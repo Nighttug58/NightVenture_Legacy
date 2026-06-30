@@ -16,11 +16,23 @@
         return Math.max(1, Number(fallback) || 1);
     }
 
+    function getTimeInfo() {
+        if (typeof obtenirInformationsTemps === "function") return obtenirInformationsTemps();
+        const p = Game?.data?.personnage || {};
+        const heure = Number(p.heure || 0);
+        const minute = Number(p.minute || 0);
+        return {
+            jour: p.jour || 1,
+            heureAffichee: heure + "h" + String(minute).padStart(2, "0"),
+            periode: heure >= 6 && heure < 18 ? "Jour" : "Nuit"
+        };
+    }
+
     function injectStyle() {
         if (document.getElementById("nvExplorationInlineHudStyle")) return;
         const style = document.createElement("style");
         style.id = "nvExplorationInlineHudStyle";
-        style.textContent = "body.nv-mode-playing #topCharacterBar #personnage,body.nv-mode-playing #topCharacterBar .nv-hud-world-info,body.nv-mode-playing #topCharacterBar .nv-hud-collapse-button{display:none!important}body.nv-mode-playing #topCharacterBar{position:static!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}.nv-inline-hud{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding:10px}.nv-inline-hud-top{display:grid;grid-template-columns:minmax(0,1fr)auto;gap:7px;align-items:start}.nv-inline-hud-title{min-width:0}.nv-inline-hud-title strong{display:block;color:#f5d37a;font-size:clamp(.76rem,3.2vw,.94rem);line-height:1.18;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal}.nv-inline-hud-title span{display:block;color:#c7bdad;font-size:clamp(.66rem,2.8vw,.76rem);line-height:1.15;font-weight:800;margin-top:3px;white-space:normal;overflow:visible;text-overflow:clip}.nv-inline-hud button{min-width:42px!important;width:auto!important;max-width:54px!important;min-height:28px!important;padding:4px 8px!important;border-radius:999px!important;font-size:.66rem!important;line-height:1!important;white-space:nowrap}.nv-inline-xp{width:100%}.nv-inline-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.nv-inline-res-item{min-width:0}.nv-inline-bar{position:relative;height:26px;overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(0,0,0,.32)}.nv-inline-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:inherit;background:rgba(245,211,122,.78)}.nv-inline-bar-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 5px;color:#fff;font-size:.64rem;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nv-inline-xp .nv-inline-bar{height:28px}.nv-inline-xp .nv-inline-bar-text{font-size:.68rem}.nv-inline-res-item:nth-child(1) .nv-inline-bar-fill{background:rgba(210,75,67,.82)}.nv-inline-res-item:nth-child(2) .nv-inline-bar-fill{background:rgba(87,137,220,.82)}.nv-inline-res-item:nth-child(3) .nv-inline-bar-fill{background:rgba(96,176,98,.82)}.nv-inline-meta{display:flex;flex-wrap:wrap;gap:5px}.nv-inline-meta span{padding:3px 7px;border-radius:999px;background:rgba(0,0,0,.14);color:#c7bdad;font-size:.68rem;font-weight:800}.nv-exploration-hero-mobile__actions button[onclick*=ouvrirZones]{display:none!important}";
+        style.textContent = "body.nv-mode-playing #topCharacterBar #personnage,body.nv-mode-playing #topCharacterBar .nv-hud-world-info,body.nv-mode-playing #topCharacterBar .nv-hud-collapse-button{display:none!important}body.nv-mode-playing #topCharacterBar{position:static!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}.nv-inline-hud{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding:10px}.nv-inline-hud-top{display:grid;grid-template-columns:minmax(0,1fr)auto;gap:7px;align-items:start}.nv-inline-hud-title{min-width:0}.nv-inline-hud-title strong{display:block;color:#f5d37a;font-size:clamp(.76rem,3.2vw,.94rem);line-height:1.18;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal}.nv-inline-hud-title span{display:block;color:#c7bdad;font-size:clamp(.66rem,2.8vw,.76rem);line-height:1.15;font-weight:800;margin-top:3px;white-space:normal;overflow:visible;text-overflow:clip}.nv-inline-hud button{min-width:42px!important;width:auto!important;max-width:54px!important;min-height:28px!important;padding:4px 8px!important;border-radius:999px!important;font-size:.66rem!important;line-height:1!important;white-space:nowrap}.nv-inline-xp{width:100%}.nv-inline-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.nv-inline-res-item{min-width:0}.nv-inline-bar{position:relative;height:26px;overflow:hidden;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(0,0,0,.32)}.nv-inline-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:inherit;background:rgba(245,211,122,.78)}.nv-inline-bar-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 5px;color:#fff;font-size:.64rem;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nv-inline-xp .nv-inline-bar{height:28px}.nv-inline-xp .nv-inline-bar-text{font-size:.68rem}.nv-inline-res-item:nth-child(1) .nv-inline-bar-fill{background:rgba(210,75,67,.82)}.nv-inline-res-item:nth-child(2) .nv-inline-bar-fill{background:rgba(87,137,220,.82)}.nv-inline-res-item:nth-child(3) .nv-inline-bar-fill{background:rgba(96,176,98,.82)}.nv-inline-meta{display:flex;flex-wrap:wrap;gap:5px}.nv-inline-meta span{padding:3px 7px;border-radius:999px;background:rgba(0,0,0,.14);color:#c7bdad;font-size:.68rem;font-weight:800}.nv-inline-meta .nv-inline-time{color:#f1eadf;background:rgba(245,211,122,.10);border:1px solid rgba(245,211,122,.14)}.nv-exploration-hero-mobile__actions button[onclick*=ouvrirZones]{display:none!important}";
         document.head.appendChild(style);
     }
 
@@ -40,6 +52,7 @@
         if (!p) return null;
         const zone = typeof obtenirZoneActuelle === "function" ? obtenirZoneActuelle() : Game?.cache?.zonesParId?.[p.zoneActuelle];
         const region = typeof obtenirRegionMondeActuelle === "function" ? obtenirRegionMondeActuelle() : null;
+        const temps = getTimeInfo();
         const pvMax = maxFrom("pvMaxTotal", p.pvMax || p.pv || 1);
         const manaMax = maxFrom("manaMaxTotal", p.manaMax || p.mana || 1);
         const staMax = maxFrom("staminaMaxTotal", p.staminaMax || p.stamina || 1);
@@ -63,8 +76,12 @@
         zoneChip.textContent = zone?.nom || "Zone inconnue";
         const regionChip = document.createElement("span");
         regionChip.textContent = region?.nom || "Région inconnue";
+        const timeChip = document.createElement("span");
+        timeChip.className = "nv-inline-time";
+        timeChip.textContent = "Jour " + (temps.jour || 1) + " · " + (temps.heureAffichee || "0h00") + " · " + (temps.periode || "Jour");
         meta.appendChild(zoneChip);
         meta.appendChild(regionChip);
+        meta.appendChild(timeChip);
         return hud;
     }
 
