@@ -1,0 +1,95 @@
+/* NightVenture - Combat UI animations */
+
+.combat-shell .barre--combat {
+    position: relative;
+    isolation: isolate;
+}
+
+.combat-shell .barre--combat .barre-pv,
+.combat-shell .barre--combat .barre-mana,
+.combat-shell .barre--combat .barre-stamina,
+.combat-shell .barre--combat .barre-xp {
+    will-change: width, filter, box-shadow;
+    transition: none;
+}
+
+.combat-shell--impact .combat-bar-fill--animated {
+    animation: nvCombatResourceBarChange 680ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.combat-shell--impact .barre--combat:has(.combat-bar-fill--animated)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    animation: nvCombatResourceBarFlash 680ms ease-out both;
+}
+
+.combat-shell--impact .combat-bar-fill--animated::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -8px;
+    width: 18px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.42);
+    filter: blur(4px);
+    opacity: 0;
+    animation: nvCombatResourceBarEdge 680ms ease-out both;
+    pointer-events: none;
+}
+
+@keyframes nvCombatResourceBarChange {
+    0% {
+        width: var(--bar-from, 0%);
+        filter: brightness(1.45) saturate(1.22);
+    }
+
+    65% {
+        filter: brightness(1.18) saturate(1.1);
+    }
+
+    100% {
+        width: var(--bar-to, 0%);
+        filter: brightness(1) saturate(1);
+    }
+}
+
+@keyframes nvCombatResourceBarFlash {
+    0% {
+        box-shadow: inset 0 0 0 rgba(255, 255, 255, 0), 0 0 0 rgba(255, 215, 0, 0);
+        opacity: 0;
+    }
+
+    18% {
+        box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.22), 0 0 14px rgba(255, 215, 0, 0.18);
+        opacity: 1;
+    }
+
+    100% {
+        box-shadow: inset 0 0 0 rgba(255, 255, 255, 0), 0 0 0 rgba(255, 215, 0, 0);
+        opacity: 0;
+    }
+}
+
+@keyframes nvCombatResourceBarEdge {
+    0% {
+        opacity: 0.85;
+        transform: scaleX(0.7);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scaleX(1.25);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .combat-shell--impact .combat-bar-fill--animated,
+    .combat-shell--impact .barre--combat:has(.combat-bar-fill--animated)::after,
+    .combat-shell--impact .combat-bar-fill--animated::before {
+        animation: none;
+    }
+}
