@@ -7,21 +7,15 @@
     "ordre": 1,
     "base": { "force": 8, "dexterite": 4, "intelligence": 2, "vitalite": 7, "chance": 3, "vitesse": 4 },
     "poids": { "force": 1.45, "dexterite": 0.75, "intelligence": 0.25, "vitalite": 1.30, "chance": 0.55, "vitesse": 0.65 },
-    "bonusCombat": {
-      "pvMax": 18,
-      "manaMax": -8,
-      "staminaMax": 10,
-      "attaquePhysique": 4,
-      "attaqueMagique": -6,
-      "defensePhysique": 4,
-      "defenseMagique": 0,
-      "critique": 0,
-      "esquive": -1,
-      "vitesse": 0
-    },
+    "bonusCombat": { "pvMax": 18, "manaMax": -8, "staminaMax": 10, "attaquePhysique": 4, "attaqueMagique": -6, "defensePhysique": 4, "defenseMagique": 0, "critique": 0, "esquive": -1, "vitesse": 0 },
     "statsDepart": { "force": 9, "dexterite": 4, "intelligence": 2, "vitalite": 8, "chance": 3, "vitesse": 4 },
     "ressourcesDepart": { "pv": 198, "mana": 62, "stamina": 130 },
-    "competencesDepart": ["guerrier_aura_epee"]
+    "specialisationDepart": "guerrier_corps_a_corps",
+    "specialisations": [
+      { "id": "guerrier_corps_a_corps", "nom": "Corps a Corps", "description": "Style offensif du Guerrier, rapide et direct.", "competences": ["guerrier_aura_epee", "guerrier_berserk", "guerrier_moulinet_epee", "guerrier_triple_entaille", "guerrier_charge"] },
+      { "id": "guerrier_mental", "nom": "Mental", "description": "Style lourd du Guerrier, base sur l'impact et la resistance.", "competences": ["guerrier_corps_puissant", "guerrier_coup_epee", "guerrier_pilon", "guerrier_frappe_esprit", "guerrier_tremblement"] }
+    ],
+    "competencesDepart": ["guerrier_aura_epee", "guerrier_berserk", "guerrier_moulinet_epee", "guerrier_triple_entaille", "guerrier_charge"]
   },
   {
     "id": "ninja",
@@ -31,21 +25,15 @@
     "ordre": 2,
     "base": { "force": 4, "dexterite": 9, "intelligence": 3, "vitalite": 4, "chance": 5, "vitesse": 9 },
     "poids": { "force": 0.80, "dexterite": 1.80, "intelligence": 0.35, "vitalite": 0.65, "chance": 1.10, "vitesse": 1.65 },
-    "bonusCombat": {
-      "pvMax": -4,
-      "manaMax": -4,
-      "staminaMax": 18,
-      "attaquePhysique": 3,
-      "attaqueMagique": -4,
-      "defensePhysique": -1,
-      "defenseMagique": -1,
-      "critique": 4,
-      "esquive": 4,
-      "vitesse": 0
-    },
+    "bonusCombat": { "pvMax": -4, "manaMax": -4, "staminaMax": 18, "attaquePhysique": 3, "attaqueMagique": -4, "defensePhysique": -1, "defenseMagique": -1, "critique": 4, "esquive": 4, "vitesse": 0 },
     "statsDepart": { "force": 5, "dexterite": 11, "intelligence": 3, "vitalite": 4, "chance": 6, "vitesse": 11 },
     "ressourcesDepart": { "pv": 136, "mana": 76, "stamina": 173 },
-    "competencesDepart": ["ninja_embuscade"]
+    "specialisationDepart": "ninja_assassin",
+    "specialisations": [
+      { "id": "ninja_assassin", "nom": "Assassin", "description": "Style dague, critique et mobilite.", "competences": ["ninja_embuscade", "ninja_attaque_rapide", "ninja_dague_tournoyante", "ninja_furtivite", "ninja_nuage_poison"] },
+      { "id": "ninja_archer", "nom": "Archer", "description": "Style distance, fleches rapides et tirs elementaires.", "competences": ["ninja_tir_repetitif", "ninja_pluie_fleches", "ninja_fleche_feu", "ninja_fleche_poison", "ninja_pas_plume"] }
+    ],
+    "competencesDepart": ["ninja_embuscade", "ninja_attaque_rapide", "ninja_dague_tournoyante", "ninja_furtivite", "ninja_nuage_poison"]
   },
   {
     "id": "sura",
@@ -55,21 +43,15 @@
     "ordre": 3,
     "base": { "force": 6, "dexterite": 4, "intelligence": 7, "vitalite": 5, "chance": 3, "vitesse": 5 },
     "poids": { "force": 1.05, "dexterite": 0.65, "intelligence": 1.35, "vitalite": 1.00, "chance": 0.55, "vitesse": 0.80 },
-    "bonusCombat": {
-      "pvMax": 10,
-      "manaMax": 24,
-      "staminaMax": 2,
-      "attaquePhysique": 2,
-      "attaqueMagique": 6,
-      "defensePhysique": 1,
-      "defenseMagique": 4,
-      "critique": 1,
-      "esquive": 0,
-      "vitesse": 0
-    },
+    "bonusCombat": { "pvMax": 10, "manaMax": 24, "staminaMax": 2, "attaquePhysique": 2, "attaqueMagique": 6, "defensePhysique": 1, "defenseMagique": 4, "critique": 1, "esquive": 0, "vitesse": 0 },
     "statsDepart": { "force": 7, "dexterite": 4, "intelligence": 9, "vitalite": 6, "chance": 3, "vitesse": 5 },
     "ressourcesDepart": { "pv": 170, "mana": 164, "stamina": 122 },
-    "competencesDepart": ["sura_lame_enchantee"]
+    "specialisationDepart": "sura_armes_magiques",
+    "specialisations": [
+      { "id": "sura_armes_magiques", "nom": "Armes Magiques", "description": "Style hybride, arme enchantee et magie de contact.", "competences": ["sura_lame_enchantee", "sura_armure_enchantee", "sura_peur", "sura_tourbillon_dragon", "sura_doigt_de_lame"] },
+      { "id": "sura_magie_noire", "nom": "Magie Noire", "description": "Style lanceur de sorts, orbes noires et flammes spirituelles.", "competences": ["sura_frappe_obscure", "sura_esprit_flamme", "sura_protection_tenebres", "sura_frappe_fantome", "sura_orbe_noire"] }
+    ],
+    "competencesDepart": ["sura_lame_enchantee", "sura_armure_enchantee", "sura_peur", "sura_tourbillon_dragon", "sura_doigt_de_lame"]
   },
   {
     "id": "shaman",
@@ -79,20 +61,14 @@
     "ordre": 4,
     "base": { "force": 3, "dexterite": 4, "intelligence": 9, "vitalite": 5, "chance": 5, "vitesse": 5 },
     "poids": { "force": 0.45, "dexterite": 0.70, "intelligence": 1.70, "vitalite": 0.95, "chance": 0.90, "vitesse": 0.85 },
-    "bonusCombat": {
-      "pvMax": 6,
-      "manaMax": 38,
-      "staminaMax": -2,
-      "attaquePhysique": -4,
-      "attaqueMagique": 9,
-      "defensePhysique": 0,
-      "defenseMagique": 7,
-      "critique": 1,
-      "esquive": 0,
-      "vitesse": 0
-    },
+    "bonusCombat": { "pvMax": 6, "manaMax": 38, "staminaMax": -2, "attaquePhysique": -4, "attaqueMagique": 9, "defensePhysique": 0, "defenseMagique": 7, "critique": 1, "esquive": 0, "vitesse": 0 },
     "statsDepart": { "force": 3, "dexterite": 5, "intelligence": 11, "vitalite": 6, "chance": 6, "vitesse": 5 },
     "ressourcesDepart": { "pv": 166, "mana": 198, "stamina": 123 },
-    "competencesDepart": ["shaman_rugissement_dragon"]
+    "specialisationDepart": "shaman_dragon",
+    "specialisations": [
+      { "id": "shaman_dragon", "nom": "Dragon", "description": "Style offensif du Shaman, talismans et puissance draconique.", "competences": ["shaman_talisman_volant", "shaman_rugissement_dragon", "shaman_dragon_chassant", "shaman_benediction", "shaman_aide_dragon"] },
+      { "id": "shaman_soin", "nom": "Soin", "description": "Style lumiere et foudre, soutien converti en attaques pour cette V1.", "competences": ["shaman_jet_lumiere", "shaman_griffe_eclair", "shaman_appel_eclair", "shaman_soin", "shaman_acceleration"] }
+    ],
+    "competencesDepart": ["shaman_talisman_volant", "shaman_rugissement_dragon", "shaman_dragon_chassant", "shaman_benediction", "shaman_aide_dragon"]
   }
 ]
