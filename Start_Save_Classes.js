@@ -1,13 +1,15 @@
 /*
 NightVenture - Start / Save / Classes
-Module joueur base uniquement sur classes_metin2.js.
-Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
+Module maitre du demarrage joueur.
+- Aucun personnage n'est cree au boot.
+- L'accueil s'affiche seulement apres chargement des donnees.
+- La creation de personnage se fait uniquement apres choix de classe + Commencer.
 */
 
 (function () {
     "use strict";
 
-    const NV_START_VERSION = "metin2-classes-v2";
+    const NV_START_VERSION = "metin2-classes-v3-start-flow";
     const NV_SAVE_KEY = "NightVenture_Save_v0_9_4";
     const NV_BASE_ACTIONS = ["attaque_simple", "defendre", "fuir", "utiliser_objet"];
     const NV_CLASSE_FALLBACK = "guerrier";
@@ -21,6 +23,7 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
 
     const NV_ETAT = {
         mode: "menu",
+        donneesChargees: false,
         autosaveTimer: null,
         classeCompetencesSelectionnee: null,
         classeNouvellePartieSelectionnee: NV_CLASSE_FALLBACK
@@ -202,14 +205,22 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
         return competence.nom;
     }
 
+    function NV_obtenirRegionDepart() {
+        return Game.data?.regionsMonde?.[0]?.id || "aetheria";
+    }
+
     function NV_obtenirZonesDebloqueesDefaut() {
-        const zones = typeof obtenirZonesActuelles === "function" ? obtenirZonesActuelles() : [];
+        const regionId = NV_obtenirRegionDepart();
+        const region = (Game.data?.regionsMonde || []).find(entree => entree.id === regionId) || Game.data?.regionsMonde?.[0];
+        const zones = Array.isArray(region?.zones) ? region.zones : [];
         const debloquees = zones.filter(zone => zone?.debloqueeParDefaut).map(zone => zone.id);
-        return debloquees.length ? debloquees : ["auberge_griffon", "place_marche", "foret_brumes", "tour_mage"];
+        return debloquees.length ? debloquees : [zones[0]?.id || "auberge_griffon"].filter(Boolean);
     }
 
     function NV_obtenirZoneDepart() {
-        const zones = typeof obtenirZonesActuelles === "function" ? obtenirZonesActuelles() : [];
+        const regionId = NV_obtenirRegionDepart();
+        const region = (Game.data?.regionsMonde || []).find(entree => entree.id === regionId) || Game.data?.regionsMonde?.[0];
+        const zones = Array.isArray(region?.zones) ? region.zones : [];
         return zones.find(zone => zone?.debloqueeParDefaut)?.id || zones[0]?.id || "auberge_griffon";
     }
 
@@ -270,7 +281,7 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
             heure: 8,
             minute: 0,
             dernierRestockMarchands: 1,
-            regionMondeActuelle: Game.data?.regionsMonde?.[0]?.id || "aetheria",
+            regionMondeActuelle: NV_obtenirRegionDepart(),
             zoneActuelle: NV_obtenirZoneDepart(),
             zonesDebloquees: NV_obtenirZonesDebloqueesDefaut(),
             zonesVisitees: [],
@@ -327,7 +338,7 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
         personnage.pointsCaracteristiques ??= 0;
         personnage.pointsTalent ??= 0;
         personnage.pointsCompetence ??= 0;
-        personnage.regionMondeActuelle ??= Game.data?.regionsMonde?.[0]?.id || "aetheria";
+        personnage.regionMondeActuelle ??= NV_obtenirRegionDepart();
         personnage.zoneActuelle ??= NV_obtenirZoneDepart();
         personnage.zonesDebloquees ??= NV_obtenirZonesDebloqueesDefaut();
         personnage.zonesVisitees ??= [];
@@ -349,51 +360,81 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
     }
 
     function NV_creerSauvegarde() {
+        if (!Game.data?.personnage) return null;
         return {
             versionNightVenture: NV_START_VERSION,
             dateSauvegarde: new Date().toISOString(),
-            personnage: NV_normaliserPersonnage(Game.data?.personnage),
+            personnage: NV_normaliserPersonnage(Game.data.personnage),
             historique: Game.data?.historique || { journal: [] },
             monde: Game.data?.monde || {}
         };
     }
 
     function NV_sauvegarderLocalSilencieux() {
-        localStorage.setItem(NV_SAVE_KEY, JSON.stringify(NV_creerSauvegarde()));
+        if (NV_ETAT.mode !== "playing" || !Game.data?.personnage) return false;
+        const save = NV_creerSauvegarde();
+        if (!save) return false;
+        localStorage.setItem(NV_SAVE_KEY, JSON.stringify(save));
         return true;
     }
 
     function NV_appliquerSauvegarde(save, message = "Sauvegarde chargee.") {
-        Game.data.personnage = save?.personnage || NV_creerPersonnageNouveau(NV_CLASSE_FALLBACK, "Nighttug58");
-        Game.data.historique = save?.historique || { journal: [] };
-        Game.data.monde = save?.monde || {};
+        if (!save?.personnage) {
+            alert("Sauvegarde invalide : aucun personnage trouve.");
+            NV_ouvrirEcranAccueil();
+            return false;
+        }
+
+        Game.data.personnage = save.personnage;
+        Game.data.historique = save.historique || { journal: [] };
+        Game.data.monde = save.monde || {};
         NV_normaliserPersonnage(Game.data.personnage);
         NV_ETAT.mode = "playing";
+        Game.ui.vueActive = "exploration";
         document.body.classList.remove("nv-start-mode");
         if (typeof ajouterJournal === "function") ajouterJournal(message);
         NV_sauvegarderLocalSilencieux();
         NV_originalRafraichirInterface();
+        return true;
     }
 
     function NV_chargerLocal() {
         const texte = localStorage.getItem(NV_SAVE_KEY);
-        if (!texte) { alert("Aucune sauvegarde navigateur trouvee."); return; }
-        NV_appliquerSauvegarde(JSON.parse(texte), "Sauvegarde navigateur chargee.");
+        if (!texte) { alert("Aucune sauvegarde navigateur trouvee."); return false; }
+        try {
+            return NV_appliquerSauvegarde(JSON.parse(texte), "Sauvegarde navigateur chargee.");
+        } catch (erreur) {
+            console.error(erreur);
+            alert("Sauvegarde navigateur illisible.");
+            return false;
+        }
     }
 
     function NV_supprimerSauvegardeLocale() {
         localStorage.removeItem(NV_SAVE_KEY);
+        Game.data.personnage = null;
         NV_ouvrirEcranAccueil();
     }
 
     async function NV_chargerFichier(file) {
-        if (!file) return;
-        const save = JSON.parse(await file.text());
-        NV_appliquerSauvegarde(save, "Sauvegarde fichier chargee.");
+        if (!file) return false;
+        try {
+            const save = JSON.parse(await file.text());
+            return NV_appliquerSauvegarde(save, "Sauvegarde fichier chargee.");
+        } catch (erreur) {
+            console.error(erreur);
+            alert("Fichier de sauvegarde invalide.");
+            return false;
+        }
     }
 
     function NV_telechargerSauvegarde() {
-        const blob = new Blob([JSON.stringify(NV_creerSauvegarde(), null, 2)], { type: "application/json" });
+        const save = NV_creerSauvegarde();
+        if (!save) {
+            alert("Aucune partie en cours a sauvegarder.");
+            return;
+        }
+        const blob = new Blob([JSON.stringify(save, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const lien = document.createElement("a");
         lien.href = url;
@@ -460,6 +501,8 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
 
     function NV_ouvrirEcranAccueil() {
         NV_ETAT.mode = "menu";
+        Game.ui.vueActive = "menu";
+        Game.data.personnage = null;
         document.body.classList.add("nv-start-mode");
         NV_syncClassesMetin2();
         const sauvegardeExiste = Boolean(localStorage.getItem(NV_SAVE_KEY));
@@ -477,16 +520,19 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
         `;
         afficherVuePrincipale(html);
         const personnage = document.getElementById("personnage");
-        if (personnage) personnage.innerHTML = `<div class="nv-start-side"><strong>NightVenture</strong><br>En attente de partie.</div>`;
+        if (personnage) personnage.innerHTML = "";
     }
 
     function NV_ouvrirChoixClasse(classeId = null) {
         const nomActuel = document.getElementById("nvNomPersonnage")?.value || "Nighttug58";
         NV_ETAT.mode = "new_game";
+        Game.ui.vueActive = "new_game";
+        Game.data.personnage = null;
         document.body.classList.add("nv-start-mode");
         NV_syncClassesMetin2();
-        const classes = NV_obtenirClasses();
-        const classeSelectionneeId = Game.cache.classesParId[classeId] ? classeId : (Game.cache.classesParId[NV_ETAT.classeNouvellePartieSelectionnee] ? NV_ETAT.classeNouvellePartieSelectionnee : NV_CLASSE_FALLBACK);
+        const classeSelectionneeId = Game.cache.classesParId[classeId]
+            ? classeId
+            : (Game.cache.classesParId[NV_ETAT.classeNouvellePartieSelectionnee] ? NV_ETAT.classeNouvellePartieSelectionnee : NV_CLASSE_FALLBACK);
         NV_ETAT.classeNouvellePartieSelectionnee = classeSelectionneeId;
         const html = `
             <section class="nv-start-screen nv-classe-screen">
@@ -500,6 +546,8 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
             </section>
         `;
         afficherVuePrincipale(html);
+        const personnage = document.getElementById("personnage");
+        if (personnage) personnage.innerHTML = "";
     }
 
     function NV_lancerNouvellePartie(classeId) {
@@ -508,11 +556,12 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
         Game.data.personnage = NV_creerPersonnageNouveau(id, nom);
         Game.data.historique ??= {};
         Game.data.historique.journal = [];
+        NV_normaliserPersonnage(Game.data.personnage);
         NV_ETAT.mode = "playing";
+        Game.ui.vueActive = "exploration";
         document.body.classList.remove("nv-start-mode");
         if (typeof ajouterJournal === "function") ajouterJournal("Nouvelle partie commencee : " + Game.data.personnage.classeNom);
         NV_sauvegarderLocalSilencieux();
-        Game.ui.vueActive = "exploration";
         NV_originalRafraichirInterface();
     }
 
@@ -554,9 +603,12 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
         if (typeof window.rafraichirInterface !== "function" || window.rafraichirInterface.__NV_START_PATCH) return;
         NV_originalRafraichirInterface._fn = window.rafraichirInterface;
         window.rafraichirInterface = function () {
+            if (NV_ETAT.mode !== "playing" || !Game.data?.personnage) {
+                NV_ouvrirEcranAccueil();
+                return;
+            }
             NV_syncClassesMetin2();
-            NV_normaliserPersonnage(Game.data?.personnage);
-            if (NV_ETAT.mode !== "playing") { NV_ouvrirEcranAccueil(); return; }
+            NV_normaliserPersonnage(Game.data.personnage);
             document.body.classList.remove("nv-start-mode");
             NV_originalRafraichirInterface();
             NV_demanderAutosave("rafraichirInterface");
@@ -565,7 +617,7 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
     }
 
     function NV_demanderAutosave() {
-        if (NV_ETAT.mode !== "playing") return;
+        if (NV_ETAT.mode !== "playing" || !Game.data?.personnage) return;
         clearTimeout(NV_ETAT.autosaveTimer);
         NV_ETAT.autosaveTimer = setTimeout(() => NV_sauvegarderLocalSilencieux(), 120);
     }
@@ -599,13 +651,28 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
         };
     }
 
+    function NV_apresChargementDonnees() {
+        NV_ETAT.donneesChargees = true;
+        NV_syncClassesMetin2();
+        NV_ajouterBoutonCompetences();
+
+        if (NV_ETAT.mode !== "playing") {
+            Game.data.personnage = null;
+            NV_ouvrirEcranAccueil();
+        }
+    }
+
     function NV_boot() {
         NV_injecterStyle();
-        NV_syncClassesMetin2();
         NV_patchRafraichirInterface();
         NV_patchSaveButtons();
-        window.addEventListener("beforeunload", () => { if (NV_ETAT.mode === "playing") NV_sauvegarderLocalSilencieux(); });
-        setTimeout(() => { NV_ajouterBoutonCompetences(); if (NV_ETAT.mode !== "playing") NV_ouvrirEcranAccueil(); }, 150);
+        window.addEventListener("beforeunload", () => {
+            if (NV_ETAT.mode === "playing") NV_sauvegarderLocalSilencieux();
+        });
+
+        if (Game.data?.donneesChargees) {
+            NV_apresChargementDonnees();
+        }
     }
 
     window.NV_ouvrirEcranAccueil = NV_ouvrirEcranAccueil;
@@ -614,13 +681,17 @@ Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
     window.NV_chargerLocal = NV_chargerLocal;
     window.NV_supprimerSauvegardeLocale = NV_supprimerSauvegardeLocale;
     window.NV_chargerFichier = NV_chargerFichier;
-    window.NV_chargerFichierDepuisInputAccueil = async function (event) { await NV_chargerFichier(event.target.files?.[0]); event.target.value = ""; };
+    window.NV_chargerFichierDepuisInputAccueil = async function (event) {
+        await NV_chargerFichier(event.target.files?.[0]);
+        event.target.value = "";
+    };
     window.NV_sauvegarderLocalSilencieux = NV_sauvegarderLocalSilencieux;
     window.NV_telechargerSauvegarde = NV_telechargerSauvegarde;
     window.NV_ouvrirCompetencesClasses = NV_ouvrirCompetencesClasses;
     window.ouvrirCompetencesClasses = NV_ouvrirCompetencesClasses;
     window.NV_normaliserPersonnage = NV_normaliserPersonnage;
     window.NV_demanderAutosave = NV_demanderAutosave;
+    window.NV_apresChargementDonnees = NV_apresChargementDonnees;
     window.NV_START_VERSION = NV_START_VERSION;
 
     NV_boot();
