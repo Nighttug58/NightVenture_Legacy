@@ -151,7 +151,7 @@ function creerBarreRessource(classe, pourcentage, valeurActuelle = null, valeurM
 
     return `
         <div class="barre">
-            <div class="${classe}" style="width: ${pourcentageCorrige};"></div>
+            <div class="${classe}" style="width: ${pourcentageCorrige}%;"></div>
             <div class="barre__texte">
                 <span class="barre__libelle">${libelle}</span>
                 <span class="barre__valeur">${texteValeur}</span>
