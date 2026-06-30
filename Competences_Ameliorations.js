@@ -1,9 +1,7 @@
 /*
 NightVenture - Competences Ameliorations
-Point 2 : generation automatique des items d'amelioration de competences.
-- 1 livre par competence
-- 1 pierre_ame globale
-- 1 noyau_demoniaque global
+- Generation automatique des items d'amelioration de competences
+- Point 5 : fonction centrale d'utilisation des livres, pierres et noyaux
 */
 
 (function () {
@@ -133,5 +131,178 @@ Point 2 : generation automatique des items d'amelioration de competences.
         return Game.cache.itemsAmeliorationCompetences;
     }
 
+    function NV_resultatAmelioration(ok, message, details = {}) {
+        return { ok: Boolean(ok), message, ...details };
+    }
+
+    function NV_objetAmelioration(idObjet) {
+        return Game.cache.objetsParId?.[idObjet] || Game.data.objets?.find(objet => objet?.id === idObjet) || null;
+    }
+
+    function NV_competenceAmeliorable(idCompetence) {
+        return Game.cache.competencesParId?.[idCompetence] || Game.data.competences?.find(competence => competence?.id === idCompetence) || null;
+    }
+
+    function NV_peutConsommerObjetAmelioration(idObjet) {
+        if (typeof possedeObjet === "function") return possedeObjet(idObjet);
+        return Game.data.personnage?.inventaire?.some(item => item.id === idObjet && Number(item.quantite || 0) > 0);
+    }
+
+    function NV_consommeObjetAmelioration(idObjet) {
+        if (typeof retirerObjetInventaire === "function") return retirerObjetInventaire(idObjet, 1);
+
+        const inventaire = Game.data.personnage?.inventaire || [];
+        const item = inventaire.find(entree => entree.id === idObjet);
+        if (!item) return false;
+        item.quantite = Number(item.quantite || 0) - 1;
+        if (item.quantite <= 0) {
+            Game.data.personnage.inventaire = inventaire.filter(entree => entree.id !== idObjet);
+        }
+        return true;
+    }
+
+    function NV_verifierPreconditionsAmelioration(objet, competence, etat) {
+        if (!objet?.typeAmeliorationCompetence) {
+            return NV_resultatAmelioration(false, "Cet objet n'est pas un objet d'amelioration de competence.");
+        }
+
+        if (!competence || !etat) {
+            return NV_resultatAmelioration(false, "Competence introuvable ou indisponible pour la specialisation active.");
+        }
+
+        if (Number(etat.niveau || 0) < Number(etat.niveauMax || 0)) {
+            return NV_resultatAmelioration(false, "La competence doit d'abord atteindre son niveau maximum actuel.", {
+                niveau: etat.niveau,
+                niveauMax: etat.niveauMax
+            });
+        }
+
+        return NV_resultatAmelioration(true, "Preconditions valides.");
+    }
+
+    function NV_utiliserLivreCompetence(objet, competence, etat) {
+        if (objet.competenceId !== competence.id) {
+            return NV_resultatAmelioration(false, "Ce livre ne correspond pas a cette competence.");
+        }
+
+        const niveauMaxDepart = Number(objet.niveauMaxDepart || 5);
+        const niveauMaxFinal = Number(objet.niveauMaxFinal || 10);
+        const niveauMaxActuel = Number(etat.niveauMax || niveauMaxDepart);
+
+        if (niveauMaxActuel < niveauMaxDepart || niveauMaxActuel >= niveauMaxFinal) {
+            return NV_resultatAmelioration(false, `Ce livre fonctionne seulement du niveau max ${niveauMaxDepart} au niveau max ${niveauMaxFinal}.`);
+        }
+
+        etat.niveauMax = Math.min(niveauMaxActuel + 1, niveauMaxFinal);
+        etat.livresUtilises = Number(etat.livresUtilises || 0) + 1;
+        return NV_resultatAmelioration(true, `${competence.nom} peut maintenant monter jusqu'au niveau ${etat.niveauMax}.`, {
+            palier: "livre_competence",
+            niveauMax: etat.niveauMax
+        });
+    }
+
+    function NV_utiliserPierreAme(objet, competence, etat) {
+        const niveauMaxDepart = Number(objet.niveauMaxDepart || 10);
+        const niveauMaxFinal = Number(objet.niveauMaxFinal || 15);
+        const niveauMaxActuel = Number(etat.niveauMax || 5);
+
+        if (niveauMaxActuel < niveauMaxDepart || niveauMaxActuel >= niveauMaxFinal) {
+            return NV_resultatAmelioration(false, `La Pierre d'ame fonctionne seulement du niveau max ${niveauMaxDepart} au niveau max ${niveauMaxFinal}.`);
+        }
+
+        etat.niveauMax = Math.min(niveauMaxActuel + 1, niveauMaxFinal);
+        etat.pierresAmeUtilisees = Number(etat.pierresAmeUtilisees || 0) + 1;
+        return NV_resultatAmelioration(true, `${competence.nom} peut maintenant monter jusqu'au niveau ${etat.niveauMax}.`, {
+            palier: "pierre_ame",
+            niveauMax: etat.niveauMax
+        });
+    }
+
+    function NV_utiliserNoyauDemoniaque(objet, competence, etat) {
+        const niveauMaxDepart = Number(objet.niveauMaxDepart || 15);
+        const niveauMaxFinal = Number(objet.niveauMaxFinal || 16);
+        const niveauMaxActuel = Number(etat.niveauMax || 5);
+
+        if (etat.noyauDemoniaqueUtilise || etat.masterisee) {
+            return NV_resultatAmelioration(false, "Cette competence est deja Masterisee.");
+        }
+
+        if (niveauMaxActuel !== niveauMaxDepart) {
+            return NV_resultatAmelioration(false, `Le Noyau demoniaque fonctionne seulement au niveau max ${niveauMaxDepart}.`);
+        }
+
+        etat.niveauMax = niveauMaxFinal;
+        etat.masterisee = true;
+        etat.noyauDemoniaqueUtilise = true;
+        return NV_resultatAmelioration(true, `${competence.nom} est maintenant Masterisee et peut monter au niveau ${etat.niveauMax}.`, {
+            palier: "noyau_demoniaque",
+            niveauMax: etat.niveauMax,
+            masterisee: true
+        });
+    }
+
+    function utiliserObjetAmeliorationCompetence(idObjet, idCompetence) {
+        const personnage = Game.data?.personnage;
+        if (!personnage) return NV_resultatAmelioration(false, "Personnage indisponible.");
+
+        if (typeof NV_normaliserCompetencesPersonnage === "function") {
+            NV_normaliserCompetencesPersonnage(personnage);
+        }
+
+        const objet = NV_objetAmelioration(idObjet);
+        const competence = NV_competenceAmeliorable(idCompetence);
+        const etat = typeof NV_etatCompetencePersonnage === "function"
+            ? NV_etatCompetencePersonnage(idCompetence, personnage)
+            : personnage.competencesProgression?.[idCompetence];
+
+        if (!objet) return NV_resultatAmelioration(false, "Objet introuvable.");
+        if (!NV_peutConsommerObjetAmelioration(idObjet)) return NV_resultatAmelioration(false, "Vous ne possedez pas cet objet.");
+
+        const preconditions = NV_verifierPreconditionsAmelioration(objet, competence, etat);
+        if (!preconditions.ok) {
+            if (typeof ajouterJournal === "function") ajouterJournal(preconditions.message);
+            return preconditions;
+        }
+
+        let resultat;
+        switch (objet.typeAmeliorationCompetence) {
+            case "livre_competence":
+                resultat = NV_utiliserLivreCompetence(objet, competence, etat);
+                break;
+            case "pierre_ame":
+                resultat = NV_utiliserPierreAme(objet, competence, etat);
+                break;
+            case "noyau_demoniaque":
+                resultat = NV_utiliserNoyauDemoniaque(objet, competence, etat);
+                break;
+            default:
+                resultat = NV_resultatAmelioration(false, "Type d'objet d'amelioration inconnu.");
+        }
+
+        if (!resultat.ok) {
+            if (typeof ajouterJournal === "function") ajouterJournal(resultat.message);
+            return resultat;
+        }
+
+        const consomme = NV_consommeObjetAmelioration(idObjet);
+        if (!consomme) return NV_resultatAmelioration(false, "Impossible de consommer l'objet.");
+
+        personnage.competencesProgression ??= {};
+        personnage.competencesNiveaux ??= {};
+        personnage.competencesProgression[idCompetence] = etat;
+        personnage.competencesNiveaux[idCompetence] = etat.niveau;
+
+        if (typeof ajouterJournal === "function") {
+            ajouterJournal(`${objet.nom} utilise.`);
+            ajouterJournal(resultat.message);
+        }
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("competence max upgrade");
+        if (typeof rafraichirInterface === "function") rafraichirInterface();
+
+        return resultat;
+    }
+
     window.NV_genererItemsAmeliorationCompetences = NV_genererItemsAmeliorationCompetences;
+    window.utiliserObjetAmeliorationCompetence = utiliserObjetAmeliorationCompetence;
+    window.NV_utiliserObjetAmeliorationCompetence = utiliserObjetAmeliorationCompetence;
 })();
