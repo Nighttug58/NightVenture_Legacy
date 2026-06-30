@@ -1,10 +1,10 @@
 /*
-NightVenture — Statistiques et niveaux
+NightVenture - Statistiques et niveaux
 - Stats totales
 - Ressources max
 - Vue statistiques
-- XP / montée de niveau
-- Points de caractéristiques
+- XP / montee de niveau
+- Points de caracteristiques
 */
 
 function pvMaxTotal() { return 100 + statTotale("vitalite") * 10 + statTotale("pvMax"); }
@@ -16,23 +16,24 @@ function defenseTotale() { return statTotale("defense") + statTotale("vitalite")
 function attaqueMagiqueTotale() { return statTotale("attaqueMagique") + statTotale("intelligence") * 2; }
 function defenseMagiqueTotale() { return statTotale("defenseMagique") + statTotale("vitalite") * 2; }
 function esquiveTotale() { return statTotale("esquive") + statTotale("dexterite") * 0.5; }
+function vitesseTotale() { return statTotale("vitesse"); }
 function bonusOrTotal() { return statTotale("bonusOr") + statTotale("chance"); }
 function staminaMaxTotal() { return 100 + statTotale("staminaMax") + statTotale("dexterite") * 5; }
 
 function statTotale(nomStat) {
-    let total = Game.data.personnage[nomStat] || 0;
+    let total = Number(Game.data.personnage[nomStat] || 0);
 
     Object.values(Game.data.personnage.equipement ?? {}).forEach(idObjet => {
         if (!idObjet) return;
         const objet = trouverObjet(idObjet);
         if (!objet) return;
-        total += objet[nomStat] || 0;
+        total += Number(objet[nomStat] || 0);
     });
 
     (Game.data.personnage.talents ?? []).forEach(talentJoueur => {
         const talent = Game.cache.talentsParId[talentJoueur.id];
         if (!talent) return;
-        total += (talent[nomStat] || 0) * talentJoueur.niveau;
+        total += Number(talent[nomStat] || 0) * Number(talentJoueur.niveau || 0);
     });
 
     return total;
@@ -42,46 +43,42 @@ function statTotale(nomStat) {
 function ouvrirStatistiques() {
     changerVue("statistiques");
 
-    const personnage =
-        Game.data.personnage;
-
-    const region =
-        obtenirRegionMondeActuelle()?.nom || "Région inconnue";
-
-    const zone =
-        obtenirZoneActuelle()?.nom || "Zone inconnue";
+    const personnage = Game.data.personnage;
+    const region = obtenirRegionMondeActuelle()?.nom || "Region inconnue";
+    const zone = obtenirZoneActuelle()?.nom || "Zone inconnue";
 
     const statistiques = [
         ["FOR", "force"],
         ["DEX", "dexterite"],
         ["INT", "intelligence"],
         ["VIT", "vitalite"],
-        ["LUCK", "chance"]
+        ["CHA", "chance"],
+        ["SPE", "vitesse"]
     ];
 
     const html = `
         <div class="item-card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:15px;">
                 <div>
-                    <h2 style="margin:0;">📈 Statistiques</h2>
+                    <h2 style="margin:0;">Statistiques</h2>
                     <p style="margin:6px 0 0;">
-                        Fiche complète du personnage, caractéristiques et statistiques de combat.
+                        Fiche complete du personnage, caracteristiques et statistiques de combat.
                     </p>
                 </div>
 
-                <button onclick="ouvrirExploration()">⬅ Retour</button>
+                <button onclick="ouvrirExploration()">Retour</button>
             </div>
         </div>
 
         <div class="fiche-personnage-grid">
 
             <div class="fiche-personnage-section">
-                <h3>👤 Identité</h3>
+                <h3>Identite</h3>
 
                 <div class="liste-stats">
                     <div class="ligne-stat">
                         <span>Nom</span>
-                        <strong>${personnage.nom || "Héros"}</strong>
+                        <strong>${personnage.nom || "Heros"}</strong>
                     </div>
 
                     <div class="ligne-stat">
@@ -100,7 +97,7 @@ function ouvrirStatistiques() {
                     </div>
 
                     <div class="ligne-stat">
-                        <span>Région</span>
+                        <span>Region</span>
                         <strong>${region}</strong>
                     </div>
 
@@ -112,7 +109,7 @@ function ouvrirStatistiques() {
             </div>
 
             <div class="fiche-personnage-section">
-                <h3>📊 Progression</h3>
+                <h3>Progression</h3>
 
                 <div class="liste-stats">
                     <div class="ligne-stat">
@@ -121,7 +118,7 @@ function ouvrirStatistiques() {
                     </div>
 
                     <div class="ligne-stat">
-                        <span>Points caractéristiques</span>
+                        <span>Points caracteristiques</span>
                         <strong>${personnage.pointsCaracteristiques ?? 0}</strong>
                     </div>
 
@@ -133,7 +130,7 @@ function ouvrirStatistiques() {
             </div>
 
             <div class="fiche-personnage-section">
-                <h3>❤️ Ressources</h3>
+                <h3>Ressources</h3>
 
                 <div class="liste-stats">
                     <div class="ligne-stat">
@@ -154,7 +151,7 @@ function ouvrirStatistiques() {
             </div>
 
             <div class="fiche-personnage-section">
-                <h3>⚔ Combat</h3>
+                <h3>Combat</h3>
 
                 <div class="liste-stats">
                     <div class="ligne-stat">
@@ -203,6 +200,11 @@ function ouvrirStatistiques() {
                     </div>
 
                     <div class="ligne-stat">
+                        <span>SPE</span>
+                        <strong>${vitesseTotale().toFixed(1)}</strong>
+                    </div>
+
+                    <div class="ligne-stat">
                         <span>BONUS LOOT</span>
                         <strong>${bonusLootTotal().toFixed(1)}%</strong>
                     </div>
@@ -217,7 +219,7 @@ function ouvrirStatistiques() {
         </div>
 
         <div class="item-card">
-            <h2>📈 Caractéristiques</h2>
+            <h2>Caracteristiques</h2>
 
             <p>
                 Points disponibles :
@@ -239,7 +241,7 @@ function ouvrirStatistiques() {
     afficherVuePrincipale(html);
 }
 
-/* NIVEAUX Logique Système & Moteur d'XP */
+/* NIVEAUX Logique Systeme & Moteur d'XP */
 function verifierMonteeNiveau() {
     let coutXp = xpNiveauSuivant();
     const personnage = Game.data.personnage;
@@ -262,8 +264,8 @@ function verifierMonteeNiveau() {
         personnage.mana = manaMaxTotal();
         personnage.stamina = staminaMaxTotal();
 
-        ajouterJournal(`⭐ Niveau ${personnage.niveau} atteint !`);
-        ajouterJournal(`+${palier?.pointsStats ?? 5} points de caractéristiques`);
+        ajouterJournal(`Niveau ${personnage.niveau} atteint !`);
+        ajouterJournal(`+${palier?.pointsStats ?? 5} points de caracteristiques`);
         ajouterJournal(`+${palier?.pointsTalents ?? 1} point(s) de talent`);
 
         coutXp = xpNiveauSuivant();
@@ -285,14 +287,14 @@ function ajouterPointStat(nomStat) {
         return;
     }
 
-    Game.data.personnage[nomStat]++;
+    Game.data.personnage[nomStat] = Number(Game.data.personnage[nomStat] || 0) + 1;
     Game.data.personnage.pointsCaracteristiques--;
 
     ajouterJournal(`+1 ${nomStat}`);
     rafraichirInterface();
 }
 
-/* NIVEAUX Éléments de Liaison d'Interface */
+/* NIVEAUX Elements de Liaison d'Interface */
 function verifierNiveau() {
     verifierMonteeNiveau();
     rafraichirInterface();
