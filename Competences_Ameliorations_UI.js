@@ -20,7 +20,7 @@ Version cap 21 : base 10, livre +1, pierre +1, noyau +1.
 
     function NV_quantiteInventaire(idObjet) {
         if (!idObjet) return 0;
-        return (Game.data.personnage?.inventaire || [])
+        return (Game.data?.personnage?.inventaire || [])
             .filter(entree => entree?.id === idObjet)
             .reduce((total, entree) => total + Number(entree.quantite || 0), 0);
     }
@@ -133,20 +133,6 @@ Version cap 21 : base 10, livre +1, pierre +1, noyau +1.
         `;
     }
 
-    function NV_nettoyerAffichageNiveauxCompetences(carte, idCompetence) {
-        const etat = typeof NV_etatCompetencePersonnage === "function" ? NV_etatCompetencePersonnage(idCompetence) : null;
-        const niveau = Number(etat?.niveau || 1);
-        const niveauFort = carte.querySelector(".competence-card__header strong");
-        if (niveauFort) niveauFort.textContent = `Niv. ${niveau}`;
-
-        carte.querySelectorAll(".competence-card__stats span").forEach(span => {
-            if (span.textContent.trim().startsWith("Max actuel")) span.remove();
-        });
-
-        carte.querySelector(".competence-card__progression")?.remove();
-        carte.querySelector(".competence-card__requirement")?.remove();
-    }
-
     function NV_injecterBoutonsAmeliorationCompetences() {
         const vue = document.getElementById("vuePrincipale");
         if (!vue || Game.ui?.vueActive !== "competences_classes") return;
@@ -164,7 +150,6 @@ Version cap 21 : base 10, livre +1, pierre +1, noyau +1.
             if (!idCompetence) return;
 
             carte.dataset.competenceId = idCompetence;
-            NV_nettoyerAffichageNiveauxCompetences(carte, idCompetence);
 
             const contenu = carte.querySelector(".competence-card__content");
             if (!contenu) return;
@@ -202,8 +187,6 @@ Version cap 21 : base 10, livre +1, pierre +1, noyau +1.
         const itemId = bouton?.dataset?.itemId || "";
         const competenceId = bouton?.dataset?.competenceId || bouton?.closest?.(".competence-card")?.dataset?.competenceId || "";
 
-        console.log("NV upgrade click", { itemId, competenceId, usable: bouton?.dataset?.upgradeUsable, bouton });
-
         if (!itemId || !competenceId) {
             const message = "Bouton d'amelioration incomplet : item ou competence manquant.";
             console.warn(message, { itemId, competenceId });
@@ -219,7 +202,6 @@ Version cap 21 : base 10, livre +1, pierre +1, noyau +1.
         }
 
         const resultat = window.utiliserObjetAmeliorationCompetence(itemId, competenceId);
-        console.log("NV upgrade result", resultat);
 
         if (typeof ajouterJournal === "function" && resultat?.message) {
             ajouterJournal(resultat.message);
