@@ -3,7 +3,7 @@
     {
       "id": "puissance_arcane",
       "nom": "Puissance arcane",
-      "icone": "✨",
+      "icone": "ARC",
       "description": "Renforce progressivement la maîtrise des énergies magiques.",
       "niveauMax": 5,
       "cout": 1,
@@ -12,7 +12,7 @@
     {
       "id": "constitution",
       "nom": "Constitution",
-      "icone": "🛡️",
+      "icone": "DEF",
       "description": "Améliore l'endurance générale de l'aventurier.",
       "niveauMax": 5,
       "cout": 1,
@@ -21,7 +21,7 @@
     {
       "id": "instinct",
       "nom": "Instinct",
-      "icone": "🎯",
+      "icone": "DEX",
       "description": "Aiguise les réflexes et le sens du danger.",
       "niveauMax": 5,
       "cout": 1,
