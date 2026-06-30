@@ -256,8 +256,10 @@ NightVenture - Competences Core
     }
 
     window.verifierMonteeNiveau = function () {
+        const personnage = Game.data?.personnage;
+        if (!personnage) return;
+
         let coutXp = xpNiveauSuivant();
-        const personnage = Game.data.personnage;
         NV_normaliserCompetencesPersonnage(personnage);
 
         while (personnage.xp >= coutXp) {
