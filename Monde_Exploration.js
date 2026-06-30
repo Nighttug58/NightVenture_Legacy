@@ -31,26 +31,26 @@ function executerEvenementZone(evenement, zone) {
                 ajouterJournal("Aucun monstre défini pour cette zone.");
                 break;
             }
-            ajouterJournal(`⚔ ${monstre.nom} apparaît !`);
+            ajouterJournal(`Combat : ${monstre.nom} apparaît !`);
             demarrerCombat(monstre);
             break;
         }
-        case "coffre": ajouterJournal("📦 Vous découvrez un coffre."); break;
+        case "coffre": ajouterJournal("Coffre : vous découvrez un coffre."); break;
         case "or": {
             const gain = Math.floor(Math.random() * 5) + 1;
             Game.data.personnage.or += gain;
             const messages = [
-                `🟡 Vous trouvez ${gain} pièce(s) d'or près d'une fontaine.`,
-                `🟡 Un passant laisse tomber ${gain} pièce(s) d'or.`,
-                `🟡 Vous récupérez ${gain} pièce(s) oubliée(s) sur un comptoir.`
+                `Or : vous trouvez ${gain} pièce(s) d'or près d'une fontaine.`,
+                `Or : un passant laisse tomber ${gain} pièce(s) d'or.`,
+                `Or : vous récupérez ${gain} pièce(s) oubliée(s) sur un comptoir.`
             ];
             ajouterJournal(messages[Math.floor(Math.random() * messages.length)]);
             break;
         }
-        case "pnj": ajouterJournal("👤 Vous croisez un voyageur."); break;
-        case "boss": ajouterJournal("👑 Une présence terrifiante se manifeste."); break;
-        case "rien": ajouterJournal("🚶 Vous explorez les environs sans rien découvrir de particulier."); break;
-        default: console.warn("Événement inconnu :", evenement); ajouterJournal(`⚠ Événement inconnu : ${evenement}`);
+        case "pnj": ajouterJournal("Rencontre : vous croisez un voyageur."); break;
+        case "boss": ajouterJournal("Boss : une présence terrifiante se manifeste."); break;
+        case "rien": ajouterJournal("Exploration : vous explorez les environs sans rien découvrir de particulier."); break;
+        default: console.warn("Événement inconnu :", evenement); ajouterJournal(`Attention : événement inconnu : ${evenement}`);
     }
 }
 
@@ -59,7 +59,7 @@ function voyagerVersZone(idZone) {
     if (!zone) { ajouterJournal("Zone introuvable."); return; }
 
     if (!(Game.data.personnage.zonesDebloquees ?? []).includes(idZone)) {
-        ajouterJournal(`🔒 ${zone.nom} n'est pas encore débloquée.`);
+        ajouterJournal(`${zone.nom} n'est pas encore débloquée.`);
         return;
     }
 
