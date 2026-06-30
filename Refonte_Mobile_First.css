@@ -1,0 +1,222 @@
+/* ========================================================================== 
+   NightVenture — Refonte UI mobile-first
+   Checkpoint UI 1 : base visuelle légère, sans changement gameplay.
+   ========================================================================== */
+
+:root {
+    --nv-refonte-bg: radial-gradient(circle at top, rgba(124, 98, 54, 0.24), transparent 34%), linear-gradient(180deg, #11100e 0%, #0a0b0e 58%, #080807 100%);
+    --nv-refonte-panel: rgba(18, 16, 14, 0.74);
+    --nv-refonte-panel-soft: rgba(24, 22, 19, 0.62);
+    --nv-refonte-panel-strong: rgba(12, 11, 10, 0.86);
+    --nv-refonte-border: rgba(245, 211, 122, 0.20);
+    --nv-refonte-border-soft: rgba(255, 255, 255, 0.075);
+    --nv-refonte-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+    --nv-refonte-radius: 14px;
+    --nv-refonte-gap: 10px;
+}
+
+html,
+body {
+    min-height: 100dvh;
+}
+
+body {
+    background: var(--nv-refonte-bg);
+    background-attachment: fixed;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 50% 0%, rgba(245, 211, 122, 0.08), transparent 30%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.58));
+}
+
+#appShell {
+    width: min(100%, 1120px);
+    margin: 0 auto;
+    padding: clamp(8px, 2.5vw, 16px);
+}
+
+.panel-base,
+#topCharacterBar,
+#navigationPrincipale,
+#vuePrincipale,
+.item-card,
+.modal-content,
+.infos-monde-sidebar,
+#journalSection,
+#equipementSidebar {
+    background: var(--nv-refonte-panel) !important;
+    border-color: var(--nv-refonte-border) !important;
+    border-radius: var(--nv-refonte-radius) !important;
+    box-shadow: var(--nv-refonte-shadow);
+}
+
+.item-card,
+.infos-monde-sidebar,
+#journalSection,
+#equipementSidebar {
+    background: var(--nv-refonte-panel-soft) !important;
+}
+
+#topCharacterBar {
+    top: 6px;
+    margin-bottom: var(--nv-refonte-gap);
+    padding: 9px 10px;
+    backdrop-filter: blur(7px);
+}
+
+#vuePrincipale {
+    min-height: auto;
+    padding: clamp(10px, 2.8vw, 15px);
+    backdrop-filter: blur(7px);
+}
+
+#navigationPrincipale {
+    backdrop-filter: blur(7px);
+}
+
+button,
+label[for="loadFile"] {
+    min-height: 40px;
+    border-radius: 10px;
+}
+
+.personnage-compact {
+    gap: 8px;
+}
+
+.personnage-compact__nom {
+    flex-wrap: wrap;
+    gap: 5px 8px;
+    white-space: normal;
+}
+
+.personnage-compact__nom strong {
+    font-size: clamp(1.15rem, 4.8vw, 1.55rem);
+}
+
+.personnage-compact__nom span {
+    font-size: clamp(0.88rem, 3.6vw, 1.08rem);
+}
+
+.personnage-compact .barre {
+    height: 26px;
+}
+
+.barre__texte {
+    font-size: 0.78rem;
+}
+
+@media (max-width: 900px), (orientation: portrait) {
+    #appShell {
+        max-width: 520px;
+        padding: 8px;
+    }
+
+    #gameLayout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--nv-refonte-gap);
+    }
+
+    #navigationPrincipale {
+        position: static;
+        top: auto;
+        padding: 9px;
+        order: 1;
+    }
+
+    #main {
+        order: 2;
+    }
+
+    #navigationPrincipale #barreVuePrincipale {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+    }
+
+    #navigationPrincipale button,
+    #navigationPrincipale label[for="loadFile"] {
+        width: 100%;
+        justify-content: center;
+        min-height: 38px;
+        padding: 7px 8px;
+        font-size: 0.82rem;
+        line-height: 1.1;
+    }
+
+    .infos-monde-sidebar,
+    #equipementSidebar,
+    #journalSection {
+        margin-bottom: 8px;
+        padding: 8px;
+    }
+
+    .personnage-compact__haut {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .personnage-compact__actions {
+        justify-content: flex-start;
+        gap: 6px;
+    }
+
+    .personnage-compact__actions button,
+    .personnage-compact__actions .btn-action-personnage,
+    .personnage-compact__actions .bouton-charger-haut {
+        flex: 1 1 calc(50% - 6px);
+        min-height: 34px;
+        padding: 6px 8px;
+        font-size: 0.78rem;
+    }
+
+    .personnage-compact__ressources {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .personnage-compact .barre {
+        height: 24px;
+    }
+
+    .item-card {
+        padding: 10px;
+        margin-bottom: 9px;
+    }
+
+    h1,
+    h2,
+    h3 {
+        line-height: 1.15;
+    }
+}
+
+@media (max-width: 420px) {
+    #appShell {
+        padding: 6px;
+    }
+
+    #navigationPrincipale #barreVuePrincipale {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    button,
+    label[for="loadFile"] {
+        min-height: 36px;
+        padding: 7px 9px;
+    }
+
+    #vuePrincipale {
+        padding: 8px;
+    }
+}
