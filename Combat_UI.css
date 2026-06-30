@@ -1,14 +1,21 @@
 /* NightVenture - Combat UI animations */
 
-.combat-shell .barre--combat {
+.combat-resource-slot {
     position: relative;
-    isolation: isolate;
-    overflow: visible;
     z-index: 1;
+    margin-bottom: 8px;
 }
 
-.combat-shell .barre--combat:has(.combat-resource-popup) {
-    z-index: 5;
+.combat-resource-slot--popup {
+    z-index: 8;
+}
+
+.combat-shell .combat-resource-slot .barre--combat {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    z-index: 1;
+    margin-bottom: 0;
 }
 
 .combat-shell .barre--combat .barre-pv,
@@ -50,8 +57,8 @@
 .combat-resource-popup {
     position: absolute;
     left: 50%;
-    top: -8px;
-    z-index: 10;
+    top: 50%;
+    z-index: 12;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -71,7 +78,7 @@
         1px 0 0 rgba(255, 255, 255, 0.65),
         -1px 0 0 rgba(255, 255, 255, 0.65),
         0 4px 12px rgba(0, 0, 0, 0.75);
-    transform: translate(-50%, -100%) scale(0.55);
+    transform: translate(-50%, -50%) scale(0.55);
     opacity: 0;
     animation: nvCombatResourcePopup 1000ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -141,25 +148,25 @@
 @keyframes nvCombatResourcePopup {
     0% {
         opacity: 0;
-        transform: translate(-50%, -100%) scale(0.55) translateY(12px);
+        transform: translate(-50%, -50%) scale(0.55) translateY(8px);
         filter: brightness(1.45);
     }
 
     16% {
         opacity: 1;
-        transform: translate(-50%, -100%) scale(1.22) translateY(0);
+        transform: translate(-50%, -50%) scale(1.22) translateY(0);
         filter: brightness(1.35);
     }
 
     45% {
         opacity: 1;
-        transform: translate(-50%, -100%) scale(1) translateY(-2px);
+        transform: translate(-50%, -50%) scale(1) translateY(0);
         filter: brightness(1.05);
     }
 
     100% {
         opacity: 0;
-        transform: translate(-50%, -100%) scale(0.92) translateY(-22px);
+        transform: translate(-50%, -50%) scale(0.92) translateY(-14px);
         filter: brightness(1);
     }
 }
