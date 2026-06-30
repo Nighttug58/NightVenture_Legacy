@@ -4,10 +4,24 @@ NightVenture - UI Core
 - Navigation
 - Rafraichissement interface
 - Notifications simples
+
+Le Core UI ne doit jamais supposer qu'un personnage existe au boot.
 */
 
+function NV_personnageActifCoreUI() {
+    return Boolean(Game?.data?.personnage);
+}
+
+function NV_vueHorsPartieCoreUI(vue = Game?.ui?.vueActive) {
+    return ["menu", "new_game", "competences_classes"].includes(vue);
+}
+
 function changerVue(vue) {
-    Game.ui.vueActive = vue;
+    if (!NV_personnageActifCoreUI() && !NV_vueHorsPartieCoreUI(vue)) {
+        Game.ui.vueActive = "menu";
+    } else {
+        Game.ui.vueActive = vue;
+    }
     mettreAJourTitreVue();
     mettreAJourBarreVue();
 }
@@ -21,7 +35,9 @@ function afficherVuePrincipale(html) {
     mettreAJourTitreVue();
     mettreAJourBarreVue();
     mettreAJourNotifications();
-    initialiserSelectionItemsVuePrincipale();
+    if (typeof initialiserSelectionItemsVuePrincipale === "function") {
+        initialiserSelectionItemsVuePrincipale();
+    }
 }
 
 function mettreAJourTitreVue() {
@@ -29,6 +45,8 @@ function mettreAJourTitreVue() {
     if (!titre) return;
 
     const titres = {
+        menu: "Accueil",
+        new_game: "Nouvelle partie",
         exploration: "Exploration",
         combat: "Combat",
         inventaire: "Inventaire",
@@ -43,7 +61,7 @@ function mettreAJourTitreVue() {
         competences_classes: "Competences"
     };
 
-    titre.textContent = titres[Game.ui.vueActive] || "Exploration";
+    titre.textContent = titres[Game.ui.vueActive] || "Accueil";
 }
 
 function mettreAJourBarreVue() {
@@ -76,46 +94,62 @@ function mettreAJourBarreVue() {
 }
 
 function rafraichirInterface() {
-    afficherPersonnage();
-    afficherJournal();
-    verifierProgressionQuetes();
+    if (!NV_personnageActifCoreUI()) {
+        Game.ui.vueActive = NV_vueHorsPartieCoreUI(Game.ui.vueActive) ? Game.ui.vueActive : "menu";
+        mettreAJourTitreVue();
+        mettreAJourBarreVue();
+        mettreAJourNotifications();
+
+        if (typeof window.NV_ouvrirEcranAccueil === "function" && Game.ui.vueActive !== "new_game") {
+            window.NV_ouvrirEcranAccueil();
+        }
+        return;
+    }
+
+    if (typeof afficherPersonnage === "function") afficherPersonnage();
+    if (typeof afficherJournal === "function") afficherJournal();
+    if (typeof verifierProgressionQuetes === "function") verifierProgressionQuetes();
     mettreAJourTitreVue();
     mettreAJourBarreVue();
     mettreAJourNotifications();
 
     switch (Game.ui.vueActive) {
         case "exploration":
-            ouvrirExploration();
+            if (typeof ouvrirExploration === "function") ouvrirExploration();
             break;
         case "inventaire":
-            ouvrirInventaire();
+            if (typeof ouvrirInventaire === "function") ouvrirInventaire();
             break;
         case "marchand":
-            if (Game.ui.marchandActuel) ouvrirMarchand(Game.ui.marchandActuel.id);
+            if (Game.ui.marchandActuel && typeof ouvrirMarchand === "function") ouvrirMarchand(Game.ui.marchandActuel.id);
             break;
         case "quetes":
-            ouvrirQuetes();
+            if (typeof ouvrirQuetes === "function") ouvrirQuetes();
             break;
         case "talents":
-            ouvrirTalents();
+            if (typeof ouvrirTalents === "function") ouvrirTalents();
             break;
         case "statistiques":
-            ouvrirStatistiques();
+            if (typeof ouvrirStatistiques === "function") ouvrirStatistiques();
             break;
         case "fiche_personnage":
-            ouvrirFichePersonnage();
+            if (typeof ouvrirFichePersonnage === "function") ouvrirFichePersonnage();
             break;
         case "journal":
-            ouvrirJournalComplet();
+            if (typeof ouvrirJournalComplet === "function") ouvrirJournalComplet();
             break;
         case "combat":
-            ouvrirCombat();
+            if (typeof ouvrirCombat === "function") ouvrirCombat();
             break;
         case "competences_classes":
-            NV_ouvrirCompetencesClasses();
+            if (typeof NV_ouvrirCompetencesClasses === "function") NV_ouvrirCompetencesClasses();
+            break;
+        case "menu":
+        case "new_game":
             break;
         default:
-            ouvrirExploration();
+            Game.ui.vueActive = "exploration";
+            if (typeof ouvrirExploration === "function") ouvrirExploration();
             break;
     }
 }
@@ -143,7 +177,14 @@ function creerTooltipEquipement(idObjet) {
 function mettreAJourNotifications() {
     const notifStats = document.getElementById("notifStatistiques");
     const notifTalents = document.getElementById("notifTalents");
+    const personnage = Game?.data?.personnage;
 
-    if (notifStats) notifStats.style.display = Game.data.personnage.pointsCaracteristiques > 0 ? "block" : "none";
-    if (notifTalents) notifTalents.style.display = Game.data.personnage.pointsTalent > 0 ? "block" : "none";
+    if (!personnage) {
+        if (notifStats) notifStats.style.display = "none";
+        if (notifTalents) notifTalents.style.display = "none";
+        return;
+    }
+
+    if (notifStats) notifStats.style.display = Number(personnage.pointsCaracteristiques || 0) > 0 ? "block" : "none";
+    if (notifTalents) notifTalents.style.display = Number(personnage.pointsTalent || 0) > 0 ? "block" : "none";
 }
