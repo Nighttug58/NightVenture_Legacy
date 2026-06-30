@@ -205,6 +205,7 @@ Module joueur base uniquement sur classes_metin2.js.
         const classe = NV_obtenirClasse(classeId);
         const repartition = NV_repartirPointsStatsSelonClasse(1, classe.id);
         const bonus = classe.bonusCombat || {};
+        const previewDepart = NV_calculerPreviewClasse(classe.id);
         const personnage = {
             nom: nom?.trim() || "Nighttug58",
             classe: classe.nom,
@@ -230,7 +231,7 @@ Module joueur base uniquement sur classes_metin2.js.
             defenseMagique: Number(bonus.defenseMagique) || 0,
             critique: Number(bonus.critique) || 0,
             esquive: Number(bonus.esquive) || 0,
-            vitesse: Number(bonus.vitesse) || 0,
+            vitesse: Number(previewDepart.vitesse) || 0,
             bonusLoot: 0,
             bonusOr: 0,
             or: 50,
@@ -281,6 +282,7 @@ Module joueur base uniquement sur classes_metin2.js.
         personnage.classeNom = classe.nom;
         personnage.classeIcone = classe.icone;
         personnage.classeDescription = classe.description;
+        personnage.vitesse ??= NV_calculerPreviewClasse(classe.id).vitesse;
         personnage.niveau ??= 1;
         personnage.xp ??= 0;
         personnage.or ??= 0;
