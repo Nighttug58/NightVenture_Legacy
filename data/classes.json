@@ -1,481 +1,98 @@
 [
   {
-    "id": "aventurier",
-    "nom": "Aventurier",
-    "icone": "🧍",
-    "description": "Profil équilibré sans spécialisation forte.",
-    "base": {
-      "force": 4,
-      "dexterite": 4,
-      "intelligence": 4,
-      "vitalite": 4,
-      "chance": 4
-    },
-    "poids": {
-      "force": 1,
-      "dexterite": 1,
-      "intelligence": 1,
-      "vitalite": 1,
-      "chance": 0.75
-    },
-    "bonusCombat": {
-      "pvMax": 0,
-      "manaMax": 0,
-      "staminaMax": 0,
-      "attaquePhysique": 0,
-      "attaqueMagique": 0,
-      "defensePhysique": 0,
-      "defenseMagique": 0,
-      "critique": 0,
-      "esquive": 0,
-      "vitesse": 0
-    },
-    "ordre": 1,
-    "competencesDepart": [],
-    "statsDepart": {
-      "force": 6,
-      "dexterite": 5,
-      "intelligence": 6,
-      "vitalite": 6,
-      "chance": 5
-    },
-    "ressourcesDepart": {
-      "pv": 160,
-      "mana": 110,
-      "stamina": 125
-    }
-  },
-  {
     "id": "guerrier",
     "nom": "Guerrier",
-    "icone": "⚔️",
-    "description": "FOR/VIT. Solide, physique, fiable. Peu magique.",
-    "base": {
-      "force": 6,
-      "dexterite": 3,
-      "intelligence": 2,
-      "vitalite": 5,
-      "chance": 3
-    },
-    "poids": {
-      "force": 1.35,
-      "dexterite": 0.7,
-      "intelligence": 0.35,
-      "vitalite": 1.2,
-      "chance": 0.55
-    },
+    "icone": "G",
+    "description": "Combattant physique solide, base sur la force, la vitalite et la defense.",
+    "ordre": 1,
+    "base": { "force": 8, "dexterite": 4, "intelligence": 2, "vitalite": 7, "chance": 3 },
+    "poids": { "force": 1.45, "dexterite": 0.75, "intelligence": 0.25, "vitalite": 1.30, "chance": 0.55 },
     "bonusCombat": {
-      "pvMax": 8,
+      "pvMax": 18,
       "manaMax": -8,
-      "staminaMax": 8,
-      "attaquePhysique": 2,
-      "attaqueMagique": -4,
-      "defensePhysique": 2,
-      "defenseMagique": -1,
+      "staminaMax": 10,
+      "attaquePhysique": 4,
+      "attaqueMagique": -6,
+      "defensePhysique": 4,
+      "defenseMagique": 0,
       "critique": 0,
       "esquive": -1,
       "vitesse": -0.5
     },
+    "statsDepart": { "force": 9, "dexterite": 4, "intelligence": 2, "vitalite": 8, "chance": 3 },
+    "ressourcesDepart": { "pv": 198, "mana": 62, "stamina": 130 },
+    "competencesDepart": ["metin2_coup_puissant"]
+  },
+  {
+    "id": "ninja",
+    "nom": "Ninja",
+    "icone": "N",
+    "description": "Classe rapide et precise, specialisee en dexterite, critique et esquive.",
     "ordre": 2,
-    "competencesDepart": [
-      "peq_frappe_puissante"
-    ],
-    "statsDepart": {
-      "force": 9,
-      "dexterite": 4,
-      "intelligence": 3,
-      "vitalite": 7,
-      "chance": 4
-    },
-    "ressourcesDepart": {
-      "pv": 178,
-      "mana": 72,
-      "stamina": 128
-    }
-  },
-  {
-    "id": "mage",
-    "nom": "Mage",
-    "icone": "🔮",
-    "description": "INT/CHA. Très fort en magie, fragile physiquement.",
-    "base": {
-      "force": 2,
-      "dexterite": 3,
-      "intelligence": 8,
-      "vitalite": 4,
-      "chance": 5
-    },
-    "poids": {
-      "force": 0.3,
-      "dexterite": 0.55,
-      "intelligence": 1.75,
-      "vitalite": 0.85,
-      "chance": 0.85
-    },
-    "bonusCombat": {
-      "pvMax": 18,
-      "manaMax": 38,
-      "staminaMax": -2,
-      "attaquePhysique": -5,
-      "attaqueMagique": 11,
-      "defensePhysique": 3,
-      "defenseMagique": 8,
-      "critique": 0.6,
-      "esquive": -0.4,
-      "vitesse": -0.1
-    },
-    "ordre": 3,
-    "competencesDepart": [
-      "peq_projectile_arcanique"
-    ],
-    "statsDepart": {
-      "force": 2,
-      "dexterite": 4,
-      "intelligence": 11,
-      "vitalite": 6,
-      "chance": 7
-    },
-    "ressourcesDepart": {
-      "pv": 178,
-      "mana": 198,
-      "stamina": 118
-    }
-  },
-  {
-    "id": "voleur",
-    "nom": "Voleur",
-    "icone": "🗡️",
-    "description": "DEX/CHA. Rapide, critique, esquive, mais moins tanky.",
-    "base": {
-      "force": 3,
-      "dexterite": 7,
-      "intelligence": 3,
-      "vitalite": 3,
-      "chance": 4
-    },
-    "poids": {
-      "force": 0.7,
-      "dexterite": 1.65,
-      "intelligence": 0.45,
-      "vitalite": 0.55,
-      "chance": 1.15
-    },
-    "bonusCombat": {
-      "pvMax": -2,
-      "manaMax": -4,
-      "staminaMax": 14,
-      "attaquePhysique": 2.5,
-      "attaqueMagique": -3,
-      "defensePhysique": 0,
-      "defenseMagique": -1,
-      "critique": 2.5,
-      "esquive": 2.2,
-      "vitesse": 2
-    },
-    "ordre": 4,
-    "competencesDepart": [
-      "peq_attaque_precise"
-    ],
-    "statsDepart": {
-      "force": 4,
-      "dexterite": 10,
-      "intelligence": 4,
-      "vitalite": 4,
-      "chance": 6
-    },
-    "ressourcesDepart": {
-      "pv": 138,
-      "mana": 86,
-      "stamina": 164
-    }
-  },
-  {
-    "id": "rodeur",
-    "nom": "Rôdeur",
-    "icone": "🏹",
-    "description": "DEX/FOR. Offensif, mobile, stable.",
-    "base": {
-      "force": 5,
-      "dexterite": 6,
-      "intelligence": 3,
-      "vitalite": 4,
-      "chance": 2
-    },
-    "poids": {
-      "force": 1.05,
-      "dexterite": 1.35,
-      "intelligence": 0.45,
-      "vitalite": 0.85,
-      "chance": 0.7
-    },
-    "bonusCombat": {
-      "pvMax": 2,
-      "manaMax": -3,
-      "staminaMax": 12,
-      "attaquePhysique": 3,
-      "attaqueMagique": -2,
-      "defensePhysique": 1,
-      "defenseMagique": 0,
-      "critique": 1,
-      "esquive": 1,
-      "vitesse": 1
-    },
-    "ordre": 5,
-    "competencesDepart": [
-      "peq_tir_rapide"
-    ],
-    "statsDepart": {
-      "force": 7,
-      "dexterite": 8,
-      "intelligence": 4,
-      "vitalite": 6,
-      "chance": 3
-    },
-    "ressourcesDepart": {
-      "pv": 162,
-      "mana": 87,
-      "stamina": 152
-    }
-  },
-  {
-    "id": "paladin",
-    "nom": "Paladin",
-    "icone": "🛡️",
-    "description": "FOR/VIT/INT. Tank sacré, bonne défense, magie correcte.",
-    "base": {
-      "force": 5,
-      "dexterite": 2,
-      "intelligence": 4,
-      "vitalite": 7,
-      "chance": 2
-    },
-    "poids": {
-      "force": 1.1,
-      "dexterite": 0.35,
-      "intelligence": 0.8,
-      "vitalite": 1.55,
-      "chance": 0.5
-    },
-    "bonusCombat": {
-      "pvMax": 24,
-      "manaMax": 8,
-      "staminaMax": 4,
-      "attaquePhysique": 2,
-      "attaqueMagique": 1,
-      "defensePhysique": 6,
-      "defenseMagique": 4,
-      "critique": -0.5,
-      "esquive": -1,
-      "vitesse": -1
-    },
-    "ordre": 6,
-    "competencesDepart": [
-      "peq_jugement_sacre",
-      "peq_frappe_puissante"
-    ],
-    "statsDepart": {
-      "force": 7,
-      "dexterite": 3,
-      "intelligence": 5,
-      "vitalite": 10,
-      "chance": 3
-    },
-    "ressourcesDepart": {
-      "pv": 224,
-      "mana": 108,
-      "stamina": 119
-    }
-  },
-  {
-    "id": "berserker",
-    "nom": "Berserker",
-    "icone": "🪓",
-    "description": "FOR pure. Très gros dégâts, défense moins stable.",
-    "base": {
-      "force": 7,
-      "dexterite": 4,
-      "intelligence": 1,
-      "vitalite": 4,
-      "chance": 2
-    },
-    "poids": {
-      "force": 1.65,
-      "dexterite": 0.7,
-      "intelligence": 0.2,
-      "vitalite": 0.8,
-      "chance": 0.4
-    },
+    "base": { "force": 4, "dexterite": 9, "intelligence": 3, "vitalite": 4, "chance": 5 },
+    "poids": { "force": 0.80, "dexterite": 1.80, "intelligence": 0.35, "vitalite": 0.65, "chance": 1.10 },
     "bonusCombat": {
       "pvMax": -4,
-      "manaMax": -14,
-      "staminaMax": 10,
-      "attaquePhysique": 5,
-      "attaqueMagique": -6,
-      "defensePhysique": -3,
-      "defenseMagique": -4,
-      "critique": 1,
-      "esquive": -2,
-      "vitesse": -0.4
-    },
-    "ordre": 7,
-    "competencesDepart": [
-      "peq_coup_furieux"
-    ],
-    "statsDepart": {
-      "force": 11,
-      "dexterite": 5,
-      "intelligence": 1,
-      "vitalite": 6,
-      "chance": 3
-    },
-    "ressourcesDepart": {
-      "pv": 156,
-      "mana": 46,
-      "stamina": 135
-    }
-  },
-  {
-    "id": "assassin",
-    "nom": "Assassin",
-    "icone": "🥷",
-    "description": "DEX/CHA extrême. Critique et vitesse, très fragile.",
-    "base": {
-      "force": 4,
-      "dexterite": 8,
-      "intelligence": 2,
-      "vitalite": 2,
-      "chance": 4
-    },
-    "poids": {
-      "force": 0.85,
-      "dexterite": 1.9,
-      "intelligence": 0.25,
-      "vitalite": 0.35,
-      "chance": 1.1
-    },
-    "bonusCombat": {
-      "pvMax": -10,
-      "manaMax": -8,
-      "staminaMax": 16,
-      "attaquePhysique": 4.5,
-      "attaqueMagique": -5,
-      "defensePhysique": -3,
-      "defenseMagique": -3,
+      "manaMax": -4,
+      "staminaMax": 18,
+      "attaquePhysique": 3,
+      "attaqueMagique": -4,
+      "defensePhysique": -1,
+      "defenseMagique": -1,
       "critique": 4,
-      "esquive": 2.8,
+      "esquive": 4,
       "vitesse": 3
     },
-    "ordre": 8,
-    "competencesDepart": [
-      "peq_attaque_precise"
-    ],
-    "statsDepart": {
-      "force": 6,
-      "dexterite": 11,
-      "intelligence": 2,
-      "vitalite": 3,
-      "chance": 6
-    },
-    "ressourcesDepart": {
-      "pv": 120,
-      "mana": 62,
-      "stamina": 171
-    }
+    "statsDepart": { "force": 5, "dexterite": 11, "intelligence": 3, "vitalite": 4, "chance": 6 },
+    "ressourcesDepart": { "pv": 136, "mana": 76, "stamina": 173 },
+    "competencesDepart": ["metin2_lame_rapide"]
   },
   {
-    "id": "necromancien",
-    "nom": "Nécromancien",
-    "icone": "💀",
-    "description": "INT/VIT. Mage sombre plus résistant qu’un mage pur.",
-    "base": {
-      "force": 2,
-      "dexterite": 2,
-      "intelligence": 8,
-      "vitalite": 6,
-      "chance": 4
-    },
-    "poids": {
-      "force": 0.25,
-      "dexterite": 0.35,
-      "intelligence": 1.55,
-      "vitalite": 1.2,
-      "chance": 0.85
-    },
+    "id": "sura",
+    "nom": "Sura",
+    "icone": "S",
+    "description": "Guerrier demoniaque hybride, puissant en attaque physique et magie sombre.",
+    "ordre": 3,
+    "base": { "force": 6, "dexterite": 4, "intelligence": 7, "vitalite": 5, "chance": 3 },
+    "poids": { "force": 1.05, "dexterite": 0.65, "intelligence": 1.35, "vitalite": 1.00, "chance": 0.55 },
     "bonusCombat": {
-      "pvMax": 24,
-      "manaMax": 28,
-      "staminaMax": -2,
-      "attaquePhysique": -5,
-      "attaqueMagique": 8,
-      "defensePhysique": 3,
-      "defenseMagique": 6,
+      "pvMax": 10,
+      "manaMax": 24,
+      "staminaMax": 2,
+      "attaquePhysique": 2,
+      "attaqueMagique": 6,
+      "defensePhysique": 1,
+      "defenseMagique": 4,
       "critique": 1,
-      "esquive": -0.8,
-      "vitesse": -0.8
+      "esquive": 0,
+      "vitesse": 0
     },
-    "ordre": 9,
-    "competencesDepart": [
-      "peq_trait_ombre"
-    ],
-    "statsDepart": {
-      "force": 2,
-      "dexterite": 3,
-      "intelligence": 11,
-      "vitalite": 8,
-      "chance": 6
-    },
-    "ressourcesDepart": {
-      "pv": 204,
-      "mana": 188,
-      "stamina": 113
-    }
+    "statsDepart": { "force": 7, "dexterite": 4, "intelligence": 9, "vitalite": 6, "chance": 3 },
+    "ressourcesDepart": { "pv": 170, "mana": 164, "stamina": 122 },
+    "competencesDepart": ["metin2_lame_demoniaque"]
   },
   {
-    "id": "gardien",
-    "nom": "Gardien",
-    "icone": "🪨",
-    "description": "VIT extrême. Très tanky, lent, dégâts faibles.",
-    "base": {
-      "force": 4,
-      "dexterite": 1,
-      "intelligence": 2,
-      "vitalite": 8,
-      "chance": 4
-    },
-    "poids": {
-      "force": 0.82,
-      "dexterite": 0.2,
-      "intelligence": 0.35,
-      "vitalite": 1.7,
-      "chance": 0.5
-    },
+    "id": "shaman",
+    "nom": "Shaman",
+    "icone": "H",
+    "description": "Classe mystique orientee magie, soutien, resistance magique et controle du rythme.",
+    "ordre": 4,
+    "base": { "force": 3, "dexterite": 4, "intelligence": 9, "vitalite": 5, "chance": 5 },
+    "poids": { "force": 0.45, "dexterite": 0.70, "intelligence": 1.70, "vitalite": 0.95, "chance": 0.90 },
     "bonusCombat": {
-      "pvMax": 28,
-      "manaMax": -6,
-      "staminaMax": 6,
-      "attaquePhysique": 1,
-      "attaqueMagique": -4,
-      "defensePhysique": 5,
-      "defenseMagique": 3,
-      "critique": -1.5,
-      "esquive": -2.2,
-      "vitesse": -2.2
+      "pvMax": 6,
+      "manaMax": 38,
+      "staminaMax": -2,
+      "attaquePhysique": -4,
+      "attaqueMagique": 9,
+      "defensePhysique": 0,
+      "defenseMagique": 7,
+      "critique": 1,
+      "esquive": 0,
+      "vitesse": 0.5
     },
-    "ordre": 10,
-    "competencesDepart": [
-      "peq_frappe_bouclier"
-    ],
-    "statsDepart": {
-      "force": 6,
-      "dexterite": 1,
-      "intelligence": 3,
-      "vitalite": 12,
-      "chance": 5
-    },
-    "ressourcesDepart": {
-      "pv": 248,
-      "mana": 74,
-      "stamina": 111
-    }
+    "statsDepart": { "force": 3, "dexterite": 5, "intelligence": 11, "vitalite": 6, "chance": 6 },
+    "ressourcesDepart": { "pv": 166, "mana": 198, "stamina": 123 },
+    "competencesDepart": ["metin2_orbe_spirituel"]
   }
 ]
