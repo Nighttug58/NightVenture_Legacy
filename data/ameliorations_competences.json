@@ -1,14 +1,15 @@
 {
-  "version": 1,
-  "niveauMaxBase": 5,
-  "niveauMaxAbsolu": 16,
+  "version": 2,
+  "niveauMaxBase": 10,
+  "niveauMaxAbsolu": 21,
   "regles": {
     "livresCompetence": {
       "typeItem": "livre_competence",
       "itemParCompetence": true,
       "rarete": "rare",
-      "niveauMaxDepart": 5,
-      "niveauMaxFinal": 10,
+      "niveauMaxDepart": 10,
+      "niveauMaxFinal": 15,
+      "gainNiveauMax": 5,
       "itemIdPattern": "livre_competence_{competenceId}",
       "tableDrop": null
     },
@@ -18,8 +19,9 @@
       "typeItem": "pierre_ame",
       "itemParCompetence": false,
       "rarete": "epique",
-      "niveauMaxDepart": 10,
-      "niveauMaxFinal": 15,
+      "niveauMaxDepart": 15,
+      "niveauMaxFinal": 20,
+      "gainNiveauMax": 5,
       "image": "assets/items/competences/pierre_ame.png",
       "tableDrop": null
     },
@@ -29,8 +31,9 @@
       "typeItem": "noyau_demoniaque",
       "itemParCompetence": false,
       "rarete": "legendaire",
-      "niveauMaxDepart": 15,
-      "niveauMaxFinal": 16,
+      "niveauMaxDepart": 20,
+      "niveauMaxFinal": 21,
+      "gainNiveauMax": 1,
       "rendMasterisee": true,
       "image": "assets/items/competences/noyau_demoniaque.png",
       "tableDrop": null
@@ -42,8 +45,9 @@
       "nom": "Pierre d'ame",
       "type": "pierre_ame",
       "rarete": "epique",
-      "niveauMaxDepart": 10,
-      "niveauMaxFinal": 15,
+      "niveauMaxDepart": 15,
+      "niveauMaxFinal": 20,
+      "gainNiveauMax": 5,
       "image": "assets/items/competences/pierre_ame.png",
       "tableDrop": null
     },
@@ -52,8 +56,9 @@
       "nom": "Noyau demoniaque",
       "type": "noyau_demoniaque",
       "rarete": "legendaire",
-      "niveauMaxDepart": 15,
-      "niveauMaxFinal": 16,
+      "niveauMaxDepart": 20,
+      "niveauMaxFinal": 21,
+      "gainNiveauMax": 1,
       "rendMasterisee": true,
       "image": "assets/items/competences/noyau_demoniaque.png",
       "tableDrop": null
