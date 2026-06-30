@@ -2,7 +2,7 @@
     "use strict";
 
     const NV_EXPLORATION_EVENTS_VERSION =
-        "v0.9.5-auto-events";
+        "v0.9.5-auto-events-no-emoji";
 
     const NV_EXPLORATION_STATE = {
         dernierEvenement: null,
@@ -302,7 +302,7 @@
 
         NVX_ajouterObjet(idObjet, quantite);
 
-        NVX_journal(`🌿 Tu récupères ${NVX_nomObjet(idObjet)} x${quantite}.`);
+        NVX_journal(`Ressource : tu récupères ${NVX_nomObjet(idObjet)} x${quantite}.`);
     }
 
     function NVX_evenementPiege(zone) {
@@ -321,9 +321,9 @@
             Math.max(1, Number(personnage.pv || pvMax) - degats);
 
         const messages = [
-            `⚠ Une dalle cède sous tes pas. Tu perds ${degats} PV.`,
-            `⚠ Un piège rudimentaire se déclenche. Tu perds ${degats} PV.`,
-            `⚠ Le terrain se dérobe brièvement. Tu perds ${degats} PV.`
+            `Piège : une dalle cède sous tes pas. Tu perds ${degats} PV.`,
+            `Piège : un piège rudimentaire se déclenche. Tu perds ${degats} PV.`,
+            `Piège : le terrain se dérobe brièvement. Tu perds ${degats} PV.`
         ];
 
         NVX_journal(NVX_choisir(messages));
@@ -360,7 +360,7 @@
         personnage.stamina =
             Math.min(staminaMax, Number(personnage.stamina || 0) + Math.round(staminaMax * 0.08));
 
-        NVX_journal(`🛏 Tu trouves un moment de répit. +${soin} PV.`);
+        NVX_journal(`Repos : tu trouves un moment de répit. PV +${soin}.`);
     }
 
     function NVX_evenementOr(zone) {
@@ -374,28 +374,28 @@
             Number(personnage.or || 0) + gain;
 
         const messages = [
-            `🟡 Tu trouves ${gain} pièce(s) d'or.`,
-            `🟡 Tu récupères ${gain} pièce(s) oubliée(s).`,
-            `🟡 Une petite bourse contient ${gain} pièce(s) d'or.`
+            `Or : tu trouves ${gain} pièce(s) d'or.`,
+            `Or : tu récupères ${gain} pièce(s) oubliée(s).`,
+            `Or : une petite bourse contient ${gain} pièce(s) d'or.`
         ];
 
         NVX_journal(NVX_choisir(messages));
     }
 
     function NVX_evenementRumeur(zone) {
-        NVX_journal(`💬 ${NVX_choisir(NV_MESSAGES_RESULTAT.rumeur)}`);
+        NVX_journal(`Rumeur : ${NVX_choisir(NV_MESSAGES_RESULTAT.rumeur)}`);
     }
 
     function NVX_evenementRencontre(zone) {
-        NVX_journal(`👤 ${NVX_choisir(NV_MESSAGES_RESULTAT.rencontre)}`);
+        NVX_journal(`Rencontre : ${NVX_choisir(NV_MESSAGES_RESULTAT.rencontre)}`);
     }
 
     function NVX_evenementIndice(zone) {
-        NVX_journal(`🔎 ${NVX_choisir(NV_MESSAGES_RESULTAT.indice)}`);
+        NVX_journal(`Indice : ${NVX_choisir(NV_MESSAGES_RESULTAT.indice)}`);
     }
 
     function NVX_evenementRien(zone) {
-        NVX_journal(`🚶 ${NVX_choisir(NV_MESSAGES_RESULTAT.rien_ambiance)}`);
+        NVX_journal(`Exploration : ${NVX_choisir(NV_MESSAGES_RESULTAT.rien_ambiance)}`);
     }
 
     function NVX_afficherAmbianceAvantEvenement(zone, evenement) {
@@ -404,7 +404,7 @@
 
         if (!ambiance) return;
 
-        NVX_journal(`📍 ${zone?.nom || "Zone inconnue"} — ${ambiance}`);
+        NVX_journal(`Zone : ${zone?.nom || "Zone inconnue"} - ${ambiance}`);
     }
 
     function NVX_patchGenererEvenementZone() {
@@ -537,13 +537,13 @@
 
             carte.innerHTML =
                 `
-                    <h3>🧭 Exploration automatique</h3>
+                    <h3>Exploration automatique</h3>
                     <p>
                         Bouton Explorer conservé : les événements sont tirés automatiquement.
                     </p>
                     <p class="nvx-exploration-mini">
                         Zone : <strong>${zone?.nom || "Inconnue"}</strong>
-                        ${NV_EXPLORATION_STATE.dernierEvenement ? ` — Dernier événement : <strong>${NV_EXPLORATION_STATE.dernierEvenement}</strong>` : ""}
+                        ${NV_EXPLORATION_STATE.dernierEvenement ? ` - Dernier événement : <strong>${NV_EXPLORATION_STATE.dernierEvenement}</strong>` : ""}
                     </p>
                 `;
 
@@ -599,7 +599,7 @@
         NVX_patchVisiterZoneActuelle();
         NVX_patchExplorationCard();
 
-        console.log(`✅ Exploration_Events.js chargé — ${NV_EXPLORATION_EVENTS_VERSION}`);
+        console.log(`Exploration_Events.js chargé — ${NV_EXPLORATION_EVENTS_VERSION}`);
     }
 
     if (document.readyState === "loading") {
