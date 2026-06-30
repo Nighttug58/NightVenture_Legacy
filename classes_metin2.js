@@ -123,62 +123,76 @@ const NV_COMPETENCE_SPECS_METIN2 = [
 ];
 
 function NV_lerpMetin2(debut, fin, t) {
-    return debut + (fin - debut) * t;
+    return debut + (fin - debut) * Math.max(0, Math.min(1, Number(t) || 0));
+}
+
+function NV_ancienNiveauEquivalentMetin2(niveau) {
+    return 1 + ((Math.max(1, Math.min(21, Number(niveau) || 1)) - 1) * 15 / 20);
 }
 
 function NV_palierCompetenceMetin2(niveau) {
-    if (niveau <= 5) return "base";
-    if (niveau <= 10) return "livre";
-    if (niveau <= 15) return "ame";
+    if (niveau <= 10) return "base";
+    if (niveau <= 15) return "livre";
+    if (niveau <= 20) return "ame";
     return "master";
 }
 
-function NV_puissanceCompetenceMetin2(base, fin, niveau) {
+function NV_puissanceAncienneCourbeMetin2(base, fin, ancienNiveau) {
     const cible10 = Math.round(fin * 1.85 + base * 0.30);
     const cible15 = Math.round(fin * 3.00 + base * 0.50);
     const cible16 = Math.round(fin * 3.70 + base * 0.70);
 
-    if (niveau <= 5) return Math.round(NV_lerpMetin2(base, fin, (niveau - 1) / 4));
-    if (niveau <= 10) return Math.round(NV_lerpMetin2(fin, cible10, (niveau - 5) / 5));
-    if (niveau <= 15) return Math.round(NV_lerpMetin2(cible10, cible15, (niveau - 10) / 5));
-    return cible16;
+    if (ancienNiveau <= 5) return NV_lerpMetin2(base, fin, (ancienNiveau - 1) / 4);
+    if (ancienNiveau <= 10) return NV_lerpMetin2(fin, cible10, (ancienNiveau - 5) / 5);
+    if (ancienNiveau <= 15) return NV_lerpMetin2(cible10, cible15, (ancienNiveau - 10) / 5);
+    return NV_lerpMetin2(cible15, cible16, ancienNiveau - 15);
+}
+
+function NV_puissanceCompetenceMetin2(base, fin, niveau) {
+    return Math.round(NV_puissanceAncienneCourbeMetin2(base, fin, NV_ancienNiveauEquivalentMetin2(niveau)));
+}
+
+function NV_multiplicateurAncienMetin2(fin, ancienNiveau) {
+    const bonusFin = fin >= 40 ? 0.03 : 0;
+    if (ancienNiveau <= 5) return 0.96 + 0.08 * ancienNiveau + bonusFin;
+    if (ancienNiveau <= 10) return 1.38 + 0.09 * (ancienNiveau - 5) + bonusFin;
+    if (ancienNiveau <= 15) return 1.85 + 0.11 * (ancienNiveau - 10) + bonusFin;
+    return NV_lerpMetin2(2.40 + bonusFin, 2.55 + bonusFin, ancienNiveau - 15);
 }
 
 function NV_multiplicateurCompetenceMetin2(fin, niveau) {
-    const bonusFin = fin >= 40 ? 0.03 : 0;
-    if (niveau <= 5) return Number((0.96 + 0.08 * niveau + bonusFin).toFixed(2));
-    if (niveau <= 10) return Number((1.38 + 0.09 * (niveau - 5) + bonusFin).toFixed(2));
-    if (niveau <= 15) return Number((1.85 + 0.11 * (niveau - 10) + bonusFin).toFixed(2));
-    return Number((2.55 + bonusFin).toFixed(2));
+    return Number(NV_multiplicateurAncienMetin2(fin, NV_ancienNiveauEquivalentMetin2(niveau)).toFixed(2));
 }
 
 function NV_coutsCompetenceMetin2(coutType, fin, niveau) {
-    const palierBonus = niveau <= 5 ? 0 : niveau <= 10 ? 6 : niveau <= 15 ? 14 : 24;
+    const ancienNiveau = NV_ancienNiveauEquivalentMetin2(niveau);
+    const palierBonus = ancienNiveau <= 5 ? 0 : ancienNiveau <= 10 ? 6 : ancienNiveau <= 15 ? 14 : 24;
 
     if (coutType === "stamina") {
-        return { mana: 0, stamina: Math.round(6 + niveau * 3.2 + fin / 12 + palierBonus) };
+        return { mana: 0, stamina: Math.round(6 + ancienNiveau * 3.2 + fin / 12 + palierBonus) };
     }
 
     if (coutType === "hybrid") {
         return {
-            mana: Math.round(5 + niveau * 4.5 + fin / 14 + palierBonus),
-            stamina: Math.round(3 + niveau * 2.2 + palierBonus / 2)
+            mana: Math.round(5 + ancienNiveau * 4.5 + fin / 14 + palierBonus),
+            stamina: Math.round(3 + ancienNiveau * 2.2 + palierBonus / 2)
         };
     }
 
-    return { mana: Math.round(7 + niveau * 5.2 + fin / 10 + palierBonus), stamina: 0 };
+    return { mana: Math.round(7 + ancienNiveau * 5.2 + fin / 10 + palierBonus), stamina: 0 };
 }
 
 function NV_progressionCompetenceMetin2(base, fin, coutType, cooldown, critiqueBase) {
     const progression = [];
 
-    for (let niveau = 1; niveau <= 16; niveau++) {
+    for (let niveau = 1; niveau <= 21; niveau++) {
+        const ancienNiveau = NV_ancienNiveauEquivalentMetin2(niveau);
         const puissance = NV_puissanceCompetenceMetin2(base, fin, niveau);
         const multiplicateur = NV_multiplicateurCompetenceMetin2(fin, niveau);
         const couts = NV_coutsCompetenceMetin2(coutType, fin, niveau);
         const palier = NV_palierCompetenceMetin2(niveau);
-        const bonusPalierInitiative = niveau <= 5 ? 0 : niveau <= 10 ? 5 : niveau <= 15 ? 10 : 16;
-        const bonusPalierCritique = niveau <= 5 ? 0 : niveau <= 10 ? 1 : niveau <= 15 ? 3 : 6;
+        const bonusPalierInitiative = niveau <= 10 ? 0 : niveau <= 15 ? 5 : niveau <= 20 ? 10 : 16;
+        const bonusPalierCritique = niveau <= 10 ? 0 : niveau <= 15 ? 1 : niveau <= 20 ? 3 : 6;
 
         progression.push({
             niveau,
@@ -186,8 +200,8 @@ function NV_progressionCompetenceMetin2(base, fin, coutType, cooldown, critiqueB
             puissance,
             multiplicateur,
             couts,
-            coutInitiative: 100 + niveau * 2 + cooldown + bonusPalierInitiative,
-            bonusCritique: critiqueBase + niveau - 1 + bonusPalierCritique
+            coutInitiative: Math.round(100 + ancienNiveau * 2 + cooldown + bonusPalierInitiative),
+            bonusCritique: Math.round(critiqueBase + ancienNiveau - 1 + bonusPalierCritique)
         });
     }
 
@@ -208,9 +222,9 @@ function NV_creerCompetenceMetin2(spec) {
         cible: "ennemi",
         icone: `assets/competences/${id}.png`,
         image: `assets/competences/${id}.png`,
-        maxNiveau: 16,
-        niveauMaxBase: 5,
-        niveauMaxAbsolu: 16,
+        maxNiveau: 21,
+        niveauMaxBase: 10,
+        niveauMaxAbsolu: 21,
         cooldownTours,
         couts: niveau1.couts,
         coutInitiative: niveau1.coutInitiative,
