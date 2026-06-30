@@ -46,6 +46,8 @@ function mettreAJourBarreVue() {
         inventaire: "btnInventaire",
         quetes: "btnQuetes",
         journal: "btnJournal",
+        statistiques: "btnStatistiquesTop",
+        talents: "btnTalentsTop",
         competences_classes: "btnCompetencesClasses"
     };
 
