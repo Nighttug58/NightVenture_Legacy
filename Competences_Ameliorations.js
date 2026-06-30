@@ -2,7 +2,7 @@
 NightVenture - Competences Ameliorations
 - Generation automatique des items d'amelioration de competences
 - Fonction centrale d'utilisation des livres, pierres et noyaux
-- Livre +1, Pierre d'ame +5, Noyau demoniaque +1, cap final niveau 21.
+- Livre +1, Pierre d'ame +1, Noyau demoniaque +1, cap final niveau 21.
 */
 
 (function () {
@@ -220,7 +220,7 @@ NightVenture - Competences Ameliorations
     function NV_utiliserPierreAme(objet, competence, etat) {
         const niveauMaxDepart = Number(objet.niveauMaxDepart || 15);
         const niveauMaxFinal = Number(objet.niveauMaxFinal || 20);
-        const gain = Number(objet.gainNiveauMax || 5);
+        const gain = Number(objet.gainNiveauMax || 1);
         const niveauMaxActuel = Number(etat.niveauMax || 10);
 
         if (niveauMaxActuel < niveauMaxDepart || niveauMaxActuel >= niveauMaxFinal) {
