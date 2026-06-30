@@ -41,6 +41,52 @@
     pointer-events: none;
 }
 
+.combat-resource-popup {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    padding: 2px 12px;
+    font-family: Georgia, serif;
+    font-size: clamp(2rem, 4.5vw, 4.4rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    white-space: nowrap;
+    -webkit-text-stroke: 0.7px rgba(255, 255, 255, 0.96);
+    text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.85),
+        0 -1px 0 rgba(255, 255, 255, 0.65),
+        1px 0 0 rgba(255, 255, 255, 0.65),
+        -1px 0 0 rgba(255, 255, 255, 0.65),
+        0 4px 12px rgba(0, 0, 0, 0.75);
+    transform: translate(-50%, -50%) scale(0.55);
+    opacity: 0;
+    animation: nvCombatResourcePopup 1000ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.combat-resource-popup--damage {
+    color: #ff2222;
+}
+
+.combat-resource-popup--heal {
+    color: #32ff67;
+}
+
+.combat-float {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
 @keyframes nvCombatResourceBarChange {
     0% {
         width: var(--bar-from, 0%);
@@ -86,10 +132,37 @@
     }
 }
 
+@keyframes nvCombatResourcePopup {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.55) translateY(8px);
+        filter: brightness(1.45);
+    }
+
+    16% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.22) translateY(0);
+        filter: brightness(1.35);
+    }
+
+    45% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) translateY(0);
+        filter: brightness(1.05);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.92) translateY(-14px);
+        filter: brightness(1);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .combat-shell--impact .combat-bar-fill--animated,
     .combat-shell--impact .barre--combat:has(.combat-bar-fill--animated)::after,
-    .combat-shell--impact .combat-bar-fill--animated::before {
+    .combat-shell--impact .combat-bar-fill--animated::before,
+    .combat-resource-popup {
         animation: none;
     }
 }
