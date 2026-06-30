@@ -20,6 +20,7 @@ const Game = {
         niveaux: [],
         classes: [],
         competences: [],
+        ameliorationsCompetences: {},
         regionsMonde: []
     },
     cache: {
@@ -65,7 +66,7 @@ const Game = {
     pnjSelectionne: null,
     zoneSelectionnee: null,
     regionSelectionnee: null
-	},
+ 	},
     combat: {
         actif: null
     },
@@ -75,18 +76,18 @@ const Game = {
             prix: "desc", atk: "desc", atkMagique: "desc", def: "desc", defMagique: "desc"
         },
         filtresInventaire: [
-			{ id: "tous", nom: "Tous", categorie: "systeme" },
-			{ id: "favoris", nom: "⭐ Favoris", categorie: "modificateur" },
+ 			{ id: "tous", nom: "Tous", categorie: "systeme" },
+ 			{ id: "favoris", nom: "⭐ Favoris", categorie: "modificateur" },
 
-			{ id: "arme", nom: "Armes", categorie: "type" },
-			{ id: "armure", nom: "Armures", categorie: "type" },
-			{ id: "accessoire", nom: "Accessoires", categorie: "type" },
-			{ id: "consommable", nom: "Consommables", categorie: "type" },
+ 			{ id: "arme", nom: "Armes", categorie: "type" },
+ 			{ id: "armure", nom: "Armures", categorie: "type" },
+ 			{ id: "accessoire", nom: "Accessoires", categorie: "type" },
+ 			{ id: "consommable", nom: "Consommables", categorie: "type" },
 
-			{ id: "materiau", nom: "Matériaux", categorie: "type" },
-			{ id: "quete", nom: "Objets de quête", categorie: "type" },
-			{ id: "divers", nom: "Divers", categorie: "type" }
-		],
+ 			{ id: "materiau", nom: "Matériaux", categorie: "type" },
+ 			{ id: "quete", nom: "Objets de quête", categorie: "type" },
+ 			{ id: "divers", nom: "Divers", categorie: "type" }
+ 		],
         trisInventaire: [
             { id: "nom", nom: "Nom" }, { id: "type", nom: "Type" }, { id: "rarete", nom: "Rareté" },
             { id: "niveau", nom: "Niveau requis" }, { id: "prix", nom: "Prix" },
@@ -117,14 +118,16 @@ async function chargerDonnees() {
     try {
         const [
             personnageCharge, historiqueCharge, mondeCharge, quetesChargees, pnjCharges,
-            objetsCharges, niveauxCharges, monstresCharges, talentsCharges, classesChargees, competencesChargees, zonesChargees
+            objetsCharges, niveauxCharges, monstresCharges, talentsCharges, classesChargees,
+            competencesChargees, ameliorationsCompetencesChargees, zonesChargees
         ] = await Promise.all([
             chargerJson("data/personnage.json"), chargerJson("data/historique.json"),
             chargerJson("data/monde.json"), chargerJson("data/quetes.json"),
             chargerJson("data/pnj.json"), chargerJson("data/objets.json"),
             chargerJson("data/niveaux.json"), chargerJson("data/monstres.json"),
             chargerJson("data/talents.json"), chargerJson("data/classes.json"),
-            chargerJson("data/competences.json"), chargerJson("data/zones.json")
+            chargerJson("data/competences.json"), chargerJson("data/ameliorations_competences.json"),
+            chargerJson("data/zones.json")
         ]);
 
         Game.data.personnage = personnageCharge ?? {};
@@ -171,6 +174,8 @@ async function chargerDonnees() {
             if (!competence?.id) return;
             Game.cache.competencesParId[competence.id] = competence;
         });
+
+        Game.data.ameliorationsCompetences = ameliorationsCompetencesChargees ?? {};
 
         if (typeof window.NV_enregistrerClassesEtCompetences === "function") {
             window.NV_enregistrerClassesEtCompetences();
