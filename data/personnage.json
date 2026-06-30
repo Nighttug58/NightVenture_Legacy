@@ -1,32 +1,42 @@
 {
   "nom": "Nighttug58",
-  "classe": "Mage",
+  "classe": "Guerrier",
+  "classeId": "guerrier",
+  "classeNom": "Guerrier",
+  "classeIcone": "G",
+  "classeDescription": "Combattant physique solide, base sur la force, la vitalite et la defense.",
+  "specialisationId": "guerrier_corps_a_corps",
+  "specialisationNom": "Corps a Corps",
   "niveau": 1,
   "xp": 0,
   "pointsCaracteristiques": 0,
   "pointsTalent": 0,
-  "pv": 150,
-  "pvMax": 0,
-  "mana": 110,
-  "manaMax": 0,
-  "stamina": 120,
-  "staminaMax": 0,
+  "pointsCompetence": 0,
+  "pv": 198,
+  "pvMax": 18,
+  "mana": 62,
+  "manaMax": -8,
+  "stamina": 130,
+  "staminaMax": 10,
   "or": 50,
-  "attaqueBase": 3,
-  "defenseBase": 1,
-  "attaqueMagique": 5,
-  "defenseMagique": 2,
-  "esquive": 3,
+  "attaque": 4,
+  "defense": 4,
+  "attaqueMagique": -6,
+  "defenseMagique": 0,
+  "critique": 0,
+  "esquive": -1,
   "bonusLoot": 0,
-  "force": 3,
+  "bonusOr": 0,
+  "force": 9,
   "dexterite": 4,
-  "intelligence": 6,
-  "vitalite": 5,
+  "intelligence": 2,
+  "vitalite": 8,
   "chance": 3,
-  "vitesse": 8,
+  "vitesse": 4,
   "jour": 1,
   "heure": 8,
-  "dernierRestockMarchands": 0,
+  "minute": 0,
+  "dernierRestockMarchands": 1,
   "regionMondeActuelle": "aetheria",
   "zoneActuelle": "auberge_griffon",
   "zonesDebloquees": [
@@ -35,8 +45,29 @@
     "foret_brumes",
     "tour_mage"
   ],
+  "zonesVisitees": [],
   "quetes": [],
   "talents": [],
+  "competences": [
+    "attaque_simple",
+    "defendre",
+    "fuir",
+    "utiliser_objet",
+    "guerrier_aura_epee",
+    "guerrier_berserk",
+    "guerrier_moulinet_epee",
+    "guerrier_triple_entaille",
+    "guerrier_charge"
+  ],
+  "competencesProgression": {},
+  "competencesNiveaux": {},
+  "progressionQuetes": {
+    "arcsRecompenses": {}
+  },
+  "progressionCombat": {
+    "bossPersistants": {},
+    "miniBossUniques": {}
+  },
   "equipement": {
     "arme": null,
     "casque": null,
@@ -50,31 +81,18 @@
   },
   "inventaire": [
     {
-      "id": "baton_novice",
-      "quantite": 1
-    },
-    {
-      "id": "potion_soin",
-      "quantite": 3
-    },
-    {
-      "id": "potion_soin_superieure",
-      "quantite": 1
-    },
-    {
       "id": "epee_rouillee",
       "quantite": 1
     },
     {
       "id": "armure_cuir",
       "quantite": 1
+    },
+    {
+      "id": "potion_soin",
+      "quantite": 5
     }
   ],
-  "minute": 0,
-  "effetsActifs": [],
-  "classeId": "mage",
-  "attaque": 3,
-  "defense": 1,
-  "critique": 3,
-  "bonusOr": 0
+  "favoris": [],
+  "effetsActifs": []
 }
