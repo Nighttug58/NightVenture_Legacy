@@ -58,13 +58,13 @@ function recolterRecompenses() {
         ajouterObjetInventaire(item.id, item.quantite);
     });
 
-    ajouterJournal(`🏆 ${monstre.nom} vaincu`);
-    if (xp > 0) ajouterJournal(`⭐ +${xp} XP`);
-    if (or > 0) ajouterJournal(`🟡 +${or} or`);
+    ajouterJournal(`Vaincu : ${monstre.nom}`);
+    if (xp > 0) ajouterJournal(`XP +${xp}`);
+    if (or > 0) ajouterJournal(`Or +${or}`);
 
     loot.forEach(item => {
         const objet = trouverObjet(item.id);
-        ajouterJournal(`📦 ${objet?.nom || item.id} x${item.quantite}`);
+        ajouterJournal(`Butin : ${objet?.nom || item.id} x${item.quantite}`);
     });
 
     verifierNiveau();
@@ -100,14 +100,14 @@ function ouvrirCombat() {
 
     const html = `
         <div class="item-card">
-            <h2>⚔ Combat</h2>
+            <h2>Combat</h2>
             <h3>${monstre.nom}</h3>
             ${creerBarreRessource(
                 "barre-pv",
                 calculerPourcentage(pv, pvMax),
                 pv,
                 pvMax,
-                "❤️ PV"
+                "PV"
             )}
         </div>
 
