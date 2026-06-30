@@ -1,5 +1,53 @@
 /* NightVenture - Start / save UI */
 
+/* Etats UI officiels
+   - nv-mode-menu : accueil
+   - nv-mode-new-game : creation de personnage
+   - nv-mode-playing : partie active
+*/
+
+body.nv-mode-menu #topCharacterBar,
+body.nv-mode-new-game #topCharacterBar,
+body.nv-mode-menu #navigationPrincipale,
+body.nv-mode-new-game #navigationPrincipale,
+body.nv-mode-menu #barreVuePrincipale,
+body.nv-mode-new-game #barreVuePrincipale,
+body.nv-mode-menu #infosMondeSidebar,
+body.nv-mode-new-game #infosMondeSidebar,
+body.nv-mode-menu #equipementSidebar,
+body.nv-mode-new-game #equipementSidebar,
+body.nv-mode-menu #journalSection,
+body.nv-mode-new-game #journalSection,
+body.nv-mode-menu #journalMini,
+body.nv-mode-new-game #journalMini,
+body.nv-mode-menu #journalNotifications,
+body.nv-mode-new-game #journalNotifications {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+body.nv-mode-menu #gameLayout,
+body.nv-mode-new-game #gameLayout {
+    display: block !important;
+}
+
+body.nv-mode-menu #main,
+body.nv-mode-new-game #main,
+body.nv-mode-menu #vuePrincipale,
+body.nv-mode-new-game #vuePrincipale {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+body.nv-mode-playing #topCharacterBar,
+body.nv-mode-playing #navigationPrincipale {
+    visibility: visible;
+    pointer-events: auto;
+}
+
 .nv-start-actions .nv-start-label {
     display: inline-flex;
     align-items: center;
