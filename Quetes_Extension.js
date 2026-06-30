@@ -9,8 +9,8 @@ NightVenture — Quêtes Extension loader
     "use strict";
 
     const scripts = [
-        "backup/Quetes_Extension.js",
-        "Quetes_Extension_NoEmoji_Runtime.js"
+        "Quetes_Extension_NoEmoji_Runtime.js",
+        "backup/Quetes_Extension.js"
     ];
 
     if (document.currentScript && document.readyState === "loading") {
