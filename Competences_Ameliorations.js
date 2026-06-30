@@ -2,7 +2,7 @@
 NightVenture - Competences Ameliorations
 - Generation automatique des items d'amelioration de competences
 - Fonction centrale d'utilisation des livres, pierres et noyaux
-- Les objets debloquent le niveau max ET montent immediatement la competence au niveau suivant.
+- Livre +5, Pierre d'ame +5, Noyau demoniaque +1, cap final niveau 21.
 */
 
 (function () {
@@ -76,8 +76,9 @@ NightVenture - Competences Ameliorations
             }),
             competenceId: idCompetence,
             typeAmeliorationCompetence: "livre_competence",
-            niveauMaxDepart: Number(regle?.niveauMaxDepart || 5),
-            niveauMaxFinal: Number(regle?.niveauMaxFinal || 10),
+            niveauMaxDepart: Number(regle?.niveauMaxDepart || 10),
+            niveauMaxFinal: Number(regle?.niveauMaxFinal || 15),
+            gainNiveauMax: Number(regle?.gainNiveauMax || 5),
             itemParCompetence: true
         };
     }
@@ -94,6 +95,7 @@ NightVenture - Competences Ameliorations
             typeAmeliorationCompetence: itemSchema?.type || regle?.typeItem || typeFallback,
             niveauMaxDepart: Number(itemSchema?.niveauMaxDepart ?? regle?.niveauMaxDepart ?? 0),
             niveauMaxFinal: Number(itemSchema?.niveauMaxFinal ?? regle?.niveauMaxFinal ?? 0),
+            gainNiveauMax: Number(itemSchema?.gainNiveauMax ?? regle?.gainNiveauMax ?? 1),
             rendMasterisee: Boolean(itemSchema?.rendMasterisee || regle?.rendMasterisee),
             itemParCompetence: false
         };
@@ -186,24 +188,29 @@ NightVenture - Competences Ameliorations
         return etat.niveau;
     }
 
+    function NV_appliquerGainNiveauMax(etat, niveauMaxActuel, niveauMaxFinal, gain) {
+        etat.niveauMax = Math.min(niveauMaxActuel + Math.max(1, Number(gain) || 1), niveauMaxFinal);
+        etat.niveau = etat.niveauMax;
+    }
+
     function NV_utiliserLivreCompetence(objet, competence, etat) {
         if (objet.competenceId !== competence.id) {
             return NV_resultatAmelioration(false, "Ce livre ne correspond pas a cette competence.");
         }
 
-        const niveauMaxDepart = Number(objet.niveauMaxDepart || 5);
-        const niveauMaxFinal = Number(objet.niveauMaxFinal || 10);
+        const niveauMaxDepart = Number(objet.niveauMaxDepart || 10);
+        const niveauMaxFinal = Number(objet.niveauMaxFinal || 15);
+        const gain = Number(objet.gainNiveauMax || 5);
         const niveauMaxActuel = Number(etat.niveauMax || niveauMaxDepart);
 
         if (niveauMaxActuel < niveauMaxDepart || niveauMaxActuel >= niveauMaxFinal) {
-            return NV_resultatAmelioration(false, `Ce livre fonctionne seulement du niveau max ${niveauMaxDepart} au niveau max ${niveauMaxFinal}.`);
+            return NV_resultatAmelioration(false, `Ce livre fonctionne seulement du niveau ${niveauMaxDepart} au niveau ${niveauMaxFinal}.`);
         }
 
-        etat.niveauMax = Math.min(niveauMaxActuel + 1, niveauMaxFinal);
-        etat.niveau = etat.niveauMax;
+        NV_appliquerGainNiveauMax(etat, niveauMaxActuel, niveauMaxFinal, gain);
         etat.livresUtilises = Number(etat.livresUtilises || 0) + 1;
 
-        return NV_resultatAmelioration(true, `${competence.nom} passe au niveau ${etat.niveau}/${etat.niveauMax}.`, {
+        return NV_resultatAmelioration(true, `${competence.nom} passe au niveau ${etat.niveau}.`, {
             palier: "livre_competence",
             niveau: etat.niveau,
             niveauMax: etat.niveauMax
@@ -211,19 +218,19 @@ NightVenture - Competences Ameliorations
     }
 
     function NV_utiliserPierreAme(objet, competence, etat) {
-        const niveauMaxDepart = Number(objet.niveauMaxDepart || 10);
-        const niveauMaxFinal = Number(objet.niveauMaxFinal || 15);
-        const niveauMaxActuel = Number(etat.niveauMax || 5);
+        const niveauMaxDepart = Number(objet.niveauMaxDepart || 15);
+        const niveauMaxFinal = Number(objet.niveauMaxFinal || 20);
+        const gain = Number(objet.gainNiveauMax || 5);
+        const niveauMaxActuel = Number(etat.niveauMax || 10);
 
         if (niveauMaxActuel < niveauMaxDepart || niveauMaxActuel >= niveauMaxFinal) {
-            return NV_resultatAmelioration(false, `La Pierre d'ame fonctionne seulement du niveau max ${niveauMaxDepart} au niveau max ${niveauMaxFinal}.`);
+            return NV_resultatAmelioration(false, `La Pierre d'ame fonctionne seulement du niveau ${niveauMaxDepart} au niveau ${niveauMaxFinal}.`);
         }
 
-        etat.niveauMax = Math.min(niveauMaxActuel + 1, niveauMaxFinal);
-        etat.niveau = etat.niveauMax;
+        NV_appliquerGainNiveauMax(etat, niveauMaxActuel, niveauMaxFinal, gain);
         etat.pierresAmeUtilisees = Number(etat.pierresAmeUtilisees || 0) + 1;
 
-        return NV_resultatAmelioration(true, `${competence.nom} passe au niveau ${etat.niveau}/${etat.niveauMax}.`, {
+        return NV_resultatAmelioration(true, `${competence.nom} passe au niveau ${etat.niveau}.`, {
             palier: "pierre_ame",
             niveau: etat.niveau,
             niveauMax: etat.niveauMax
@@ -231,16 +238,16 @@ NightVenture - Competences Ameliorations
     }
 
     function NV_utiliserNoyauDemoniaque(objet, competence, etat) {
-        const niveauMaxDepart = Number(objet.niveauMaxDepart || 15);
-        const niveauMaxFinal = Number(objet.niveauMaxFinal || 16);
-        const niveauMaxActuel = Number(etat.niveauMax || 5);
+        const niveauMaxDepart = Number(objet.niveauMaxDepart || 20);
+        const niveauMaxFinal = Number(objet.niveauMaxFinal || 21);
+        const niveauMaxActuel = Number(etat.niveauMax || 10);
 
         if (etat.noyauDemoniaqueUtilise || etat.masterisee) {
             return NV_resultatAmelioration(false, "Cette competence est deja Masterisee.");
         }
 
         if (niveauMaxActuel !== niveauMaxDepart) {
-            return NV_resultatAmelioration(false, `Le Noyau demoniaque fonctionne seulement au niveau max ${niveauMaxDepart}.`);
+            return NV_resultatAmelioration(false, `Le Noyau demoniaque fonctionne seulement au niveau ${niveauMaxDepart}.`);
         }
 
         etat.niveauMax = niveauMaxFinal;
@@ -248,7 +255,7 @@ NightVenture - Competences Ameliorations
         etat.masterisee = true;
         etat.noyauDemoniaqueUtilise = true;
 
-        return NV_resultatAmelioration(true, `${competence.nom} est maintenant Masterisee au niveau ${etat.niveau}/${etat.niveauMax}.`, {
+        return NV_resultatAmelioration(true, `${competence.nom} est maintenant Masterisee au niveau ${etat.niveau}.`, {
             palier: "noyau_demoniaque",
             niveau: etat.niveau,
             niveauMax: etat.niveauMax,
