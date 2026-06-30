@@ -1,12 +1,11 @@
 /*
-NightVenture — UI Core
+NightVenture - UI Core
 - Vue principale
 - Navigation
-- Rafraîchissement interface
+- Rafraichissement interface
 - Notifications simples
 */
 
-/* VUE PRINCIPALE */
 function changerVue(vue) {
     Game.ui.vueActive = vue;
     mettreAJourTitreVue();
@@ -14,47 +13,37 @@ function changerVue(vue) {
 }
 
 function afficherVuePrincipale(html) {
-    const conteneur =
-        document.getElementById("vuePrincipale");
-
+    const conteneur = document.getElementById("vuePrincipale");
     if (!conteneur) return;
 
-    conteneur.innerHTML =
-        html;
+    conteneur.innerHTML = html;
 
     mettreAJourTitreVue();
     mettreAJourBarreVue();
     mettreAJourNotifications();
-
     initialiserSelectionItemsVuePrincipale();
 }
 
 function mettreAJourTitreVue() {
-    const titre =
-        document.getElementById("titreVuePrincipale");
-
+    const titre = document.getElementById("titreVuePrincipale");
     if (!titre) return;
 
     const titres = {
-        exploration: "🌍 Exploration",
-        combat: "⚔ Combat",
-        inventaire: "🎒 Inventaire",
-        quetes: "📜 Journal des quêtes",
-        talents: "🌟 Talents",
-        marchand: "🛒 Marchand",
-        quetes_pnj: "📜 Quêtes du PNJ",
-        statistiques: "📈 Statistiques",
-        fiche_personnage: "📈 Statistiques",
-        equipement: "🛡 Équipement",
-        journal: "📜 Journal d'aventure",
-        simulateur_combat: "🧪 Simulateur de combat",
-        equipements_proceduraux: "⚒ Équipements procéduraux",
-        monstres_proceduraux: "👹 Monstres procéduraux",
-        profils_equipements: "🧍 Profils d'équipement simulés"
+        exploration: "Exploration",
+        combat: "Combat",
+        inventaire: "Inventaire",
+        quetes: "Journal des quetes",
+        talents: "Talents",
+        marchand: "Marchand",
+        quetes_pnj: "Quetes du PNJ",
+        statistiques: "Statistiques",
+        fiche_personnage: "Statistiques",
+        equipement: "Equipement",
+        journal: "Journal d'aventure",
+        competences_classes: "Competences"
     };
 
-    titre.textContent =
-        titres[Game.ui.vueActive] || "🌍 Exploration";
+    titre.textContent = titres[Game.ui.vueActive] || "Exploration";
 }
 
 function mettreAJourBarreVue() {
@@ -63,16 +52,11 @@ function mettreAJourBarreVue() {
         inventaire: "btnInventaire",
         quetes: "btnQuetes",
         journal: "btnJournal",
-        simulateur_combat: "btnSimulateurCombat",
-        equipements_proceduraux: "btnEquipementsProceduraux",
-        monstres_proceduraux: "btnMonstresProceduraux",
-        profils_equipements: "btnProfilsEquipements"
+        competences_classes: "btnCompetencesClasses"
     };
 
     Object.values(boutons).forEach(idBouton => {
-        const bouton =
-            document.getElementById(idBouton);
-
+        const bouton = document.getElementById(idBouton);
         if (!bouton) return;
 
         bouton.classList.remove("vue-active");
@@ -80,14 +64,10 @@ function mettreAJourBarreVue() {
         bouton.classList.remove("active");
     });
 
-    const idBoutonActif =
-        boutons[Game.ui.vueActive];
-
+    const idBoutonActif = boutons[Game.ui.vueActive];
     if (!idBoutonActif) return;
 
-    const boutonActif =
-        document.getElementById(idBoutonActif);
-
+    const boutonActif = document.getElementById(idBoutonActif);
     if (!boutonActif) return;
 
     boutonActif.classList.add("vue-active");
@@ -98,9 +78,7 @@ function mettreAJourBarreVue() {
 function rafraichirInterface() {
     afficherPersonnage();
     afficherJournal();
-
     verifierProgressionQuetes();
-
     mettreAJourTitreVue();
     mettreAJourBarreVue();
     mettreAJourNotifications();
@@ -109,41 +87,33 @@ function rafraichirInterface() {
         case "exploration":
             ouvrirExploration();
             break;
-
         case "inventaire":
             ouvrirInventaire();
             break;
-
         case "marchand":
-            if (Game.ui.marchandActuel) {
-                ouvrirMarchand(Game.ui.marchandActuel.id);
-            }
+            if (Game.ui.marchandActuel) ouvrirMarchand(Game.ui.marchandActuel.id);
             break;
-
         case "quetes":
             ouvrirQuetes();
             break;
-
         case "talents":
             ouvrirTalents();
             break;
-
         case "statistiques":
             ouvrirStatistiques();
             break;
-
         case "fiche_personnage":
             ouvrirFichePersonnage();
             break;
-
         case "journal":
             ouvrirJournalComplet();
             break;
-
         case "combat":
             ouvrirCombat();
             break;
-
+        case "competences_classes":
+            NV_ouvrirCompetencesClasses();
+            break;
         default:
             ouvrirExploration();
             break;
@@ -152,12 +122,11 @@ function rafraichirInterface() {
 
 function creerTooltipEquipement(idObjet) {
     if (!idObjet) return "";
+
     const objet = trouverObjet(idObjet);
     if (!objet) return "";
 
-    let bonus =
-    creerDetailsObjet(objet, "<br>") +
-    creerDetailsEffetsObjet(objet, "<br>");
+    const bonus = creerDetailsObjet(objet, "<br>") + creerDetailsEffetsObjet(objet, "<br>");
 
     return `
         <div class="tooltip-text">
