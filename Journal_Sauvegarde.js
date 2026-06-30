@@ -164,7 +164,7 @@ function ouvrirJournalComplet() {
 
             <div class="item-card journal-complet-header">
                 <div class="journal-complet-header__texte">
-                    <h2>📜 Journal d’aventure</h2>
+                    <h2>Journal d’aventure</h2>
                     <p class="journal-complet-sous-titre">
                         Historique complet conservé dans la sauvegarde
                         (maximum ${1000} entrées).
@@ -172,8 +172,8 @@ function ouvrirJournalComplet() {
                 </div>
 
                 <div class="journal-complet-actions">
-                    <button onclick="telechargerJournal()">💾 Exporter</button>
-                    <button onclick="ouvrirExploration()">⬅ Retour</button>
+                    <button onclick="telechargerJournal()">Exporter</button>
+                    <button onclick="ouvrirExploration()">Retour</button>
                 </div>
             </div>
 
@@ -406,7 +406,7 @@ async function sauvegarderJeu() {
 
     URL.revokeObjectURL(url);
 
-    ajouterJournal("💾 Partie sauvegardée.");
+    ajouterJournal("Partie sauvegardée.");
 }
 
 async function chargerSauvegardeDepuisInput(event) {
@@ -487,7 +487,7 @@ async function chargerSauvegardeDepuisInput(event) {
                 "";
         }
 
-        ajouterJournal("📂 Sauvegarde chargée.");
+        ajouterJournal("Sauvegarde chargée.");
 
         if (typeof rafraichirInterface === "function") rafraichirInterface();
     } catch (erreur) {
