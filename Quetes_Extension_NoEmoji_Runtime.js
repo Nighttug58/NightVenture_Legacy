@@ -9,7 +9,7 @@ NightVenture — Quêtes Extension No Emoji Runtime
     "use strict";
 
     const NQX_VERSION = "v0.9.3.3-no-emoji-runtime";
-    const NQX_EMOJI_REGEX = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]\s*/gu;
+    const NQX_EMOJI_REGEX = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]\s*/gu;
 
     function NQX_cleanText(value) {
         return String(value ?? "")
