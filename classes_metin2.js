@@ -90,7 +90,6 @@ const NV_COMPETENCE_SPECS_METIN2 = [
     ["guerrier", "guerrier_mental", "Mental", "guerrier_pilon", "Pilon", "physique", "stamina", 10, 40, 0, 3, "Ecrase l'ennemi avec une attaque descendante."],
     ["guerrier", "guerrier_mental", "Mental", "guerrier_frappe_esprit", "Frappe de l'Esprit", "physique", "stamina", 11, 44, 1, 4, "Libere une pression spirituelle dans la lame."],
     ["guerrier", "guerrier_mental", "Mental", "guerrier_tremblement", "Tremblement", "physique", "stamina", 12, 48, 0, 4, "Un choc de guerre qui fait vaciller la cible."],
-
     ["ninja", "ninja_assassin", "Assassin", "ninja_embuscade", "Embuscade", "physique", "stamina", 5, 27, 4, 2, "Frappe sournoise, rapide et critique."],
     ["ninja", "ninja_assassin", "Assassin", "ninja_attaque_rapide", "Attaque Rapide", "physique", "stamina", 6, 29, 5, 2, "Assaut fulgurant avec une courte recuperation."],
     ["ninja", "ninja_assassin", "Assassin", "ninja_dague_tournoyante", "Dague Tournoyante", "physique", "stamina", 7, 33, 5, 3, "Enchaine une rotation de dagues aceree."],
@@ -101,7 +100,6 @@ const NV_COMPETENCE_SPECS_METIN2 = [
     ["ninja", "ninja_archer", "Archer", "ninja_fleche_feu", "Fleche de Feu", "physique", "stamina", 8, 36, 4, 3, "Une fleche incandescente a fort impact."],
     ["ninja", "ninja_archer", "Archer", "ninja_fleche_poison", "Fleche Empoisonnee", "physique", "stamina", 9, 38, 5, 4, "Fleche vicieuse qui perce les defenses."],
     ["ninja", "ninja_archer", "Archer", "ninja_pas_plume", "Pas de Plume", "physique", "stamina", 6, 31, 7, 2, "Tir agile porte dans un mouvement evasif."],
-
     ["sura", "sura_armes_magiques", "Armes Magiques", "sura_lame_enchantee", "Lame Enchantee", "magique", "hybrid", 8, 35, 2, 2, "Une lame sombre chargee d'energie demoniaque."],
     ["sura", "sura_armes_magiques", "Armes Magiques", "sura_armure_enchantee", "Armure Enchantee", "magique", "hybrid", 7, 32, 1, 2, "Convertit l'energie defensive en riposte occulte."],
     ["sura", "sura_armes_magiques", "Armes Magiques", "sura_peur", "Peur", "magique", "mana", 8, 34, 2, 3, "Impose une pression demoniaque a l'ennemi."],
@@ -112,7 +110,6 @@ const NV_COMPETENCE_SPECS_METIN2 = [
     ["sura", "sura_magie_noire", "Magie Noire", "sura_protection_tenebres", "Protection des Tenebres", "magique", "mana", 7, 34, 1, 2, "Retourne une partie des tenebres en attaque."],
     ["sura", "sura_magie_noire", "Magie Noire", "sura_frappe_fantome", "Frappe Fantome", "magique", "mana", 10, 44, 3, 4, "Un coup spectral qui ignore les reflexes."],
     ["sura", "sura_magie_noire", "Magie Noire", "sura_orbe_noire", "Orbe Noire", "magique", "mana", 12, 50, 4, 5, "Orbe concentree de magie noire pure."],
-
     ["shaman", "shaman_dragon", "Dragon", "shaman_talisman_volant", "Talisman Volant", "magique", "mana", 7, 32, 1, 2, "Projette un talisman charge d'esprit."],
     ["shaman", "shaman_dragon", "Dragon", "shaman_rugissement_dragon", "Rugissement du Dragon", "magique", "mana", 9, 39, 1, 3, "Onde draconique spirituelle qui frappe a distance."],
     ["shaman", "shaman_dragon", "Dragon", "shaman_dragon_chassant", "Dragon Chassant", "magique", "mana", 10, 43, 2, 4, "Un dragon d'energie poursuit sa cible."],
@@ -125,22 +122,75 @@ const NV_COMPETENCE_SPECS_METIN2 = [
     ["shaman", "shaman_soin", "Soin", "shaman_acceleration", "Acceleration", "magique", "mana", 7, 33, 3, 2, "Convertit la vitesse spirituelle en impact magique."]
 ];
 
+function NV_lerpMetin2(debut, fin, t) {
+    return debut + (fin - debut) * t;
+}
+
+function NV_palierCompetenceMetin2(niveau) {
+    if (niveau <= 5) return "base";
+    if (niveau <= 10) return "livre";
+    if (niveau <= 15) return "ame";
+    return "master";
+}
+
+function NV_puissanceCompetenceMetin2(base, fin, niveau) {
+    const cible10 = Math.round(fin * 1.85 + base * 0.30);
+    const cible15 = Math.round(fin * 3.00 + base * 0.50);
+    const cible16 = Math.round(fin * 3.70 + base * 0.70);
+
+    if (niveau <= 5) return Math.round(NV_lerpMetin2(base, fin, (niveau - 1) / 4));
+    if (niveau <= 10) return Math.round(NV_lerpMetin2(fin, cible10, (niveau - 5) / 5));
+    if (niveau <= 15) return Math.round(NV_lerpMetin2(cible10, cible15, (niveau - 10) / 5));
+    return cible16;
+}
+
+function NV_multiplicateurCompetenceMetin2(fin, niveau) {
+    const bonusFin = fin >= 40 ? 0.03 : 0;
+    if (niveau <= 5) return Number((0.96 + 0.08 * niveau + bonusFin).toFixed(2));
+    if (niveau <= 10) return Number((1.38 + 0.09 * (niveau - 5) + bonusFin).toFixed(2));
+    if (niveau <= 15) return Number((1.85 + 0.11 * (niveau - 10) + bonusFin).toFixed(2));
+    return Number((2.55 + bonusFin).toFixed(2));
+}
+
+function NV_coutsCompetenceMetin2(coutType, fin, niveau) {
+    const palierBonus = niveau <= 5 ? 0 : niveau <= 10 ? 6 : niveau <= 15 ? 14 : 24;
+
+    if (coutType === "stamina") {
+        return { mana: 0, stamina: Math.round(6 + niveau * 3.2 + fin / 12 + palierBonus) };
+    }
+
+    if (coutType === "hybrid") {
+        return {
+            mana: Math.round(5 + niveau * 4.5 + fin / 14 + palierBonus),
+            stamina: Math.round(3 + niveau * 2.2 + palierBonus / 2)
+        };
+    }
+
+    return { mana: Math.round(7 + niveau * 5.2 + fin / 10 + palierBonus), stamina: 0 };
+}
+
 function NV_progressionCompetenceMetin2(base, fin, coutType, cooldown, critiqueBase) {
     const progression = [];
-    for (let niveau = 1; niveau <= 5; niveau++) {
-        const t = (niveau - 1) / 4;
-        const puissance = Math.round(base + (fin - base) * t);
-        const multiplicateur = Number((0.96 + 0.08 * niveau + (fin >= 40 ? 0.03 : 0)).toFixed(2));
-        let couts;
-        if (coutType === "stamina") {
-            couts = { mana: 0, stamina: Math.round(6 + niveau * 3 + fin / 12) };
-        } else if (coutType === "hybrid") {
-            couts = { mana: Math.round(5 + niveau * 4 + fin / 14), stamina: Math.round(3 + niveau * 2) };
-        } else {
-            couts = { mana: Math.round(7 + niveau * 5 + fin / 10), stamina: 0 };
-        }
-        progression.push({ niveau, puissance, multiplicateur, couts, coutInitiative: 100 + niveau * 2 + cooldown, bonusCritique: critiqueBase + niveau - 1 });
+
+    for (let niveau = 1; niveau <= 16; niveau++) {
+        const puissance = NV_puissanceCompetenceMetin2(base, fin, niveau);
+        const multiplicateur = NV_multiplicateurCompetenceMetin2(fin, niveau);
+        const couts = NV_coutsCompetenceMetin2(coutType, fin, niveau);
+        const palier = NV_palierCompetenceMetin2(niveau);
+        const bonusPalierInitiative = niveau <= 5 ? 0 : niveau <= 10 ? 5 : niveau <= 15 ? 10 : 16;
+        const bonusPalierCritique = niveau <= 5 ? 0 : niveau <= 10 ? 1 : niveau <= 15 ? 3 : 6;
+
+        progression.push({
+            niveau,
+            palier,
+            puissance,
+            multiplicateur,
+            couts,
+            coutInitiative: 100 + niveau * 2 + cooldown + bonusPalierInitiative,
+            bonusCritique: critiqueBase + niveau - 1 + bonusPalierCritique
+        });
     }
+
     return progression;
 }
 
@@ -158,7 +208,9 @@ function NV_creerCompetenceMetin2(spec) {
         cible: "ennemi",
         icone: `assets/competences/${id}.png`,
         image: `assets/competences/${id}.png`,
-        maxNiveau: 5,
+        maxNiveau: 16,
+        niveauMaxBase: 5,
+        niveauMaxAbsolu: 16,
         cooldownTours,
         couts: niveau1.couts,
         coutInitiative: niveau1.coutInitiative,
