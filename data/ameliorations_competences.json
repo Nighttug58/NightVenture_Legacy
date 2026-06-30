@@ -21,7 +21,7 @@
       "rarete": "epique",
       "niveauMaxDepart": 15,
       "niveauMaxFinal": 20,
-      "gainNiveauMax": 5,
+      "gainNiveauMax": 1,
       "image": "assets/items/competences/pierre_ame.png",
       "tableDrop": null
     },
@@ -47,7 +47,7 @@
       "rarete": "epique",
       "niveauMaxDepart": 15,
       "niveauMaxFinal": 20,
-      "gainNiveauMax": 5,
+      "gainNiveauMax": 1,
       "image": "assets/items/competences/pierre_ame.png",
       "tableDrop": null
     },
