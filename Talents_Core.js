@@ -1,6 +1,6 @@
 /*
 NightVenture — Talents core
-- Amélioration des talents
+- Amelioration des talents
 - Vue talents
 
 Ce module reste neutre hors partie : aucun crash si le personnage n'existe pas.
@@ -46,7 +46,7 @@ function ameliorerTalent(idTalent) {
         personnage.talents.push({ id: idTalent, niveau: 1 });
     }
 
-    ajouterJournal(`🌟 Talent amélioré : ${talent.nom}`);
+    ajouterJournal(`Talent ameliore : ${talent.nom}`);
     rafraichirInterface();
     ouvrirTalents();
 }
@@ -67,8 +67,8 @@ function ouvrirTalents() {
     let html = `
         <div class="item-card">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
-                <h2 style="margin: 0;">🌟 Talents</h2>
-                <button onclick="ouvrirExploration()">⬅ Retour</button>
+                <h2 style="margin: 0;">Talents</h2>
+                <button onclick="ouvrirExploration()">Retour</button>
             </div>
             <p>Points de talent disponibles : <strong>${personnage.pointsTalent}</strong></p>
         </div>
@@ -87,12 +87,12 @@ function ouvrirTalents() {
 
         html += `
             <div class="item-card">
-                <h3>${talent.icone || "🌟"} ${talent.nom}</h3>
+                <h3>${talent.nom}</h3>
                 <p>${talent.description}</p>
                 <p>Niveau : ${niveau} / ${talent.niveauMax}</p>
                 <p>Bonus par niveau : <strong>${bonus || "Aucun"}</strong></p>
                 <button ${niveau >= talent.niveauMax || personnage.pointsTalent < (talent.cout ?? 1) ? "disabled" : ""} onclick="ameliorerTalent('${talent.id}')">
-                    Améliorer (${talent.cout ?? 1} pt)
+                    Ameliorer (${talent.cout ?? 1} pt)
                 </button>
             </div>
         `;
