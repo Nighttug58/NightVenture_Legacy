@@ -106,11 +106,12 @@ Module joueur base uniquement sur classes_metin2.js.
             dexterite: Number(classe.base.dexterite) || 0,
             intelligence: Number(classe.base.intelligence) || 0,
             vitalite: Number(classe.base.vitalite) || 0,
-            chance: Number(classe.base.chance) || 0
+            chance: Number(classe.base.chance) || 0,
+            vitesse: Number(classe.base.vitesse) || 0
         };
 
         const poids = classe.poids;
-        const totalPoids = Object.values(poids).reduce((total, valeur) => total + (Number(valeur) || 0), 0);
+        const totalPoids = Object.keys(stats).reduce((total, stat) => total + (Number(poids[stat]) || 0), 0);
         const points = NV_pointsStatsNiveau(niveau);
         const restes = [];
         let attribues = 0;
@@ -144,6 +145,7 @@ Module joueur base uniquement sur classes_metin2.js.
             intelligence: repartition.intelligence,
             vitalite: repartition.vitalite,
             chance: repartition.chance,
+            vitesse: NV_arrondir(repartition.vitesse + (Number(bonus.vitesse) || 0), 1),
             pvMax: Math.round(100 + repartition.vitalite * 10 + (Number(bonus.pvMax) || 0)),
             manaMax: Math.round(50 + repartition.intelligence * 10 + (Number(bonus.manaMax) || 0)),
             staminaMax: Math.round(100 + repartition.dexterite * 5 + (Number(bonus.staminaMax) || 0)),
@@ -152,8 +154,7 @@ Module joueur base uniquement sur classes_metin2.js.
             attaqueMagique: NV_arrondir(repartition.intelligence * 2 + (Number(bonus.attaqueMagique) || 0), 1),
             defenseMagique: NV_arrondir(repartition.vitalite * 2 + (Number(bonus.defenseMagique) || 0), 1),
             critique: NV_arrondir(repartition.dexterite * 0.5 + (Number(bonus.critique) || 0), 1),
-            esquive: NV_arrondir(repartition.dexterite * 0.5 + (Number(bonus.esquive) || 0), 1),
-            vitesse: NV_arrondir(repartition.dexterite * 0.5 + (Number(bonus.vitesse) || 0), 1)
+            esquive: NV_arrondir(repartition.dexterite * 0.5 + (Number(bonus.esquive) || 0), 1)
         };
     }
 
@@ -222,6 +223,7 @@ Module joueur base uniquement sur classes_metin2.js.
             intelligence: Number(repartition.intelligence) || 0,
             vitalite: Number(repartition.vitalite) || 0,
             chance: Number(repartition.chance) || 0,
+            vitesse: Number(previewDepart.vitesse) || 0,
             pvMax: Math.round(Number(bonus.pvMax) || 0),
             manaMax: Math.round(Number(bonus.manaMax) || 0),
             staminaMax: Math.round(Number(bonus.staminaMax) || 0),
@@ -231,7 +233,6 @@ Module joueur base uniquement sur classes_metin2.js.
             defenseMagique: Number(bonus.defenseMagique) || 0,
             critique: Number(bonus.critique) || 0,
             esquive: Number(bonus.esquive) || 0,
-            vitesse: Number(previewDepart.vitesse) || 0,
             bonusLoot: 0,
             bonusOr: 0,
             or: 50,
