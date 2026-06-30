@@ -1,7 +1,7 @@
 /*
 NightVenture - Competences Ameliorations UI
 Branche les boutons d'utilisation des livres, pierres et noyaux sur la page Competences.
-Version cap 21 : base 10, livre +5, pierre +5, noyau +1.
+Version cap 21 : base 10, livre +1, pierre +5, noyau +1.
 */
 
 (function () {
@@ -63,8 +63,8 @@ Version cap 21 : base 10, livre +5, pierre +5, noyau +1.
                 niveau,
                 niveauMax: max,
                 type: "livre_competence",
-                label: "Utiliser le livre (+5)",
-                texte: "Debloque et monte cette competence jusqu'au niveau 15.",
+                label: "Utiliser le livre (+1)",
+                texte: "Debloque et monte cette competence de +1, jusqu'au niveau 15.",
                 signature: `${idCompetence}|${itemId}|${niveau}|${max}|${NV_quantiteInventaire(itemId)}`
             };
         }
