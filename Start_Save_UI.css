@@ -33,55 +33,85 @@
     transform: translateY(1px);
 }
 
-.nv-classe-screen .nv-classe-card .nv-stats-primaires,
-.nv-classe-screen .nv-classe-card .nv-stats-combat {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin: 10px 0;
-}
-
-.nv-classe-screen .nv-classe-card .nv-stats-primaires::before {
-    content: "Caracteristiques";
-    display: block;
-    margin: 4px 0 2px;
-    color: var(--gold, #f5d37a);
-    font-weight: bold;
-}
-
-.nv-classe-screen .nv-classe-card .nv-stats-combat::before {
-    content: "Combat";
-    display: block;
-    margin: 8px 0 2px;
-    color: var(--gold, #f5d37a);
-    font-weight: bold;
-}
-
-.nv-classe-screen .nv-classe-card .nv-stats-primaires span,
-.nv-classe-screen .nv-classe-card .nv-stats-combat span {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    width: 100%;
-    padding: 7px 10px;
-    border: 1px solid rgba(245, 211, 122, 0.14);
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.16);
-    color: var(--text-muted, #bcbcbc);
-}
-
-.nv-classe-screen .nv-classe-card .nv-stats-primaires strong,
-.nv-classe-screen .nv-classe-card .nv-stats-combat strong {
-    color: var(--gold, #f5d37a);
-}
-
-.nv-classe-screen .nv-classe-card__actions {
+.nv-class-select-bar {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.nv-class-select-button {
+    min-height: 44px;
+    justify-content: center;
+}
+
+.nv-class-select-button.active {
+    color: var(--white, #fff);
+    background: var(--bg-selection, #5a4527);
+    border: 1px solid var(--gold-bright, #ffd700);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.28);
+}
+
+.nv-selected-class-panel {
+    margin-top: 14px;
+}
+
+.nv-classe-card--selected {
+    padding: 18px;
+}
+
+.nv-classe-card__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 14px;
+}
+
+.nv-classe-card__header button {
+    min-width: 210px;
+}
+
+.nv-class-stats-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.nv-class-stats-two-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
 }
 
-.nv-classe-screen .nv-classe-card__actions .nv-btn-secondary {
-    display: none !important;
+.nv-class-stats-two-columns .ligne-stat {
+    margin: 0;
+}
+
+.nv-class-start-skill {
+    margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+    .nv-class-select-bar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .nv-classe-card__header,
+    .nv-class-stats-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .nv-classe-card__header button {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 560px) {
+    .nv-class-select-bar,
+    .nv-class-stats-two-columns {
+        grid-template-columns: 1fr;
+    }
 }
