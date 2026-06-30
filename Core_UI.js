@@ -22,7 +22,7 @@ function changerVue(vue) {
     } else {
         Game.ui.vueActive = vue;
     }
-    mettreAJourTitreVue();
+
     mettreAJourBarreVue();
 }
 
@@ -32,36 +32,12 @@ function afficherVuePrincipale(html) {
 
     conteneur.innerHTML = html;
 
-    mettreAJourTitreVue();
     mettreAJourBarreVue();
     mettreAJourNotifications();
+
     if (typeof initialiserSelectionItemsVuePrincipale === "function") {
         initialiserSelectionItemsVuePrincipale();
     }
-}
-
-function mettreAJourTitreVue() {
-    const titre = document.getElementById("titreVuePrincipale");
-    if (!titre) return;
-
-    const titres = {
-        menu: "Accueil",
-        new_game: "Nouvelle partie",
-        exploration: "Exploration",
-        combat: "Combat",
-        inventaire: "Inventaire",
-        quetes: "Journal des quetes",
-        talents: "Talents",
-        marchand: "Marchand",
-        quetes_pnj: "Quetes du PNJ",
-        statistiques: "Statistiques",
-        fiche_personnage: "Statistiques",
-        equipement: "Equipement",
-        journal: "Journal d'aventure",
-        competences_classes: "Competences"
-    };
-
-    titre.textContent = titres[Game.ui.vueActive] || "Accueil";
 }
 
 function mettreAJourBarreVue() {
@@ -96,7 +72,6 @@ function mettreAJourBarreVue() {
 function rafraichirInterface() {
     if (!NV_personnageActifCoreUI()) {
         Game.ui.vueActive = NV_vueHorsPartieCoreUI(Game.ui.vueActive) ? Game.ui.vueActive : "menu";
-        mettreAJourTitreVue();
         mettreAJourBarreVue();
         mettreAJourNotifications();
 
@@ -109,7 +84,6 @@ function rafraichirInterface() {
     if (typeof afficherPersonnage === "function") afficherPersonnage();
     if (typeof afficherJournal === "function") afficherJournal();
     if (typeof verifierProgressionQuetes === "function") verifierProgressionQuetes();
-    mettreAJourTitreVue();
     mettreAJourBarreVue();
     mettreAJourNotifications();
 
@@ -152,26 +126,6 @@ function rafraichirInterface() {
             if (typeof ouvrirExploration === "function") ouvrirExploration();
             break;
     }
-}
-
-function creerTooltipEquipement(idObjet) {
-    if (!idObjet) return "";
-
-    const objet = trouverObjet(idObjet);
-    if (!objet) return "";
-
-    const bonus = creerDetailsObjet(objet, "<br>") + creerDetailsEffetsObjet(objet, "<br>");
-
-    return `
-        <div class="tooltip-text">
-            <b class="${classeRarete(objet)}">${objet.nom}</b><br>
-            <small>${objet.type}</small><br>
-            <small class="${classeRarete(objet)}">${objet.rarete || "commun"}</small><br><br>
-            ${objet.description || "Aucune description."}<br><br>
-            ${bonus}
-            Prix : ${objet.prix || 0} or
-        </div>
-    `;
 }
 
 function mettreAJourNotifications() {
