@@ -3,7 +3,10 @@ NightVenture — Journal et sauvegardes
 - Journal mini / complet
 - Notifications journal
 - Téléchargement journal
-- Sauvegarde / chargement JSON
+- Compatibilité sauvegarde / chargement JSON
+
+Le module Start_Save_Classes.js reste maître de la sauvegarde moderne.
+Les helpers legacy ci-dessous sont gardés en sécurité pour éviter les crashs.
 */
 
 function ajouterJournal(message) {
@@ -26,10 +29,12 @@ function ajouterJournal(message) {
 }
 
 function creerSauvegarde() {
+    if (!Game.data?.personnage) return null;
+
     return {
         personnage: Game.data.personnage,
-        historique: Game.data.historique,
-        monde: Game.data.monde
+        historique: Game.data.historique || { journal: [] },
+        monde: Game.data.monde || {}
     };
 }
 
@@ -201,14 +206,6 @@ function afficherJournal() {
             journal.join("\n");
     }
 
-    /*
-        MINI JOURNAL
-        - garde les 20 dernières entrées en mémoire affichée
-        - hauteur fixe côté CSS
-        - ordre chronologique : ancien en haut, récent en bas
-        - scroll automatique en bas après nouvelle entrée
-    */
-
     const conteneurMini =
         document.getElementById("journalMini");
 
@@ -234,13 +231,6 @@ function afficherJournal() {
                 conteneurMini.scrollHeight;
         });
     }
-
-    /*
-        JOURNAL COMPLET
-        - historique complet
-        - ancien en haut
-        - dernier message en bas
-    */
 
     const conteneurComplet =
         document.getElementById("journalComplet");
@@ -279,12 +269,26 @@ function afficherJournal() {
 }
 
 function telechargerJournal() {
-    const contenu = Game.data.historique.journal.join("\n");
-    const blob = new Blob([contenu], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const lien = document.createElement("a");
+    const journal =
+        assurerHistoriqueJournal();
+
+    const contenu =
+        journal.join("\n");
+
+    const blob =
+        new Blob([contenu], { type: "text/plain" });
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const lien =
+        document.createElement("a");
+
+    const jour =
+        Game.data?.personnage?.jour ?? "menu";
+
     lien.href = url;
-    lien.download = `NightVenture_Journal_J${Game.data.personnage.jour}.txt`;
+    lien.download = `NightVenture_Journal_J${jour}.txt`;
     lien.click();
     URL.revokeObjectURL(url);
 }
@@ -361,11 +365,21 @@ function activerDefilementGlisseJournalMini() {
     journalMini.addEventListener("pointercancel", terminerGlissement);
 }
 
-/* Gestionnaires de Fichiers (Save & Load JSON) */
+/* Gestionnaires de Fichiers legacy sécurisés */
 
 async function sauvegarderJeu() {
+    if (typeof window.NV_telechargerSauvegarde === "function") {
+        window.NV_telechargerSauvegarde();
+        return;
+    }
+
     const saveData =
         creerSauvegarde();
+
+    if (!saveData) {
+        alert("Aucune partie en cours a sauvegarder.");
+        return;
+    }
 
     const json =
         JSON.stringify(saveData, null, 2);
@@ -397,65 +411,87 @@ async function sauvegarderJeu() {
 
 async function chargerSauvegardeDepuisInput(event) {
     const file =
-        event.target.files[0];
+        event?.target?.files?.[0];
 
     if (!file) return;
 
-    const text =
-        await file.text();
-
-    const save =
-        JSON.parse(text);
-
-    Game.data.personnage =
-        save.personnage;
-
-    Game.data.historique =
-        save.historique;
-
-    Game.data.monde =
-        save.monde ?? {};
-
-    Game.data.personnage.inventaire ??= [];
-    Game.data.personnage.equipement ??= {};
-    Game.data.personnage.quetes ??= [];
-    Game.data.personnage.talents ??= [];
-    Game.data.personnage.pointsTalent ??= 0;
-
-    Game.data.historique.journal ??= [];
-
-    Game.data.personnage.minute ??= 0;
-    Game.data.personnage.pvMax ??= 0;
-    Game.data.personnage.manaMax ??= 0;
-    Game.data.personnage.staminaMax ??= 0;
-
-    Game.data.personnage.dernierRestockMarchands ??=
-        Game.data.personnage.jour ?? 1;
-
-    Game.data.personnage.regionMondeActuelle ??=
-        Game.data.regionsMonde[0]?.id ?? null;
-
-    if (!obtenirZoneActuelle()) {
-        Game.data.personnage.zoneActuelle =
-            obtenirZonesActuelles()[0]?.id ?? null;
+    if (typeof window.NV_chargerFichier === "function") {
+        await window.NV_chargerFichier(file);
+        if (event?.target) event.target.value = "";
+        return;
     }
 
-    Game.data.personnage.zonesDebloquees ??=
-        obtenirZonesActuelles()
-            .filter(zone => zone.debloqueeParDefaut)
-            .map(zone => zone.id);
+    try {
+        const text =
+            await file.text();
 
-    Game.data.personnage.jour ??= 1;
-    Game.data.personnage.heure ??= 8;
-    Game.data.personnage.minute ??= 0;
+        const save =
+            JSON.parse(text);
 
-    Game.ui.pnjSelectionne =
-        null;
+        if (!save?.personnage) {
+            alert("Sauvegarde invalide : aucun personnage trouve.");
+            return;
+        }
 
-    event.target.value =
-        "";
+        Game.data.personnage =
+            save.personnage;
 
-    ajouterJournal("📂 Sauvegarde chargée.");
+        Game.data.historique =
+            save.historique || { journal: [] };
 
-    rafraichirInterface();
+        Game.data.monde =
+            save.monde ?? {};
+
+        Game.data.personnage.inventaire ??= [];
+        Game.data.personnage.equipement ??= {};
+        Game.data.personnage.quetes ??= [];
+        Game.data.personnage.talents ??= [];
+        Game.data.personnage.pointsTalent ??= 0;
+
+        assurerHistoriqueJournal();
+
+        Game.data.personnage.minute ??= 0;
+        Game.data.personnage.pvMax ??= 0;
+        Game.data.personnage.manaMax ??= 0;
+        Game.data.personnage.staminaMax ??= 0;
+
+        Game.data.personnage.dernierRestockMarchands ??=
+            Game.data.personnage.jour ?? 1;
+
+        Game.data.personnage.regionMondeActuelle ??=
+            Game.data.regionsMonde?.[0]?.id ?? null;
+
+        if (typeof obtenirZoneActuelle === "function" && !obtenirZoneActuelle()) {
+            Game.data.personnage.zoneActuelle =
+                typeof obtenirZonesActuelles === "function"
+                    ? obtenirZonesActuelles()[0]?.id ?? null
+                    : Game.data.personnage.zoneActuelle;
+        }
+
+        Game.data.personnage.zonesDebloquees ??=
+            typeof obtenirZonesActuelles === "function"
+                ? obtenirZonesActuelles()
+                    .filter(zone => zone.debloqueeParDefaut)
+                    .map(zone => zone.id)
+                : [];
+
+        Game.data.personnage.jour ??= 1;
+        Game.data.personnage.heure ??= 8;
+        Game.data.personnage.minute ??= 0;
+
+        Game.ui.pnjSelectionne =
+            null;
+
+        if (event?.target) {
+            event.target.value =
+                "";
+        }
+
+        ajouterJournal("📂 Sauvegarde chargée.");
+
+        if (typeof rafraichirInterface === "function") rafraichirInterface();
+    } catch (erreur) {
+        console.error(erreur);
+        alert("Fichier de sauvegarde invalide.");
+    }
 }
