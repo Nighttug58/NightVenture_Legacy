@@ -181,6 +181,10 @@ async function chargerDonnees() {
             window.NV_enregistrerClassesEtCompetences();
         }
 
+        if (typeof window.NV_genererItemsAmeliorationCompetences === "function") {
+            window.NV_genererItemsAmeliorationCompetences();
+        }
+
         Game.data.regionsMonde = zonesChargees.regions_monde ?? [];
         Game.cache.zonesParId = {};
         Game.data.regionsMonde.forEach(region => {
