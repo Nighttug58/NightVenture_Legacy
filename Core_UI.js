@@ -118,6 +118,9 @@ function rafraichirInterface() {
         case "competences_classes":
             if (typeof NV_ouvrirCompetencesClasses === "function") NV_ouvrirCompetencesClasses();
             break;
+        case "progression_combat":
+            if (typeof GI_ouvrirProgressionCombat === "function") GI_ouvrirProgressionCombat();
+            break;
         case "menu":
         case "new_game":
             break;
