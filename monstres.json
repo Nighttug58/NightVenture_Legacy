@@ -1,0 +1,597 @@
+{
+  "monstres": [
+    {
+      "id": "rat_geant",
+      "nom": "Rat géant",
+      "niveau": 1,
+      "pv": 15,
+      "pvMax": 15,
+      "mana": 10,
+      "manaMax": 10,
+      "stamina": 105,
+      "staminaMax": 105,
+      "attaque": 2,
+      "defense": 0,
+      "attaqueMagique": 1,
+      "defenseMagique": 1,
+      "critique": 1,
+      "esquive": 1,
+      "xp": 5,
+      "or": 2,
+      "loot": [
+        {
+          "id": "potion_soin",
+          "chance": 100,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        },
+        {
+          "id": "cape_usee",
+          "chance": 3,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/rat_geant.png"
+    },
+    {
+      "id": "chauve_souris_geante",
+      "nom": "Chauve-souris géante",
+      "niveau": 1,
+      "pv": 12,
+      "pvMax": 12,
+      "mana": 10,
+      "manaMax": 10,
+      "stamina": 105,
+      "staminaMax": 105,
+      "attaque": 3,
+      "defense": 0,
+      "attaqueMagique": 1,
+      "defenseMagique": 1,
+      "critique": 1,
+      "esquive": 1,
+      "xp": 6,
+      "or": 3,
+      "loot": [
+        {
+          "id": "potion_soin",
+          "chance": 100,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/chauve_souris_geante.png"
+    },
+    {
+      "id": "loup_affame",
+      "nom": "Loup affamé",
+      "niveau": 2,
+      "pv": 25,
+      "pvMax": 25,
+      "mana": 20,
+      "manaMax": 20,
+      "stamina": 110,
+      "staminaMax": 110,
+      "attaque": 5,
+      "defense": 1,
+      "attaqueMagique": 2,
+      "defenseMagique": 2,
+      "critique": 1.0,
+      "esquive": 1.0,
+      "xp": 10,
+      "or": 5,
+      "loot": [
+        {
+          "id": "bottes_voyageur",
+          "chance": 5,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        },
+        {
+          "id": "potion_soin",
+          "chance": 15,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/loup_affame.png"
+    },
+    {
+      "id": "gobelin_eclaireur",
+      "nom": "Gobelin éclaireur",
+      "niveau": 2,
+      "pv": 30,
+      "pvMax": 30,
+      "mana": 20,
+      "manaMax": 20,
+      "stamina": 110,
+      "staminaMax": 110,
+      "attaque": 4,
+      "defense": 2,
+      "attaqueMagique": 2,
+      "defenseMagique": 2,
+      "critique": 1.0,
+      "esquive": 1.0,
+      "xp": 12,
+      "or": 6,
+      "loot": [
+        {
+          "id": "dague_assassin",
+          "chance": 2,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/gobelin_eclaireur.png"
+    },
+    {
+      "id": "gobelin_guerrier",
+      "nom": "Gobelin guerrier",
+      "niveau": 3,
+      "pv": 40,
+      "pvMax": 40,
+      "mana": 30,
+      "manaMax": 30,
+      "stamina": 115,
+      "staminaMax": 115,
+      "attaque": 7,
+      "defense": 3,
+      "attaqueMagique": 3,
+      "defenseMagique": 3,
+      "critique": 1.5,
+      "esquive": 1.5,
+      "xp": 18,
+      "or": 10,
+      "loot": [
+        {
+          "id": "epee_rouillee",
+          "chance": 8,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/gobelin_guerrier.png"
+    },
+    {
+      "id": "squelette",
+      "nom": "Squelette animé",
+      "niveau": 3,
+      "pv": 75,
+      "pvMax": 75,
+      "mana": 30,
+      "manaMax": 30,
+      "stamina": 115,
+      "staminaMax": 115,
+      "attaque": 9,
+      "defense": 5,
+      "attaqueMagique": 3,
+      "defenseMagique": 4,
+      "critique": 2,
+      "esquive": 2,
+      "xp": 26,
+      "or": 10,
+      "loot": [
+        {
+          "id": "epee_rouillee",
+          "chance": 5,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/squelette.png",
+      "vitesse": 6
+    },
+    {
+      "id": "zombie",
+      "nom": "Zombie putride",
+      "niveau": 4,
+      "pv": 95,
+      "pvMax": 95,
+      "mana": 40,
+      "manaMax": 40,
+      "stamina": 120,
+      "staminaMax": 120,
+      "attaque": 10,
+      "defense": 6,
+      "attaqueMagique": 4,
+      "defenseMagique": 5,
+      "critique": 1,
+      "esquive": 1,
+      "xp": 32,
+      "or": 14,
+      "loot": [
+        {
+          "id": "armure_cuir",
+          "chance": 4,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/zombie.png",
+      "vitesse": 5
+    },
+    {
+      "id": "araignee_geante",
+      "nom": "Araignée géante",
+      "niveau": 4,
+      "pv": 80,
+      "pvMax": 80,
+      "mana": 40,
+      "manaMax": 40,
+      "stamina": 120,
+      "staminaMax": 120,
+      "attaque": 11,
+      "defense": 4,
+      "attaqueMagique": 4,
+      "defenseMagique": 4,
+      "critique": 5,
+      "esquive": 6,
+      "xp": 35,
+      "or": 16,
+      "loot": [
+        {
+          "id": "gants_tanneur",
+          "chance": 6,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/araignee_geante.png",
+      "vitesse": 12
+    },
+    {
+      "id": "orc_guerrier",
+      "nom": "Orc guerrier",
+      "niveau": 5,
+      "pv": 115,
+      "pvMax": 115,
+      "mana": 50,
+      "manaMax": 50,
+      "stamina": 125,
+      "staminaMax": 125,
+      "attaque": 12,
+      "defense": 7,
+      "attaqueMagique": 5,
+      "defenseMagique": 6,
+      "critique": 3,
+      "esquive": 2,
+      "xp": 45,
+      "or": 22,
+      "loot": [
+        {
+          "id": "hache_bucheron",
+          "chance": 10,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/orc_guerrier.png",
+      "vitesse": 8
+    },
+    {
+      "id": "orc_berserker",
+      "nom": "Orc berserker",
+      "niveau": 6,
+      "pv": 120,
+      "pvMax": 120,
+      "mana": 60,
+      "manaMax": 60,
+      "stamina": 130,
+      "staminaMax": 130,
+      "attaque": 15,
+      "defense": 5,
+      "attaqueMagique": 6,
+      "defenseMagique": 6,
+      "critique": 5,
+      "esquive": 3,
+      "xp": 55,
+      "or": 28,
+      "loot": [
+        {
+          "id": "anneau_force",
+          "chance": 2,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/orc_berserker.png",
+      "vitesse": 9
+    },
+    {
+      "id": "mage_noir",
+      "nom": "Mage noir",
+      "niveau": 7,
+      "pv": 105,
+      "pvMax": 105,
+      "mana": 70,
+      "manaMax": 70,
+      "stamina": 135,
+      "staminaMax": 135,
+      "attaque": 14,
+      "defense": 6,
+      "attaqueMagique": 21,
+      "defenseMagique": 14,
+      "critique": 4,
+      "esquive": 4,
+      "xp": 70,
+      "or": 35,
+      "loot": [
+        {
+          "id": "collier_sagesse",
+          "chance": 3,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/mage_noir.png",
+      "vitesse": 8
+    },
+    {
+      "id": "golem_pierre",
+      "nom": "Golem de pierre",
+      "niveau": 8,
+      "pv": 160,
+      "pvMax": 160,
+      "mana": 80,
+      "manaMax": 80,
+      "stamina": 140,
+      "staminaMax": 140,
+      "attaque": 16,
+      "defense": 14,
+      "attaqueMagique": 8,
+      "defenseMagique": 24,
+      "critique": 0,
+      "esquive": 0,
+      "xp": 100,
+      "or": 50,
+      "loot": [
+        {
+          "id": "armure_chevalier",
+          "chance": 5,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/golem_pierre.png",
+      "vitesse": 4
+    },
+    {
+      "id": "troll_caverne",
+      "nom": "Troll des cavernes",
+      "niveau": 9,
+      "pv": 180,
+      "pvMax": 180,
+      "mana": 90,
+      "manaMax": 90,
+      "stamina": 145,
+      "staminaMax": 145,
+      "attaque": 20,
+      "defense": 10,
+      "attaqueMagique": 9,
+      "defenseMagique": 27,
+      "critique": 0,
+      "esquive": 0,
+      "xp": 130,
+      "or": 65,
+      "loot": [
+        {
+          "id": "collier_vie",
+          "chance": 5,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/troll_caverne.png",
+      "vitesse": 5
+    },
+    {
+      "id": "wyverne",
+      "nom": "Wyverne",
+      "niveau": 10,
+      "pv": 140,
+      "pvMax": 140,
+      "mana": 100,
+      "manaMax": 100,
+      "stamina": 150,
+      "staminaMax": 150,
+      "attaque": 14,
+      "defense": 6,
+      "attaqueMagique": 10,
+      "defenseMagique": 10,
+      "critique": 4,
+      "esquive": 3,
+      "xp": 180,
+      "or": 90,
+      "loot": [
+        {
+          "id": "anneau_archer",
+          "chance": 5,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/wyverne.png",
+      "vitesse": 9
+    },
+    {
+      "id": "vampire",
+      "nom": "Vampire ancien",
+      "niveau": 11,
+      "pv": 150,
+      "pvMax": 150,
+      "mana": 110,
+      "manaMax": 110,
+      "stamina": 155,
+      "staminaMax": 155,
+      "attaque": 15,
+      "defense": 7,
+      "attaqueMagique": 11,
+      "defenseMagique": 11,
+      "critique": 5,
+      "esquive": 4,
+      "xp": 220,
+      "or": 120,
+      "loot": [
+        {
+          "id": "anneau_chance",
+          "chance": 4,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/vampire.png",
+      "vitesse": 8
+    },
+    {
+      "id": "lich",
+      "nom": "Liche",
+      "niveau": 12,
+      "pv": 180,
+      "pvMax": 180,
+      "mana": 120,
+      "manaMax": 120,
+      "stamina": 160,
+      "staminaMax": 160,
+      "attaque": 17,
+      "defense": 9,
+      "attaqueMagique": 30,
+      "defenseMagique": 22,
+      "critique": 4,
+      "esquive": 3,
+      "xp": 280,
+      "or": 150,
+      "loot": [
+        {
+          "id": "artefact_cristal",
+          "chance": 2,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/lich.png",
+      "vitesse": 6
+    },
+    {
+      "id": "dragon_jeune",
+      "nom": "Jeune dragon rouge",
+      "niveau": 13,
+      "pv": 210,
+      "pvMax": 210,
+      "mana": 130,
+      "manaMax": 130,
+      "stamina": 165,
+      "staminaMax": 165,
+      "attaque": 19,
+      "defense": 10,
+      "attaqueMagique": 13,
+      "defenseMagique": 13,
+      "critique": 2,
+      "esquive": 1,
+      "xp": 400,
+      "or": 250,
+      "loot": [
+        {
+          "id": "artefact_dragon",
+          "chance": 3,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/dragon_jeune.png",
+      "vitesse": 5
+    },
+    {
+      "id": "dragon_adulte",
+      "nom": "Dragon rouge adulte",
+      "niveau": 14,
+      "pv": 210,
+      "pvMax": 210,
+      "mana": 140,
+      "manaMax": 140,
+      "stamina": 170,
+      "staminaMax": 170,
+      "attaque": 20,
+      "defense": 11,
+      "attaqueMagique": 14,
+      "defenseMagique": 28,
+      "critique": 2,
+      "esquive": 1,
+      "xp": 600,
+      "or": 500,
+      "loot": [
+        {
+          "id": "artefact_dragon",
+          "chance": 8,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/dragon_adulte.png",
+      "vitesse": 5
+    },
+    {
+      "id": "seigneur_demon",
+      "nom": "Seigneur démon",
+      "niveau": 15,
+      "pv": 240,
+      "pvMax": 240,
+      "mana": 150,
+      "manaMax": 150,
+      "stamina": 175,
+      "staminaMax": 175,
+      "attaque": 22,
+      "defense": 13,
+      "attaqueMagique": 32,
+      "defenseMagique": 24,
+      "critique": 3,
+      "esquive": 2,
+      "xp": 900,
+      "or": 1000,
+      "loot": [
+        {
+          "id": "artefact_ombre",
+          "chance": 10,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/seigneur_demon.png",
+      "vitesse": 4
+    },
+    {
+      "id": "roi_liche",
+      "nom": "Roi-Liche",
+      "niveau": 15,
+      "pv": 240,
+      "pvMax": 240,
+      "mana": 150,
+      "manaMax": 150,
+      "stamina": 175,
+      "staminaMax": 175,
+      "attaque": 23,
+      "defense": 14,
+      "attaqueMagique": 34,
+      "defenseMagique": 25,
+      "critique": 3,
+      "esquive": 2,
+      "xp": 1000,
+      "or": 1200,
+      "loot": [
+        {
+          "id": "artefact_cristal",
+          "chance": 10,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        },
+        {
+          "id": "artefact_ombre",
+          "chance": 5,
+          "quantiteMin": 1,
+          "quantiteMax": 1
+        }
+      ],
+      "image": "assets/monstres/roi_liche.png",
+      "vitesse": 4
+    }
+  ]
+}

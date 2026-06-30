@@ -1,0 +1,80 @@
+{
+  "nom": "Nighttug58",
+  "classe": "Mage",
+  "niveau": 1,
+  "xp": 0,
+  "pointsCaracteristiques": 0,
+  "pointsTalent": 0,
+  "pv": 150,
+  "pvMax": 0,
+  "mana": 110,
+  "manaMax": 0,
+  "stamina": 120,
+  "staminaMax": 0,
+  "or": 50,
+  "attaqueBase": 3,
+  "defenseBase": 1,
+  "attaqueMagique": 5,
+  "defenseMagique": 2,
+  "esquive": 3,
+  "bonusLoot": 0,
+  "force": 3,
+  "dexterite": 4,
+  "intelligence": 6,
+  "vitalite": 5,
+  "chance": 3,
+  "vitesse": 8,
+  "jour": 1,
+  "heure": 8,
+  "dernierRestockMarchands": 0,
+  "regionMondeActuelle": "aetheria",
+  "zoneActuelle": "auberge_griffon",
+  "zonesDebloquees": [
+    "auberge_griffon",
+    "place_marche",
+    "foret_brumes",
+    "tour_mage"
+  ],
+  "quetes": [],
+  "talents": [],
+  "equipement": {
+    "arme": null,
+    "casque": null,
+    "armure": null,
+    "gants": null,
+    "chaussures": null,
+    "collier": null,
+    "bague1": null,
+    "bague2": null,
+    "artefact": null
+  },
+  "inventaire": [
+    {
+      "id": "baton_novice",
+      "quantite": 1
+    },
+    {
+      "id": "potion_soin",
+      "quantite": 3
+    },
+    {
+      "id": "potion_soin_superieure",
+      "quantite": 1
+    },
+    {
+      "id": "epee_rouillee",
+      "quantite": 1
+    },
+    {
+      "id": "armure_cuir",
+      "quantite": 1
+    }
+  ],
+  "minute": 0,
+  "effetsActifs": [],
+  "classeId": "mage",
+  "attaque": 3,
+  "defense": 1,
+  "critique": 3,
+  "bonusOr": 0
+}

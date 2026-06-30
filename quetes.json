@@ -1,0 +1,605 @@
+{
+  "quetes": [
+    {
+      "id": "chasseur_des_brumes",
+      "nom": "Chasseur des Brumes",
+      "description": "Finn veut réduire la présence des créatures dans la Forêt des Brumes.",
+      "pnj": "chasseur_finn",
+      "etat": "disponible",
+      "objectif": {
+        "type": "tuer",
+        "zone": "foret_brumes",
+        "quantite": 5
+      },
+      "recompense": {
+        "xp": 180,
+        "or": 90,
+        "objets": [
+          {
+            "id": "potion_soin",
+            "quantite": 2
+          }
+        ]
+      },
+      "niveauMin": 2,
+      "zonesDebloqueesRequises": [
+        "foret_brumes"
+      ],
+      "ligneRacine": true,
+      "ligneQuete": "aetheria_brumes",
+      "chapitre": "Aetheria II — Les Brumes",
+      "ordre": 1,
+      "categorie": "chasse"
+    },
+    {
+      "id": "coeur_foret_brumes",
+      "nom": "Le cœur de la brume",
+      "description": "Vaincs le boss persistant de la Forêt des Brumes.",
+      "pnj": "chasseur_finn",
+      "etat": "disponible",
+      "quetesRequises": [
+        "chasseur_des_brumes"
+      ],
+      "objectif": {
+        "type": "boss",
+        "zone": "foret_brumes",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 260,
+        "or": 130
+      },
+      "niveauMin": 4,
+      "zonesDebloqueesRequises": [
+        "foret_brumes"
+      ],
+      "ligneQuete": "aetheria_brumes",
+      "chapitre": "Aetheria II — Les Brumes",
+      "ordre": 2,
+      "categorie": "boss",
+      "recompenseArc": {
+        "idArc": "aetheria_brumes",
+        "xp": 420,
+        "or": 210,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 1
+          }
+        ]
+      },
+      "finaleArc": true
+    },
+    {
+      "id": "parler_nadia",
+      "nom": "Une aventurière à écouter",
+      "description": "Borin pense que Nadia peut te donner de bons conseils avant tes premiers vrais combats.",
+      "pnj": "tavernier_borin",
+      "etat": "disponible",
+      "objectif": {
+        "type": "parler",
+        "pnj": "aventuriere_nadia",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 25,
+        "or": 10
+      },
+      "niveauMin": 1,
+      "ligneRacine": true,
+      "ligneQuete": "aetheria_cour_griffon",
+      "chapitre": "Aetheria I — La Cour du Griffon",
+      "ordre": 1,
+      "categorie": "principale"
+    },
+    {
+      "id": "entrainement_griffon",
+      "nom": "Premier sang dans la cour",
+      "description": "Nadia veut vérifier que tu sais survivre à plusieurs affrontements dans la cour du Griffon.",
+      "pnj": "aventuriere_nadia",
+      "etat": "disponible",
+      "quetesRequises": [
+        "parler_nadia"
+      ],
+      "objectif": {
+        "type": "tuer",
+        "zone": "auberge_griffon",
+        "quantite": 3
+      },
+      "recompense": {
+        "xp": 90,
+        "or": 35,
+        "objets": [
+          {
+            "id": "potion_soin",
+            "quantite": 2
+          }
+        ]
+      },
+      "niveauMin": 1,
+      "ligneQuete": "aetheria_cour_griffon",
+      "chapitre": "Aetheria I — La Cour du Griffon",
+      "ordre": 2,
+      "categorie": "chasse"
+    },
+    {
+      "id": "champion_griffon",
+      "nom": "Le champion de la cour",
+      "description": "Affronte le mini-boss unique de la Cour d'entraînement du Griffon.",
+      "pnj": "aventuriere_nadia",
+      "etat": "disponible",
+      "quetesRequises": [
+        "entrainement_griffon"
+      ],
+      "objectif": {
+        "type": "mini_boss",
+        "zone": "auberge_griffon",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 120,
+        "or": 60
+      },
+      "niveauMin": 2,
+      "zonesDebloqueesRequises": [
+        "auberge_griffon"
+      ],
+      "ligneQuete": "aetheria_cour_griffon",
+      "chapitre": "Aetheria I — La Cour du Griffon",
+      "ordre": 3,
+      "categorie": "boss"
+    },
+    {
+      "id": "seigneur_griffon",
+      "nom": "Le seigneur de la cour",
+      "description": "Vaincs le boss persistant de la Cour d'entraînement du Griffon.",
+      "pnj": "tavernier_borin",
+      "etat": "disponible",
+      "quetesRequises": [
+        "champion_griffon"
+      ],
+      "objectif": {
+        "type": "boss",
+        "zone": "auberge_griffon",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 180,
+        "or": 90,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 1
+          }
+        ]
+      },
+      "niveauMin": 2,
+      "miniBossVaincusRequis": [
+        "auberge_griffon"
+      ],
+      "ligneQuete": "aetheria_cour_griffon",
+      "chapitre": "Aetheria I — La Cour du Griffon",
+      "ordre": 4,
+      "categorie": "boss"
+    },
+    {
+      "id": "route_pins_noirs",
+      "nom": "La route des Pins Noirs",
+      "description": "Assure-toi que la route vers le Sentier des Pins Noirs est ouverte.",
+      "pnj": "tavernier_borin",
+      "etat": "disponible",
+      "quetesRequises": [
+        "seigneur_griffon"
+      ],
+      "objectif": {
+        "type": "debloquer_zone",
+        "zone": "sentier_pins_noirs",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 80,
+        "or": 40
+      },
+      "niveauMin": 2,
+      "bossVaincusRequis": [
+        "auberge_griffon"
+      ],
+      "ligneQuete": "aetheria_cour_griffon",
+      "chapitre": "Aetheria I — La Cour du Griffon",
+      "ordre": 5,
+      "categorie": "exploration",
+      "recompenseArc": {
+        "idArc": "aetheria_cour_griffon",
+        "xp": 300,
+        "or": 150,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 1
+          }
+        ]
+      },
+      "finaleArc": true
+    },
+    {
+      "id": "mine_croc_fer",
+      "nom": "Nettoyer Croc-Fer",
+      "description": "Durak a besoin que la Mine de Croc-Fer soit moins dangereuse pour récupérer du minerai.",
+      "pnj": "forgeron_durak",
+      "etat": "disponible",
+      "objectif": {
+        "type": "tuer",
+        "zone": "mine_croc_fer",
+        "quantite": 6
+      },
+      "recompense": {
+        "xp": 300,
+        "or": 180
+      },
+      "niveauMin": 6,
+      "zonesDebloqueesRequises": [
+        "mine_croc_fer"
+      ],
+      "ligneRacine": true,
+      "ligneQuete": "aetheria_donjons_anciens",
+      "chapitre": "Aetheria IV — Mines et Catacombes",
+      "ordre": 1,
+      "categorie": "donjon"
+    },
+    {
+      "id": "catacombes_oubliees",
+      "nom": "Les morts sous la forêt",
+      "description": "Eldrin veut que tu survives aux Catacombes Oubliées et y réduises la présence des morts.",
+      "pnj": "mage_eldrin",
+      "etat": "disponible",
+      "quetesRequises": [
+        "observatoire_interdit"
+      ],
+      "objectif": {
+        "type": "tuer",
+        "zone": "catacombes_oubliees",
+        "quantite": 8
+      },
+      "recompense": {
+        "xp": 420,
+        "or": 220
+      },
+      "niveauMin": 7,
+      "zonesDebloqueesRequises": [
+        "catacombes_oubliees"
+      ],
+      "ligneQuete": "aetheria_donjons_anciens",
+      "chapitre": "Aetheria IV — Mines et Catacombes",
+      "ordre": 2,
+      "categorie": "donjon"
+    },
+    {
+      "id": "ruines_anciennes_boss",
+      "nom": "Le gardien des Ruines Anciennes",
+      "description": "Vaincs le boss des Ruines Anciennes pour ouvrir la voie vers les régions les plus dangereuses.",
+      "pnj": "mage_eldrin",
+      "etat": "disponible",
+      "quetesRequises": [
+        "catacombes_oubliees"
+      ],
+      "objectif": {
+        "type": "boss",
+        "zone": "ruines_anciennes",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 900,
+        "or": 450,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 2
+          }
+        ]
+      },
+      "niveauMin": 14,
+      "zonesDebloqueesRequises": [
+        "ruines_anciennes"
+      ],
+      "ligneQuete": "aetheria_donjons_anciens",
+      "chapitre": "Aetheria IV — Mines et Catacombes",
+      "ordre": 3,
+      "categorie": "boss",
+      "recompenseArc": {
+        "idArc": "aetheria_donjons_anciens",
+        "xp": 900,
+        "or": 450,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 2
+          }
+        ]
+      },
+      "finaleArc": true
+    },
+    {
+      "id": "potions_borin",
+      "nom": "Les potions pour Borin",
+      "description": "Borin veut remplir sa réserve de potions pour les jeunes aventuriers.",
+      "pnj": "tavernier_borin",
+      "etat": "disponible",
+      "objectif": {
+        "type": "posseder",
+        "objet": "potion_soin",
+        "quantite": 5,
+        "consommer": true
+      },
+      "recompense": {
+        "xp": 50,
+        "or": 25,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 1
+          }
+        ]
+      },
+      "niveauMin": 1,
+      "ligneRacine": true,
+      "ligneQuete": "aetheria_soutien_depart",
+      "chapitre": "Aetheria — Soutien du village",
+      "ordre": 1,
+      "categorie": "secondaire"
+    },
+    {
+      "id": "livraison_herbes",
+      "nom": "Livraison urgente",
+      "description": "Apporte un paquet d'herbes médicinales à Lyra l'alchimiste.",
+      "pnj": "alchimiste_lyra",
+      "etat": "disponible",
+      "objectif": {
+        "type": "posseder",
+        "objet": "paquet_herbes",
+        "quantite": 1,
+        "consommer": true
+      },
+      "recompense": {
+        "xp": 30,
+        "or": 15,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 1
+          }
+        ]
+      },
+      "niveauMin": 1,
+      "ligneRacine": true,
+      "ligneQuete": "aetheria_soutien_depart",
+      "chapitre": "Aetheria — Soutien du village",
+      "ordre": 2,
+      "categorie": "secondaire",
+      "recompenseArc": {
+        "idArc": "aetheria_soutien_depart",
+        "xp": 120,
+        "or": 60,
+        "objets": [
+          {
+            "id": "potion_soin",
+            "quantite": 2
+          }
+        ]
+      },
+      "finaleArc": true
+    },
+    {
+      "id": "inspection_tour_mage",
+      "nom": "Inspection de la Tour des Mages",
+      "description": "Eldrin veut que tu te présentes à la Tour des Mages avant d'enquêter plus loin.",
+      "pnj": "mage_eldrin",
+      "etat": "disponible",
+      "objectif": {
+        "type": "visiter",
+        "zone": "tour_mage",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 70,
+        "or": 40
+      },
+      "niveauMin": 2,
+      "zonesDebloqueesRequises": [
+        "tour_mage"
+      ],
+      "ligneRacine": true,
+      "ligneQuete": "aetheria_tour_mages",
+      "chapitre": "Aetheria III — La Tour des Mages",
+      "ordre": 1,
+      "categorie": "exploration"
+    },
+    {
+      "id": "observatoire_interdit",
+      "nom": "L'Observatoire interdit",
+      "description": "Atteins l'Observatoire de la Lune Fendue pour confirmer les visions d'Eldrin.",
+      "pnj": "mage_eldrin",
+      "etat": "disponible",
+      "quetesRequises": [
+        "inspection_tour_mage"
+      ],
+      "objectif": {
+        "type": "visiter",
+        "zone": "observatoire_lune_fendue",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 220,
+        "or": 120
+      },
+      "niveauMin": 6,
+      "zonesDebloqueesRequises": [
+        "observatoire_lune_fendue"
+      ],
+      "ligneQuete": "aetheria_tour_mages",
+      "chapitre": "Aetheria III — La Tour des Mages",
+      "ordre": 2,
+      "categorie": "exploration",
+      "recompenseArc": {
+        "idArc": "aetheria_tour_mages",
+        "xp": 500,
+        "or": 250,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 1
+          }
+        ]
+      },
+      "finaleArc": true
+    },
+    {
+      "id": "premiers_pas_nord",
+      "nom": "Vers les Hauts du Nord",
+      "description": "Durak parle d'un ancien col gelé où le minerai chante sous la glace.",
+      "pnj": "forgeron_durak",
+      "etat": "disponible",
+      "ligneRacine": true,
+      "niveauMin": 12,
+      "zonesDebloqueesRequises": [
+        "col_blanc_roncier"
+      ],
+      "objectif": {
+        "type": "visiter",
+        "zone": "col_blanc_roncier",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 450,
+        "or": 220
+      },
+      "ligneQuete": "hauts_du_nord_depart",
+      "chapitre": "Hauts du Nord I — Le Col gelé",
+      "ordre": 1,
+      "categorie": "exploration",
+      "recompenseArc": {
+        "idArc": "hauts_du_nord_depart",
+        "xp": 550,
+        "or": 275
+      },
+      "finaleArc": true
+    },
+    {
+      "id": "serment_dragon",
+      "nom": "Le Serment-Dragon",
+      "description": "Eldrin refuse d'en dire plus tant que tu n'auras pas prouvé que tu peux atteindre les hauteurs anciennes.",
+      "pnj": "mage_eldrin",
+      "etat": "disponible",
+      "ligneRacine": true,
+      "niveauMin": 22,
+      "zonesDebloqueesRequises": [
+        "pic_serment_dragon"
+      ],
+      "objectif": {
+        "type": "boss",
+        "zone": "pic_serment_dragon",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 1400,
+        "or": 700,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 2
+          }
+        ]
+      },
+      "ligneQuete": "hauts_du_nord_serment",
+      "chapitre": "Hauts du Nord II — Le Serment-Dragon",
+      "ordre": 1,
+      "categorie": "boss",
+      "recompenseArc": {
+        "idArc": "hauts_du_nord_serment",
+        "xp": 1500,
+        "or": 750,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 2
+          }
+        ]
+      },
+      "finaleArc": true
+    },
+    {
+      "id": "fort_ecarlate_rumeurs",
+      "nom": "Rumeurs du Fort Écarlate",
+      "description": "Eva a entendu parler d'un fort rouge où les mercenaires refusent de sortir après le coucher du soleil.",
+      "pnj": "marchande_eva",
+      "etat": "disponible",
+      "ligneRacine": true,
+      "niveauMin": 16,
+      "zonesDebloqueesRequises": [
+        "fort_ecarlate"
+      ],
+      "objectif": {
+        "type": "visiter",
+        "zone": "fort_ecarlate",
+        "quantite": 1
+      },
+      "recompense": {
+        "xp": 600,
+        "or": 300
+      },
+      "ligneQuete": "marche_ecarlate_depart",
+      "chapitre": "Marche Écarlate I — Le Fort rouge",
+      "ordre": 1,
+      "categorie": "exploration",
+      "recompenseArc": {
+        "idArc": "marche_ecarlate_depart",
+        "xp": 650,
+        "or": 325
+      },
+      "finaleArc": true
+    },
+    {
+      "id": "cristal_perdu",
+      "nom": "Le cristal disparu",
+      "description": "Retrouve un cristal magique volé pour Eldrin.",
+      "pnj": "mage_eldrin",
+      "etat": "disponible",
+      "objectif": {
+        "type": "posseder",
+        "objet": "cristal_perdu",
+        "quantite": 1,
+        "consommer": false
+      },
+      "recompense": {
+        "xp": 150,
+        "or": 100,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 1
+          }
+        ]
+      },
+      "niveauMin": 4,
+      "zonesDebloqueesRequises": [
+        "ruines_anciennes"
+      ],
+      "ligneRacine": true,
+      "ligneQuete": "terres_oubliees_cristal",
+      "chapitre": "Terres Oubliées I — Le Cristal disparu",
+      "ordre": 1,
+      "categorie": "secondaire",
+      "recompenseArc": {
+        "idArc": "terres_oubliees_cristal",
+        "xp": 350,
+        "or": 175,
+        "objets": [
+          {
+            "id": "potion_soin_superieure",
+            "quantite": 1
+          }
+        ]
+      },
+      "finaleArc": true
+    }
+  ]
+}

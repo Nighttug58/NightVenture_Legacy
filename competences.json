@@ -1,0 +1,173 @@
+[
+  {
+    "id": "peq_frappe_puissante",
+    "nom": "Frappe puissante",
+    "typeAction": "attaque",
+    "nature": "physique",
+    "cible": "ennemi",
+    "couts": {
+      "mana": 0,
+      "stamina": 8
+    },
+    "coutInitiative": 114,
+    "puissance": 6,
+    "multiplicateur": 0.98,
+    "bonusCritique": 1,
+    "description": "Attaque physique lourde et fiable.",
+    "classes": [
+      "guerrier",
+      "paladin"
+    ],
+    "classe": "guerrier",
+    "effets": []
+  },
+  {
+    "id": "peq_coup_furieux",
+    "nom": "Coup furieux",
+    "typeAction": "attaque",
+    "nature": "physique",
+    "cible": "ennemi",
+    "couts": {
+      "mana": 0,
+      "stamina": 10
+    },
+    "coutInitiative": 118,
+    "puissance": 6,
+    "multiplicateur": 1,
+    "bonusCritique": 3,
+    "bonusEsquive": -1,
+    "description": "Gros coup brutal, plus risqué défensivement.",
+    "classes": [
+      "berserker"
+    ],
+    "classe": "berserker",
+    "effets": []
+  },
+  {
+    "id": "peq_projectile_arcanique",
+    "nom": "Projectile arcanique",
+    "typeAction": "attaque",
+    "nature": "magique",
+    "cible": "ennemi",
+    "couts": {
+      "mana": 8,
+      "stamina": 0
+    },
+    "coutInitiative": 96,
+    "puissance": 9,
+    "multiplicateur": 1.02,
+    "bonusCritique": 1,
+    "description": "Projectile magique rapide et stable.",
+    "classes": [
+      "mage"
+    ],
+    "classe": "mage",
+    "effets": []
+  },
+  {
+    "id": "peq_trait_ombre",
+    "nom": "Trait d’ombre",
+    "typeAction": "attaque",
+    "nature": "magique",
+    "cible": "ennemi",
+    "couts": {
+      "mana": 7,
+      "stamina": 0
+    },
+    "coutInitiative": 102,
+    "puissance": 9,
+    "multiplicateur": 1,
+    "bonusCritique": 2,
+    "description": "Attaque sombre orientée magie et critique.",
+    "classes": [
+      "necromancien"
+    ],
+    "classe": "necromancien",
+    "effets": []
+  },
+  {
+    "id": "peq_attaque_precise",
+    "nom": "Attaque précise",
+    "typeAction": "attaque",
+    "nature": "physique",
+    "cible": "ennemi",
+    "couts": {
+      "mana": 0,
+      "stamina": 6
+    },
+    "coutInitiative": 92,
+    "puissance": 5,
+    "multiplicateur": 0.98,
+    "bonusCritique": 5,
+    "description": "Attaque rapide avec fort potentiel critique.",
+    "classes": [
+      "voleur",
+      "assassin"
+    ],
+    "classe": "voleur",
+    "effets": []
+  },
+  {
+    "id": "peq_tir_rapide",
+    "nom": "Tir rapide",
+    "typeAction": "attaque",
+    "nature": "physique",
+    "cible": "ennemi",
+    "couts": {
+      "mana": 0,
+      "stamina": 5
+    },
+    "coutInitiative": 88,
+    "puissance": 4,
+    "multiplicateur": 0.95,
+    "bonusCritique": 2,
+    "description": "Action très rapide, idéale pour garder l’initiative.",
+    "classes": [
+      "rodeur"
+    ],
+    "classe": "rodeur",
+    "effets": []
+  },
+  {
+    "id": "peq_jugement_sacre",
+    "nom": "Jugement sacré",
+    "typeAction": "attaque",
+    "nature": "magique",
+    "cible": "ennemi",
+    "couts": {
+      "mana": 7,
+      "stamina": 3
+    },
+    "coutInitiative": 104,
+    "puissance": 8,
+    "multiplicateur": 1.02,
+    "bonusCritique": 0,
+    "description": "Frappe sacrée hybride pour Paladin.",
+    "classes": [
+      "paladin"
+    ],
+    "classe": "paladin",
+    "effets": []
+  },
+  {
+    "id": "peq_frappe_bouclier",
+    "nom": "Frappe de bouclier",
+    "typeAction": "attaque",
+    "nature": "physique",
+    "cible": "ennemi",
+    "couts": {
+      "mana": 0,
+      "stamina": 7
+    },
+    "coutInitiative": 115,
+    "puissance": 6,
+    "multiplicateur": 0.92,
+    "bonusCritique": -1,
+    "description": "Attaque défensive et stable de Gardien.",
+    "classes": [
+      "gardien"
+    ],
+    "classe": "gardien",
+    "effets": []
+  }
+]

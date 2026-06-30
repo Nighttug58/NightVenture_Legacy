@@ -1,0 +1,43 @@
+{
+  "nomMonde": "Aetheria",
+  "lieuActuel": "Auberge du Griffon Argenté",
+  "region": "Royaume d'Aetheria",
+  "meteo": "Ensoleillé",
+  "heure": 8,
+  "jour": 1,
+  "description": "Une terre ancienne remplie de magie, de créatures mystérieuses et de trésors oubliés.",
+  "zones": [
+    {
+      "id": "auberge_griffon",
+      "nom": "Auberge du Griffon Argenté"
+    },
+    {
+      "id": "place_marche",
+      "nom": "Place du Marché"
+    },
+    {
+      "id": "foret_brumes",
+      "nom": "Forêt des Brumes"
+    },
+    {
+      "id": "catacombes_oubliees",
+      "nom": "Catacombes Oubliées"
+    },
+    {
+      "id": "tour_mage",
+      "nom": "Tour des Mages"
+    },
+    {
+      "id": "avant_poste_ouest",
+      "nom": "Avant-Poste Ouest"
+    },
+    {
+      "id": "grotte_reliques",
+      "nom": "Grotte des Reliques"
+    },
+    {
+      "id": "sanctuaire_prelude",
+      "nom": "Sanctuaire du Prélude"
+    }
+  ]
+}

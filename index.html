@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NightVenture</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="appShell">
+
+        <!-- Bandeau personnage compact -->
+        <header id="topCharacterBar" class="panel-base">
+            <div id="personnage"></div>
+        </header>
+
+        <!-- Layout principal desktop -->
+        <div id="gameLayout">
+
+            <!-- Navigation principale -->
+            <nav id="navigationPrincipale" class="panel-base" aria-label="Navigation principale">
+
+                <div id="infosMondeSidebar" class="infos-monde-sidebar"></div>
+
+                <div id="barreVuePrincipale">
+                    <button id="btnExploration" onclick="ouvrirExploration()">🌍 Exploration</button>
+                    <button id="btnInventaire" onclick="ouvrirInventaire()">🎒 Inventaire</button>
+                    <button id="btnQuetes" onclick="ouvrirQuetes()">📜 Quêtes</button>
+                    <button id="btnJournal" onclick="ouvrirJournalComplet()">📜 Journal</button>
+                    <button id="btnSimulateurCombat" onclick="ouvrirSimulateurCombat()">🧪 Simulateur</button>
+                    <button id="btnEquipementsProceduraux" onclick="ouvrirTestEquipementsProceduraux()">⚒ Équipements</button>
+                    <button id="btnMonstresProceduraux" onclick="ouvrirTestMonstresProceduraux()">👹 Monstres</button>
+                    <button id="btnProfilsEquipements" onclick="ouvrirVisualiseurProfilsEquipements()">🧍 Profils</button>
+                </div>
+
+                <section id="equipementSidebar"></section>
+
+                <section id="journalSection">
+                    <div class="journal-mini-wrapper">
+
+                        <div class="journal-mini-header">
+                            <h3 id="journalMiniTitre">📜 Journal</h3>
+                        </div>
+
+                        <div id="journalMini"></div>
+
+                    </div>
+                </section>
+
+            </nav>
+
+            <!-- Vue principale -->
+            <main id="main" class="panel">
+                <div id="vuePrincipale" class="panel-base"></div>
+            </main>
+
+        </div>
+
+    </div>
+
+    <!-- Modale zones -->
+    <div id="zonesModal" class="modal">
+        <div id="zonesContent" class="modal-content modal-zones">
+
+            <div class="modal-header-zones">
+                <button onclick="ouvrirRegions()">🌍 Monde</button>
+                <h2>🗺️ Zones</h2>
+            </div>
+
+            <div id="zonesContainer">
+
+                <div id="listeZones"></div>
+
+                <div id="carteMondeContainer" class="carte-container">
+                    <canvas
+                        id="carteMonde"
+                        class="carte-canvas"
+                        width="1200"
+                        height="700"
+                    ></canvas>
+                </div>
+
+            </div>
+
+            <button onclick="fermerZones()">Fermer</button>
+
+        </div>
+    </div>
+
+    <!-- Modale régions -->
+    <div id="regionsModal" class="modal">
+        <div id="regionsContent" class="modal-content modal-zones">
+
+            <div class="modal-header-zones">
+                <button onclick="fermerRegions(); ouvrirZones();">◀ Retour Zones</button>
+                <h2>🌍 Monde</h2>
+            </div>
+
+            <div id="regionsContainer">
+
+                <div id="listeRegions"></div>
+
+                <div id="carteRegionsContainer" class="carte-container">
+                    <canvas
+                        id="carteRegions"
+                        class="carte-canvas"
+                        width="1200"
+                        height="700"
+                    ></canvas>
+                </div>
+
+            </div>
+
+            <button onclick="fermerRegions()">Fermer</button>
+
+        </div>
+    </div>
+
+    <!-- Notifications journal flottantes -->
+    <div
+        id="journalNotifications"
+        role="status"
+        aria-live="polite"
+        aria-atomic="false"
+        aria-relevant="additions removals"
+    ></div>
+
+    <!-- Core -->
+<script src="script.js"></script>
+<script src="Core_UI.js"></script>
+<script src="PNJ_Exploration.js"></script>
+<script src="Inventaire_Marchands.js"></script>
+<script src="Stats_Niveaux.js"></script>
+<script src="Quetes_Core.js"></script>
+<script src="Combat_Legacy.js"></script>
+<script src="Monde_Exploration.js"></script>
+<script src="Talents_Core.js"></script>
+<script src="Personnage_Temps_UI.js"></script>
+<script src="Journal_Sauvegarde.js"></script>
+
+    <!-- Combat / balancing / simulation -->
+<script src="Combats.js"></script>
+<script src="Equipements_Proceduraux.js"></script>
+<script src="Monstres_Proceduraux.js"></script>
+<script src="Profils_Equipements_Simulateur.js"></script>
+<script src="Automatiseur_Balance.js"></script>
+
+    <!-- Gameplay -->
+<script src="Gameplay_Integration.js"></script>
+<script src="Quetes_Extension.js"></script>
+<script src="Start_Save_Classes.js"></script>
+
+    <!-- Map -->
+<script src="Map_Refonte.js"></script>
+
+    <!-- Exploration -->
+<script src="Exploration_Events.js"></script>
+<script src="Exploration_Stamina_Regen.js"></script>
+<script src="Explorer_Button_UX.js"></script>
+<script src="Exploration_Loot_Rewards.js"></script>
+<script src="Rest_Inn.js"></script>
+<script src="HUD_Layout.js"></script>
+<script src="Inventory_Grid_Metin2.js"></script>
+
+    <!-- Boot -->
+<script src="NightVenture_Boot.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,446 @@
+{
+  "regions_monde": [
+    {
+      "id": "aetheria",
+      "nom": "Royaume d'Aetheria",
+      "description": "Le cœur du royaume d'Aetheria.",
+      "mapX": 12,
+      "mapY": 50,
+      "couleur": "#4CAF50",
+      "taille": 20,
+      "zones": [
+        {
+          "id": "auberge_griffon",
+          "nom": "Auberge du Griffon Argenté",
+          "type": "village",
+          "description": "Une auberge chaleureuse au cœur d'Aetheria.",
+          "pnj": [
+            "tavernier_borin",
+            "aventuriere_nadia"
+          ],
+          "evenements": {
+            "or": 5,
+            "rien": 95
+          },
+          "debloqueeParDefaut": true,
+          "tempsVoyage": 1,
+          "mapX": 8,
+          "mapY": 58,
+          "connexions": [
+            "place_marche"
+          ]
+        },
+        {
+          "id": "place_marche",
+          "nom": "Place du Marché",
+          "type": "village",
+          "description": "Le centre animé du commerce.",
+          "pnj": [
+            "marchand_gregor",
+            "alchimiste_lyra",
+            "forgeron_durak"
+          ],
+          "evenements": {
+            "or": 20,
+            "rien": 80
+          },
+          "debloqueeParDefaut": true,
+          "tempsVoyage": 1,
+          "mapX": 23,
+          "mapY": 52,
+          "connexions": [
+            "auberge_griffon",
+            "foret_brumes",
+            "tour_mage"
+          ]
+        },
+        {
+          "id": "foret_brumes",
+          "nom": "Forêt des Brumes",
+          "type": "exploration",
+          "description": "Une forêt ancienne.",
+          "pnj": [
+            "chasseur_finn"
+          ],
+          "monstres": [
+            {
+              "id": "rat_geant",
+              "chance": 35
+            },
+            {
+              "id": "chauve_souris_geante",
+              "chance": 30
+            },
+            {
+              "id": "loup_affame",
+              "chance": 20
+            },
+            {
+              "id": "gobelin_eclaireur",
+              "chance": 15
+            }
+          ],
+          "evenements": {
+            "combat": 60,
+            "coffre": 10,
+            "or": 10,
+            "rien": 20
+          },
+          "debloqueeParDefaut": true,
+          "tempsVoyage": 2,
+          "mapX": 37,
+          "mapY": 28,
+          "connexions": [
+            "place_marche",
+            "catacombes_oubliees"
+          ],
+          "loot": [
+            {
+              "id": "potion_soin",
+              "chance": 10,
+              "quantiteMin": 1,
+              "quantiteMax": 3
+            }
+          ]
+        },
+        {
+          "id": "catacombes_oubliees",
+          "nom": "Catacombes Oubliées",
+          "type": "donjon",
+          "description": "Galeries infestées de créatures.",
+          "pnj": [],
+          "monstres": [
+            {
+              "id": "squelette",
+              "chance": 45
+            },
+            {
+              "id": "zombie",
+              "chance": 35
+            },
+            {
+              "id": "araignee_geante",
+              "chance": 15
+            },
+            {
+              "id": "orc_guerrier",
+              "chance": 5
+            }
+          ],
+          "evenements": {
+            "combat": 75,
+            "coffre": 10,
+            "or": 5,
+            "rien": 10
+          },
+          "debloqueeParDefaut": false,
+          "tempsVoyage": 3,
+          "mapX": 58,
+          "mapY": 24,
+          "connexions": [
+            "foret_brumes"
+          ],
+          "loot": [
+            {
+              "id": "potion_soin",
+              "chance": 10,
+              "quantiteMin": 1,
+              "quantiteMax": 3
+            }
+          ]
+        },
+        {
+          "id": "tour_mage",
+          "nom": "Tour des Mages",
+          "type": "village",
+          "description": "Haut lieu de magie.",
+          "pnj": [
+            "mage_eldrin"
+          ],
+          "evenements": {
+            "or": 10,
+            "rien": 90
+          },
+          "debloqueeParDefaut": true,
+          "tempsVoyage": 2,
+          "mapX": 39,
+          "mapY": 76,
+          "connexions": [
+            "place_marche"
+          ]
+        }
+      ],
+      "connexions": [
+        "hauts_du_nord",
+        "terres_oubliees"
+      ]
+    },
+    {
+      "id": "terres_oubliees",
+      "nom": "Terres Oubliées",
+      "description": "Une région ancienne séparée du royaume principal.",
+      "mapX": 60,
+      "mapY": 62,
+      "couleur": "#8E44AD",
+      "taille": 22,
+      "zones": [
+        {
+          "id": "lac_cristallin",
+          "nom": "Lac Cristallin",
+          "type": "exploration",
+          "description": "Un lac mystérieux.",
+          "pnj": [],
+          "monstres": [
+            {
+              "id": "orc_guerrier",
+              "chance": 35
+            },
+            {
+              "id": "orc_berserker",
+              "chance": 25
+            },
+            {
+              "id": "mage_noir",
+              "chance": 15
+            },
+            {
+              "id": "golem_pierre",
+              "chance": 25
+            }
+          ],
+          "evenements": {
+            "combat": 30,
+            "coffre": 20,
+            "or": 15,
+            "rien": 35
+          },
+          "debloqueeParDefaut": false,
+          "tempsVoyage": 2,
+          "mapX": 10,
+          "mapY": 26,
+          "connexions": [
+            "sanctuaire_arcanique"
+          ],
+          "loot": [
+            {
+              "id": "potion_soin",
+              "chance": 10,
+              "quantiteMin": 1,
+              "quantiteMax": 3
+            }
+          ]
+        },
+        {
+          "id": "sanctuaire_arcanique",
+          "nom": "Sanctuaire Arcanique",
+          "type": "exploration",
+          "description": "Ancien lieu magique.",
+          "pnj": [],
+          "monstres": [
+            {
+              "id": "mage_noir",
+              "chance": 35
+            },
+            {
+              "id": "golem_pierre",
+              "chance": 25
+            },
+            {
+              "id": "troll_caverne",
+              "chance": 20
+            },
+            {
+              "id": "wyverne",
+              "chance": 20
+            }
+          ],
+          "evenements": {
+            "combat": 40,
+            "coffre": 15,
+            "or": 15,
+            "rien": 30
+          },
+          "debloqueeParDefaut": false,
+          "tempsVoyage": 3,
+          "mapX": 46,
+          "mapY": 56,
+          "connexions": [
+            "lac_cristallin",
+            "ruines_anciennes"
+          ],
+          "loot": [
+            {
+              "id": "potion_soin",
+              "chance": 10,
+              "quantiteMin": 1,
+              "quantiteMax": 3
+            }
+          ]
+        },
+        {
+          "id": "ruines_anciennes",
+          "nom": "Ruines Anciennes",
+          "type": "donjon",
+          "description": "Vestiges d'une civilisation disparue.",
+          "pnj": [],
+          "monstres": [
+            {
+              "id": "vampire",
+              "chance": 25
+            },
+            {
+              "id": "lich",
+              "chance": 30
+            },
+            {
+              "id": "dragon_jeune",
+              "chance": 20
+            },
+            {
+              "id": "roi_liche",
+              "chance": 25
+            }
+          ],
+          "evenements": {
+            "combat": 70,
+            "coffre": 15,
+            "or": 5,
+            "rien": 10
+          },
+          "debloqueeParDefaut": false,
+          "tempsVoyage": 4,
+          "mapX": 90,
+          "mapY": 24,
+          "connexions": [
+            "sanctuaire_arcanique"
+          ],
+          "loot": [
+            {
+              "id": "potion_soin",
+              "chance": 10,
+              "quantiteMin": 1,
+              "quantiteMax": 3
+            }
+          ]
+        }
+      ],
+      "connexions": [
+        "aetheria",
+        "marche_ecarlate"
+      ]
+    },
+    {
+      "id": "avant_poste_essais",
+      "nom": "Avant-Poste des Essais",
+      "description": "Une région de test pour valider les nouveaux objets, PNJ et liaisons de carte.",
+      "mapX": 63,
+      "mapY": 24,
+      "couleur": "#2980B9",
+      "taille": 18,
+      "zones": [
+        {
+          "id": "avant_poste_ouest",
+          "nom": "Avant-Poste Ouest",
+          "type": "village",
+          "description": "Un petit poste avancé tenu par des gardes et quelques commerçants.",
+          "pnj": [
+            "garde_ivan",
+            "marchande_eva"
+          ],
+          "evenements": {
+            "or": 15,
+            "rien": 85
+          },
+          "debloqueeParDefaut": false,
+          "tempsVoyage": 2,
+          "mapX": 18,
+          "mapY": 50,
+          "connexions": [
+            "place_marche",
+            "grotte_reliques"
+          ],
+          "loot": [
+            {
+              "id": "paquet_herbes",
+              "chance": 20,
+              "quantiteMin": 1,
+              "quantiteMax": 1
+            }
+          ]
+        },
+        {
+          "id": "grotte_reliques",
+          "nom": "Grotte des Reliques",
+          "type": "exploration",
+          "description": "Une grotte humide où l'on retrouve des cristaux oubliés et quelques créatures hostiles.",
+          "pnj": [
+            "mage_nora"
+          ],
+          "monstres": [
+            {
+              "id": "rat_geant",
+              "chance": 40
+            },
+            {
+              "id": "loup_affame",
+              "chance": 35
+            },
+            {
+              "id": "gobelin_eclaireur",
+              "chance": 25
+            }
+          ],
+          "evenements": {
+            "combat": 55,
+            "coffre": 15,
+            "or": 10,
+            "rien": 20
+          },
+          "debloqueeParDefaut": false,
+          "tempsVoyage": 2,
+          "mapX": 48,
+          "mapY": 33,
+          "connexions": [
+            "avant_poste_ouest",
+            "sanctuaire_prelude"
+          ],
+          "loot": [
+            {
+              "id": "cristal_perdu",
+              "chance": 25,
+              "quantiteMin": 1,
+              "quantiteMax": 1
+            },
+            {
+              "id": "paquet_herbes",
+              "chance": 10,
+              "quantiteMin": 1,
+              "quantiteMax": 1
+            }
+          ]
+        },
+        {
+          "id": "sanctuaire_prelude",
+          "nom": "Sanctuaire du Prélude",
+          "type": "village",
+          "description": "Un sanctuaire calme où se rassemblent chasseurs et prêtresses.",
+          "pnj": [
+            "chasseur_olan",
+            "pretresse_mira"
+          ],
+          "evenements": {
+            "or": 10,
+            "rien": 90
+          },
+          "debloqueeParDefaut": false,
+          "tempsVoyage": 3,
+          "mapX": 76,
+          "mapY": 60,
+          "connexions": [
+            "grotte_reliques"
+          ]
+        }
+      ]
+    }
+  ]
+}

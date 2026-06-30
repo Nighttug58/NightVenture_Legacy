@@ -1,0 +1,184 @@
+{
+  "pnj": [
+    {
+      "id": "tavernier_borin",
+      "nom": "Borin",
+      "role": "Tavernier",
+      "type": "tavernier",
+      "lieu": "Auberge du Griffon Argenté",
+      "dialogue": "Bienvenue voyageur. Une chambre ou une information ?"
+    },
+    {
+      "id": "marchand_gregor",
+      "nom": "Gregor",
+      "role": "Marchand",
+      "type": "marchand",
+      "lieu": "Place du Marché",
+      "dialogue": "J'ai les meilleures marchandises de la région.",
+      "inventaire": [
+        {
+          "id": "potion_soin",
+          "quantite": 5
+        },
+        {
+          "id": "epee_rouillee",
+          "quantite": 2
+        },
+        {
+          "id": "armure_cuir",
+          "quantite": 1
+        }
+      ]
+    },
+    {
+      "id": "alchimiste_lyra",
+      "nom": "Lyra",
+      "role": "Alchimiste",
+      "type": "marchand",
+      "lieu": "Quartier des Artisans",
+      "dialogue": "Les ingrédients rares valent parfois plus que l'or.",
+      "inventaire": [
+        {
+          "id": "potion_soin",
+          "quantite": 5
+        },
+        {
+          "id": "potion_soin_superieure",
+          "quantite": 2
+        },
+        {
+          "id": "petite_potion_xp",
+          "quantite": 1
+        }
+      ]
+    },
+    {
+      "id": "garde_roland",
+      "nom": "Roland",
+      "role": "Garde",
+      "type": "garde",
+      "lieu": "Porte de la Ville",
+      "dialogue": "La sécurité d'Aetheria est ma priorité."
+    },
+    {
+      "id": "mage_eldrin",
+      "nom": "Eldrin",
+      "role": "Mage",
+      "type": "mage",
+      "lieu": "Tour des Mages",
+      "dialogue": "La magie est un art qui exige discipline et patience."
+    },
+    {
+      "id": "pretresse_selene",
+      "nom": "Sélène",
+      "role": "Prêtresse",
+      "type": "pretresse",
+      "lieu": "Temple de la Lumière",
+      "dialogue": "Que la lumière guide votre chemin."
+    },
+    {
+      "id": "forgeron_durak",
+      "nom": "Durak",
+      "role": "Forgeron",
+      "type": "marchand",
+      "lieu": "Forge Royale",
+      "dialogue": "Une bonne lame peut sauver une vie.",
+      "inventaire": [
+        {
+          "id": "casque_acier",
+          "quantite": 1
+        },
+        {
+          "id": "hache_bucheron",
+          "quantite": 1
+        },
+        {
+          "id": "gants_tanneur",
+          "quantite": 2
+        }
+      ]
+    },
+    {
+      "id": "chasseur_finn",
+      "nom": "Finn",
+      "role": "Chasseur",
+      "type": "chasseur",
+      "lieu": "Forêt des Brumes",
+      "dialogue": "Les bois sont plus dangereux qu'ils n'en ont l'air."
+    },
+    {
+      "id": "aventuriere_nadia",
+      "nom": "Nadia",
+      "role": "Aventurière",
+      "type": "aventuriere",
+      "lieu": "Auberge du Griffon Argenté",
+      "dialogue": "Je reviens des catacombes avec quelques cicatrices de plus."
+    },
+    {
+      "id": "sage_orion",
+      "nom": "Orion",
+      "role": "Sage",
+      "type": "sage",
+      "lieu": "Bibliothèque d'Aetheria",
+      "dialogue": "Le savoir est souvent plus précieux que les trésors."
+    },
+    {
+      "id": "marchande_eva",
+      "nom": "Eva",
+      "role": "Marchande",
+      "type": "marchand",
+      "lieu": "Avant-Poste des Essais",
+      "dialogue": "Je peux fournir du matériel de test et quelques objets utiles.",
+      "inventaire": [
+        {
+          "id": "bottes_voyageur",
+          "quantite": 2
+        },
+        {
+          "id": "anneau_force",
+          "quantite": 1
+        },
+        {
+          "id": "paquet_herbes",
+          "quantite": 3
+        },
+        {
+          "id": "potion_vitalite",
+          "quantite": 2
+        }
+      ]
+    },
+    {
+      "id": "garde_ivan",
+      "nom": "Ivan",
+      "role": "Garde",
+      "type": "garde",
+      "lieu": "Avant-Poste des Essais",
+      "dialogue": "La route est sûre, mais restez prudent dans la grotte."
+    },
+    {
+      "id": "mage_nora",
+      "nom": "Nora",
+      "role": "Mage",
+      "type": "mage",
+      "lieu": "Grotte des Reliques",
+      "dialogue": "Ces cristaux résonnent encore d'une ancienne magie."
+    },
+    {
+      "id": "chasseur_olan",
+      "nom": "Olan",
+      "role": "Chasseur",
+      "type": "chasseur",
+      "lieu": "Sanctuaire du Prélude",
+      "dialogue": "Les bêtes se déplacent surtout la nuit."
+    },
+    {
+      "id": "pretresse_mira",
+      "nom": "Mira",
+      "role": "Prêtresse",
+      "type": "pretresse",
+      "lieu": "Sanctuaire du Prélude",
+      "dialogue": "La lumière vous protègera si vous restez fidèle à votre route."
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+[
+  {
+    "niveau": 1,
+    "xpRequise": 100,
+    "pvBonus": 10,
+    "manaBonus": 5,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 2,
+    "xpRequise": 200,
+    "pvBonus": 10,
+    "manaBonus": 5,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 3,
+    "xpRequise": 350,
+    "pvBonus": 15,
+    "manaBonus": 10,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 4,
+    "xpRequise": 500,
+    "pvBonus": 15,
+    "manaBonus": 10,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 5,
+    "xpRequise": 700,
+    "pvBonus": 20,
+    "manaBonus": 10,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 6,
+    "xpRequise": 950,
+    "pvBonus": 20,
+    "manaBonus": 10,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 7,
+    "xpRequise": 1250,
+    "pvBonus": 20,
+    "manaBonus": 15,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 8,
+    "xpRequise": 1600,
+    "pvBonus": 25,
+    "manaBonus": 15,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 9,
+    "xpRequise": 2000,
+    "pvBonus": 25,
+    "manaBonus": 15,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 10,
+    "xpRequise": 2500,
+    "pvBonus": 25,
+    "manaBonus": 20,
+    "pointsStats": 5,
+    "pointsTalents": 2
+  },
+  {
+    "niveau": 11,
+    "xpRequise": 3100,
+    "pvBonus": 30,
+    "manaBonus": 20,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 12,
+    "xpRequise": 3800,
+    "pvBonus": 30,
+    "manaBonus": 20,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 13,
+    "xpRequise": 4600,
+    "pvBonus": 30,
+    "manaBonus": 25,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 14,
+    "xpRequise": 5500,
+    "pvBonus": 35,
+    "manaBonus": 25,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 15,
+    "xpRequise": 6500,
+    "pvBonus": 35,
+    "manaBonus": 25,
+    "pointsStats": 5,
+    "pointsTalents": 2
+  },
+  {
+    "niveau": 16,
+    "xpRequise": 7700,
+    "pvBonus": 35,
+    "manaBonus": 30,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 17,
+    "xpRequise": 9000,
+    "pvBonus": 40,
+    "manaBonus": 30,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 18,
+    "xpRequise": 10500,
+    "pvBonus": 40,
+    "manaBonus": 30,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 19,
+    "xpRequise": 12200,
+    "pvBonus": 40,
+    "manaBonus": 35,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 20,
+    "xpRequise": 14000,
+    "pvBonus": 45,
+    "manaBonus": 35,
+    "pointsStats": 5,
+    "pointsTalents": 2
+  },
+  {
+    "niveau": 21,
+    "xpRequise": 16000,
+    "pvBonus": 45,
+    "manaBonus": 35,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 22,
+    "xpRequise": 18200,
+    "pvBonus": 45,
+    "manaBonus": 40,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 23,
+    "xpRequise": 20600,
+    "pvBonus": 50,
+    "manaBonus": 40,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 24,
+    "xpRequise": 23200,
+    "pvBonus": 50,
+    "manaBonus": 40,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 25,
+    "xpRequise": 26000,
+    "pvBonus": 50,
+    "manaBonus": 45,
+    "pointsStats": 5,
+    "pointsTalents": 2
+  },
+  {
+    "niveau": 26,
+    "xpRequise": 29100,
+    "pvBonus": 55,
+    "manaBonus": 45,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 27,
+    "xpRequise": 32500,
+    "pvBonus": 55,
+    "manaBonus": 45,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 28,
+    "xpRequise": 36200,
+    "pvBonus": 55,
+    "manaBonus": 50,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 29,
+    "xpRequise": 40200,
+    "pvBonus": 60,
+    "manaBonus": 50,
+    "pointsStats": 5,
+    "pointsTalents": 1
+  },
+  {
+    "niveau": 30,
+    "xpRequise": 45000,
+    "pvBonus": 60,
+    "manaBonus": 50,
+    "pointsStats": 10,
+    "pointsTalents": 3
+  }
+]
