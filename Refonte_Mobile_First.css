@@ -1,18 +1,19 @@
 /* ========================================================================== 
    NightVenture — Refonte UI mobile-first
-   Checkpoint UI 1 : base visuelle légère, sans changement gameplay.
+   Checkpoint UI 1 + UI 2 : base visuelle légère et HUD compact portrait.
    ========================================================================== */
 
 :root {
-    --nv-refonte-bg: radial-gradient(circle at top, rgba(124, 98, 54, 0.24), transparent 34%), linear-gradient(180deg, #11100e 0%, #0a0b0e 58%, #080807 100%);
-    --nv-refonte-panel: rgba(18, 16, 14, 0.74);
-    --nv-refonte-panel-soft: rgba(24, 22, 19, 0.62);
-    --nv-refonte-panel-strong: rgba(12, 11, 10, 0.86);
-    --nv-refonte-border: rgba(245, 211, 122, 0.20);
-    --nv-refonte-border-soft: rgba(255, 255, 255, 0.075);
-    --nv-refonte-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+    --nv-refonte-bg: radial-gradient(circle at top, rgba(124, 98, 54, 0.18), transparent 34%), linear-gradient(180deg, #11100e 0%, #0a0b0e 58%, #080807 100%);
+    --nv-refonte-panel: rgba(18, 16, 14, 0.15);
+    --nv-refonte-panel-soft: rgba(24, 22, 19, 0.12);
+    --nv-refonte-panel-strong: rgba(12, 11, 10, 0.20);
+    --nv-refonte-border: rgba(245, 211, 122, 0.15);
+    --nv-refonte-border-soft: rgba(255, 255, 255, 0.06);
+    --nv-refonte-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
     --nv-refonte-radius: 14px;
     --nv-refonte-gap: 10px;
+    --nv-refonte-blur: 5px;
 }
 
 html,
@@ -33,8 +34,8 @@ body::before {
     z-index: -1;
     pointer-events: none;
     background:
-        radial-gradient(circle at 50% 0%, rgba(245, 211, 122, 0.08), transparent 30%),
-        linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.58));
+        radial-gradient(circle at 50% 0%, rgba(245, 211, 122, 0.055), transparent 30%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.36));
 }
 
 #appShell {
@@ -69,17 +70,17 @@ body::before {
     top: 6px;
     margin-bottom: var(--nv-refonte-gap);
     padding: 9px 10px;
-    backdrop-filter: blur(7px);
+    backdrop-filter: blur(var(--nv-refonte-blur));
 }
 
 #vuePrincipale {
     min-height: auto;
     padding: clamp(10px, 2.8vw, 15px);
-    backdrop-filter: blur(7px);
+    backdrop-filter: blur(var(--nv-refonte-blur));
 }
 
 #navigationPrincipale {
-    backdrop-filter: blur(7px);
+    backdrop-filter: blur(var(--nv-refonte-blur));
 }
 
 button,
@@ -112,6 +113,75 @@ label[for="loadFile"] {
 
 .barre__texte {
     font-size: 0.78rem;
+}
+
+/* ========================================================================== 
+   UI 2 — HUD compact portrait
+   ========================================================================== */
+
+body.nv-mode-playing #topCharacterBar {
+    top: 4px;
+    padding: 7px 8px;
+}
+
+body.nv-mode-playing #topCharacterBar .personnage-compact {
+    gap: 6px;
+}
+
+body.nv-mode-playing #topCharacterBar .personnage-compact__haut {
+    gap: 8px;
+}
+
+body.nv-mode-playing #topCharacterBar .personnage-compact__nom strong {
+    font-size: clamp(1rem, 4.2vw, 1.35rem);
+}
+
+body.nv-mode-playing #topCharacterBar .personnage-compact__nom span {
+    font-size: clamp(0.78rem, 3.2vw, 0.95rem);
+}
+
+body.nv-mode-playing #topCharacterBar .personnage-compact__actions button,
+body.nv-mode-playing #topCharacterBar .personnage-compact__actions .btn-action-personnage,
+body.nv-mode-playing #topCharacterBar .personnage-compact__actions .bouton-charger-haut {
+    min-height: 30px;
+    padding: 5px 8px;
+    font-size: 0.74rem;
+}
+
+body.nv-mode-playing #topCharacterBar .personnage-compact__ressources {
+    gap: 5px;
+}
+
+body.nv-mode-playing #topCharacterBar .personnage-compact .barre {
+    height: 21px;
+}
+
+body.nv-mode-playing #topCharacterBar .barre__texte {
+    font-size: 0.68rem;
+}
+
+body.nv-mode-playing .nv-hud-world-info {
+    padding: 5px 6px !important;
+    gap: 5px !important;
+    background: rgba(0, 0, 0, 0.12) !important;
+}
+
+body.nv-mode-playing .nv-hud-chip {
+    padding: 3px 6px !important;
+    font-size: 0.68rem !important;
+}
+
+body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation {
+    gap: 5px !important;
+    margin-top: 6px !important;
+    padding-top: 6px !important;
+}
+
+body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button,
+body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation label[for="loadFile"] {
+    min-height: 28px !important;
+    padding: 5px 8px !important;
+    font-size: 0.72rem !important;
 }
 
 @media (max-width: 900px), (orientation: portrait) {
@@ -199,6 +269,75 @@ label[for="loadFile"] {
     h3 {
         line-height: 1.15;
     }
+
+    body.nv-mode-playing #appShell {
+        padding: 5px;
+    }
+
+    body.nv-mode-playing #topCharacterBar {
+        top: 0;
+        margin-bottom: 7px;
+        padding: 6px;
+        border-radius: 0 0 12px 12px !important;
+    }
+
+    body.nv-mode-playing #topCharacterBar .personnage-compact__haut {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    body.nv-mode-playing #topCharacterBar .personnage-compact__actions {
+        display: none;
+    }
+
+    body.nv-mode-playing #topCharacterBar .personnage-compact__ressources {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    body.nv-mode-playing #topCharacterBar .personnage-compact .barre {
+        height: 19px;
+    }
+
+    body.nv-mode-playing .nv-hud-world-info {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 4px !important;
+    }
+
+    body.nv-mode-playing .nv-hud-world-info__location,
+    body.nv-mode-playing .nv-hud-world-info__state {
+        gap: 4px !important;
+    }
+
+    body.nv-mode-playing .nv-hud-chip {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        overflow-x: visible !important;
+        flex-wrap: unset !important;
+        justify-content: stretch !important;
+        gap: 4px !important;
+        margin-top: 5px !important;
+        padding: 5px 0 0 !important;
+    }
+
+    body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button,
+    body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation label[for="loadFile"] {
+        width: 100% !important;
+        min-height: 27px !important;
+        padding: 4px 5px !important;
+        font-size: 0.64rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 }
 
 @media (max-width: 420px) {
@@ -218,5 +357,9 @@ label[for="loadFile"] {
 
     #vuePrincipale {
         padding: 8px;
+    }
+
+    body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
