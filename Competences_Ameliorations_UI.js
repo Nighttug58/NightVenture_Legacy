@@ -1,7 +1,7 @@
 /*
 NightVenture - Competences Ameliorations UI
 Branche les boutons d'utilisation des livres, pierres et noyaux sur la page Competences.
-Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs de debug.
+Version cap 21 : base 10, livre +5, pierre +5, noyau +1.
 */
 
 (function () {
@@ -40,8 +40,8 @@ Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs
         if (typeof NV_etatCompetencePersonnage !== "function") return { termine: true };
 
         const etat = NV_etatCompetencePersonnage(idCompetence);
-        const max = Number(etat?.niveauMax || 5);
-        const maxAbsolu = Number(etat?.niveauMaxAbsolu || Game.data?.ameliorationsCompetences?.niveauMaxAbsolu || 16);
+        const max = Number(etat?.niveauMax || 10);
+        const maxAbsolu = Number(etat?.niveauMaxAbsolu || Game.data?.ameliorationsCompetences?.niveauMaxAbsolu || 21);
         const niveau = Number(etat?.niveau || 1);
 
         if (etat?.masterisee || max >= maxAbsolu) {
@@ -54,7 +54,7 @@ Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs
             };
         }
 
-        if (max < 10) {
+        if (max < 15) {
             const itemId = Game.cache.itemsAmeliorationCompetences?.livresParCompetence?.[idCompetence]
                 || Game.data.ameliorationsCompetences?.livresParCompetence?.[idCompetence]
                 || null;
@@ -63,20 +63,20 @@ Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs
                 niveau,
                 niveauMax: max,
                 type: "livre_competence",
-                label: "Utiliser le livre",
-                texte: "Augmente cette competence de +1, jusqu'au niveau 10.",
+                label: "Utiliser le livre (+5)",
+                texte: "Debloque et monte cette competence jusqu'au niveau 15.",
                 signature: `${idCompetence}|${itemId}|${niveau}|${max}|${NV_quantiteInventaire(itemId)}`
             };
         }
 
-        if (max < 15) {
+        if (max < 20) {
             return {
                 itemId: "pierre_ame",
                 niveau,
                 niveauMax: max,
                 type: "pierre_ame",
-                label: "Utiliser Pierre d'ame",
-                texte: "Augmente cette competence de +1, jusqu'au niveau 15.",
+                label: "Utiliser Pierre d'ame (+5)",
+                texte: "Debloque et monte cette competence jusqu'au niveau 20.",
                 signature: `${idCompetence}|pierre_ame|${niveau}|${max}|${NV_quantiteInventaire("pierre_ame")}`
             };
         }
@@ -86,8 +86,8 @@ Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs
             niveau,
             niveauMax: max,
             type: "noyau_demoniaque",
-            label: "Utiliser Noyau demoniaque",
-            texte: "Masterise la competence et debloque le niveau 16.",
+            label: "Utiliser Noyau demoniaque (+1)",
+            texte: "Masterise la competence et debloque le niveau 21.",
             signature: `${idCompetence}|noyau_demoniaque|${niveau}|${max}|${NV_quantiteInventaire("noyau_demoniaque")}`
         };
     }
@@ -108,7 +108,7 @@ Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs
         const utilisable = Boolean(info.itemId && objet && quantite > 0 && niveauAuMax);
 
         let raison = "";
-        if (!niveauAuMax) raison = `Atteins d'abord le niveau ${info.niveauMax}/${info.niveauMax}.`;
+        if (!niveauAuMax) raison = `Atteins d'abord le niveau ${info.niveauMax}.`;
         else if (!objet) raison = "Objet requis introuvable dans les donnees.";
         else if (quantite <= 0) raison = "Objet requis absent de l'inventaire.";
 
@@ -133,6 +133,20 @@ Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs
         `;
     }
 
+    function NV_nettoyerAffichageNiveauxCompetences(carte, idCompetence) {
+        const etat = typeof NV_etatCompetencePersonnage === "function" ? NV_etatCompetencePersonnage(idCompetence) : null;
+        const niveau = Number(etat?.niveau || 1);
+        const niveauFort = carte.querySelector(".competence-card__header strong");
+        if (niveauFort) niveauFort.textContent = `Niv. ${niveau}`;
+
+        carte.querySelectorAll(".competence-card__stats span").forEach(span => {
+            if (span.textContent.trim().startsWith("Max actuel")) span.remove();
+        });
+
+        carte.querySelector(".competence-card__progression")?.remove();
+        carte.querySelector(".competence-card__requirement")?.remove();
+    }
+
     function NV_injecterBoutonsAmeliorationCompetences() {
         const vue = document.getElementById("vuePrincipale");
         if (!vue || Game.ui?.vueActive !== "competences_classes") return;
@@ -150,6 +164,7 @@ Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs
             if (!idCompetence) return;
 
             carte.dataset.competenceId = idCompetence;
+            NV_nettoyerAffichageNiveauxCompetences(carte, idCompetence);
 
             const contenu = carte.querySelector(".competence-card__content");
             if (!contenu) return;
