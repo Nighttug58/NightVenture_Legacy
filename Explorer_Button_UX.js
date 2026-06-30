@@ -127,8 +127,8 @@
 
         bouton.innerHTML =
             assez
-                ? `🧭 Explorer <span>${cout} stamina</span>`
-                : `🟢 Épuisé <span>${cout} requis</span>`;
+                ? `Explorer <span>${cout} stamina</span>`
+                : `Épuisé <span>${cout} requis</span>`;
 
         const bloc =
             NVBU_assurerBlocEtat(bouton);
@@ -287,7 +287,7 @@
 
         if (stamina < cout) {
             if (typeof ajouterJournal === "function") {
-                ajouterJournal(`🟢 Stamina insuffisante pour explorer ${zone.nom}.`);
+                ajouterJournal(`Stamina insuffisante pour explorer ${zone.nom}.`);
             }
 
             NVBU_mettreAJourBoutonExplorer();
@@ -452,7 +452,7 @@
 
         setTimeout(NVBU_mettreAJourBoutonExplorer, 0);
 
-        console.log(`✅ Explorer_Button_UX.js chargé — ${NV_EXPLORER_BUTTON_UX_VERSION}`);
+        console.log(`Explorer_Button_UX.js chargé — ${NV_EXPLORER_BUTTON_UX_VERSION}`);
     }
 
     if (document.readyState === "loading") {
