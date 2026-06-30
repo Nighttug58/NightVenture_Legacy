@@ -1,7 +1,8 @@
 (function () {
     "use strict";
 
-    const NV_HUD_LAYOUT_VERSION = "v0.9.8.3-no-emoji-hud";
+    const NV_HUD_LAYOUT_VERSION = "v0.9.8.4-collapsible-hud";
+    const NV_HUD_COLLAPSE_STORAGE_KEY = "nightventure.hud.collapsed";
 
     const NV_HUD_STATE = {
         navigationOriginalParent: null,
@@ -22,6 +23,22 @@
 
     function NVHUD_peutAfficherHud() {
         return NVHUD_hasGame() && NVHUD_estModePlaying();
+    }
+
+    function NVHUD_estReplie() {
+        try {
+            return localStorage.getItem(NV_HUD_COLLAPSE_STORAGE_KEY) === "1";
+        } catch (erreur) {
+            return false;
+        }
+    }
+
+    function NVHUD_enregistrerEtatRepli(replie) {
+        try {
+            localStorage.setItem(NV_HUD_COLLAPSE_STORAGE_KEY, replie ? "1" : "0");
+        } catch (erreur) {
+            console.warn("HUD : impossible de sauvegarder l'état replié.", erreur);
+        }
     }
 
     function NVHUD_zoneActuelle() {
@@ -102,6 +119,53 @@
         `;
     }
 
+    function NVHUD_mettreAJourBoutonRepli() {
+        const bouton = document.getElementById("nvHudCollapseButton");
+        if (!bouton) return;
+
+        const replie = document.body.classList.contains("nv-hud-collapsed");
+        bouton.textContent = replie ? "Afficher HUD" : "Masquer HUD";
+        bouton.setAttribute("aria-pressed", replie ? "true" : "false");
+        bouton.setAttribute("title", replie ? "Afficher le HUD personnage" : "Masquer le HUD personnage");
+    }
+
+    function NVHUD_appliquerEtatRepli() {
+        if (!document.body) return;
+
+        if (!NVHUD_peutAfficherHud()) {
+            document.body.classList.remove("nv-hud-collapsed");
+            NVHUD_mettreAJourBoutonRepli();
+            return;
+        }
+
+        document.body.classList.toggle("nv-hud-collapsed", NVHUD_estReplie());
+        NVHUD_mettreAJourBoutonRepli();
+    }
+
+    function NVHUD_basculerRepli() {
+        const prochainEtat = !document.body.classList.contains("nv-hud-collapsed");
+        NVHUD_enregistrerEtatRepli(prochainEtat);
+        document.body.classList.toggle("nv-hud-collapsed", prochainEtat);
+        NVHUD_mettreAJourBoutonRepli();
+    }
+
+    function NVHUD_installerBoutonRepli() {
+        const header = document.getElementById("topCharacterBar");
+        if (!header || !NVHUD_peutAfficherHud()) return;
+
+        let bouton = document.getElementById("nvHudCollapseButton");
+        if (!bouton) {
+            bouton = document.createElement("button");
+            bouton.id = "nvHudCollapseButton";
+            bouton.type = "button";
+            bouton.className = "nv-hud-collapse-button";
+            bouton.addEventListener("click", NVHUD_basculerRepli);
+            header.insertAdjacentElement("afterbegin", bouton);
+        }
+
+        NVHUD_mettreAJourBoutonRepli();
+    }
+
     function NVHUD_deplacerNavigationDansHeader() {
         if (!NVHUD_peutAfficherHud()) return;
 
@@ -134,6 +198,10 @@
     function NVHUD_nettoyerHorsPartie() {
         const hud = document.getElementById("nvHudWorldInfo");
         if (hud) hud.remove();
+
+        const boutonRepli = document.getElementById("nvHudCollapseButton");
+        if (boutonRepli) boutonRepli.remove();
+        if (document.body) document.body.classList.remove("nv-hud-collapsed");
 
         const navigation = document.getElementById("barreVuePrincipale");
         const navigationPrincipale = document.getElementById("navigationPrincipale");
@@ -170,12 +238,14 @@
         NVHUD_injecterStyle();
         NVHUD_mettreAJourInfosMonde();
         NVHUD_deplacerNavigationDansHeader();
+        NVHUD_installerBoutonRepli();
+        NVHUD_appliquerEtatRepli();
         NVHUD_desactiverSidebarGauche();
         NVHUD_demarrerTick();
     }
 
     function NVHUD_patchAfficherEquipementSidebar() {
-        if (typeof afficherEquipementSidebar !== "function" || afficherEquipementSidebar.__NVHUD_0983_PATCH) return;
+        if (typeof afficherEquipementSidebar !== "function" || afficherEquipementSidebar.__NVHUD_0984_PATCH) return;
 
         const original = afficherEquipementSidebar;
         afficherEquipementSidebar = function () {
@@ -185,11 +255,11 @@
             return undefined;
         };
 
-        afficherEquipementSidebar.__NVHUD_0983_PATCH = true;
+        afficherEquipementSidebar.__NVHUD_0984_PATCH = true;
     }
 
     function NVHUD_patchAfficherPersonnage() {
-        if (typeof afficherPersonnage !== "function" || afficherPersonnage.__NVHUD_0983_PATCH) return;
+        if (typeof afficherPersonnage !== "function" || afficherPersonnage.__NVHUD_0984_PATCH) return;
 
         const original = afficherPersonnage;
         afficherPersonnage = function () {
@@ -198,11 +268,11 @@
             return resultat;
         };
 
-        afficherPersonnage.__NVHUD_0983_PATCH = true;
+        afficherPersonnage.__NVHUD_0984_PATCH = true;
     }
 
     function NVHUD_patchAfficherVuePrincipale() {
-        if (typeof afficherVuePrincipale !== "function" || afficherVuePrincipale.__NVHUD_0983_PATCH) return;
+        if (typeof afficherVuePrincipale !== "function" || afficherVuePrincipale.__NVHUD_0984_PATCH) return;
 
         const original = afficherVuePrincipale;
         afficherVuePrincipale = function (html) {
@@ -211,7 +281,7 @@
             return resultat;
         };
 
-        afficherVuePrincipale.__NVHUD_0983_PATCH = true;
+        afficherVuePrincipale.__NVHUD_0984_PATCH = true;
     }
 
     function NVHUD_demarrerTick() {
@@ -226,6 +296,8 @@
 
             NVHUD_mettreAJourInfosMonde();
             NVHUD_deplacerNavigationDansHeader();
+            NVHUD_installerBoutonRepli();
+            NVHUD_appliquerEtatRepli();
             NVHUD_desactiverSidebarGauche();
         }, 500);
     }
@@ -283,6 +355,12 @@
             body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button.vue-active,
             body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button.actif,
             body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button.active { box-shadow: 0 0 0 1px rgba(245, 211, 122, 0.22), 0 0 12px rgba(245, 211, 122, 0.10); }
+            body.nv-mode-playing .nv-hud-collapse-button { position: absolute; right: 8px; top: 6px; z-index: 4; min-height: 26px; padding: 4px 8px; border-radius: 999px; font-size: 0.70rem; line-height: 1; opacity: 0.92; }
+            body.nv-mode-playing #topCharacterBar { position: sticky; }
+            body.nv-mode-playing.nv-hud-collapsed #topCharacterBar { padding-top: 36px; }
+            body.nv-mode-playing.nv-hud-collapsed #topCharacterBar #personnage { display: none !important; }
+            body.nv-mode-playing.nv-hud-collapsed #barreVuePrincipale.nv-hud-navigation { margin-top: 0; padding-top: 0; border-top: 0; }
+            body.nv-mode-playing.nv-hud-collapsed .nv-hud-collapse-button { left: 8px; right: auto; }
             @media (max-width: 980px) {
                 body.nv-mode-playing #appShell { padding: 10px; }
                 body.nv-mode-playing #topCharacterBar .personnage-compact__haut { align-items: flex-start; flex-direction: column; }
@@ -294,6 +372,9 @@
                 body.nv-mode-playing #topCharacterBar .personnage-compact__ressources { grid-template-columns: 1fr; }
                 body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
                 body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button { white-space: nowrap; }
+                body.nv-mode-playing.nv-hud-collapsed #topCharacterBar { padding: 30px 6px 6px; }
+                body.nv-mode-playing.nv-hud-collapsed #barreVuePrincipale.nv-hud-navigation { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow-x: visible; gap: 4px; }
+                body.nv-mode-playing.nv-hud-collapsed #barreVuePrincipale.nv-hud-navigation button { width: 100% !important; min-height: 27px; padding: 4px 5px; font-size: 0.64rem; overflow: hidden; text-overflow: ellipsis; }
             }
         `;
 
@@ -326,4 +407,5 @@
     window.NV_HUD_LAYOUT_VERSION = NV_HUD_LAYOUT_VERSION;
     window.NVHUD_mettreAJourInfosMonde = NVHUD_mettreAJourInfosMonde;
     window.NVHUD_appliquerLayoutSiPossible = NVHUD_appliquerLayoutSiPossible;
+    window.NVHUD_basculerRepli = NVHUD_basculerRepli;
 })();
