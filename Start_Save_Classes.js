@@ -20,7 +20,8 @@ Module joueur base uniquement sur classes_metin2.js.
     const NV_ETAT = {
         mode: "menu",
         autosaveTimer: null,
-        classeCompetencesSelectionnee: null
+        classeCompetencesSelectionnee: null,
+        classeNouvellePartieSelectionnee: "guerrier"
     };
 
     function NV_escape(texte) {
@@ -382,37 +383,64 @@ Module joueur base uniquement sur classes_metin2.js.
         if (typeof ajouterJournal === "function") ajouterJournal("Partie sauvegardee et exportee.");
     }
 
-    function NV_creerCarteClasse(classe) {
+    function NV_creerLigneStatClasse(label, valeur) {
+        return `<div class="ligne-stat"><span>${NV_escape(label)}</span><strong>${NV_escape(valeur)}</strong></div>`;
+    }
+
+    function NV_creerBoutonsClasses(classeSelectionneeId) {
+        return NV_obtenirClasses().map(classe => `
+            <button
+                class="nv-class-select-button ${classe.id === classeSelectionneeId ? "active" : ""}"
+                onclick="NV_ouvrirChoixClasse('${classe.id}')"
+            >${NV_escape(classe.nom)}</button>
+        `).join("");
+    }
+
+    function NV_creerFicheClasseSelectionnee(classeId) {
+        const classe = NV_obtenirClasse(classeId);
         const preview = NV_calculerPreviewClasse(classe.id);
         const competences = NV_listeCompetencesClasse(classe.id, false).map(NV_resumeCompetence).join(" / ") || "Actions de base";
+
         return `
-            <article class="item-card nv-classe-card">
-                <h3>${NV_escape(classe.nom)}</h3>
-                <p>${NV_escape(classe.description)}</p>
-                <div class="nv-stats-primaires">
-                    <span>FOR <strong>${preview.force}</strong></span>
-                    <span>DEX <strong>${preview.dexterite}</strong></span>
-                    <span>INT <strong>${preview.intelligence}</strong></span>
-                    <span>VIT <strong>${preview.vitalite}</strong></span>
-                    <span>CHA <strong>${preview.chance}</strong></span>
-                </div>
-                <div class="nv-stats-combat">
-                    <span>PV <strong>${preview.pvMax}</strong></span>
-                    <span>Mana <strong>${preview.manaMax}</strong></span>
-                    <span>Stamina <strong>${preview.staminaMax}</strong></span>
-                    <span>ATK <strong>${preview.attaquePhysique}</strong></span>
-                    <span>MAG <strong>${preview.attaqueMagique}</strong></span>
-                    <span>DEF <strong>${preview.defensePhysique}</strong></span>
-                    <span>RES <strong>${preview.defenseMagique}</strong></span>
-                    <span>Crit <strong>${preview.critique}%</strong></span>
-                    <span>Esq <strong>${preview.esquive}%</strong></span>
-                    <span>SPE <strong>${preview.vitesse}</strong></span>
-                </div>
-                <p><strong>Depart :</strong> ${NV_escape(competences)}</p>
-                <div class="nv-classe-card__actions">
+            <article class="item-card nv-classe-card nv-classe-card--selected">
+                <div class="nv-classe-card__header">
+                    <div>
+                        <h3>${NV_escape(classe.nom)}</h3>
+                        <p>${NV_escape(classe.description)}</p>
+                    </div>
                     <button onclick="NV_lancerNouvellePartie('${classe.id}')">Commencer ${NV_escape(classe.nom)}</button>
-                    <button class="nv-btn-secondary" onclick="NV_ouvrirCompetencesClasses('${classe.id}')">Voir competences</button>
                 </div>
+
+                <div class="nv-class-stats-layout">
+                    <section class="fiche-personnage-section">
+                        <h3>Caracteristiques</h3>
+                        <div class="liste-stats nv-class-stats-two-columns">
+                            ${NV_creerLigneStatClasse("FOR", preview.force)}
+                            ${NV_creerLigneStatClasse("DEX", preview.dexterite)}
+                            ${NV_creerLigneStatClasse("INT", preview.intelligence)}
+                            ${NV_creerLigneStatClasse("VIT", preview.vitalite)}
+                            ${NV_creerLigneStatClasse("CHA", preview.chance)}
+                        </div>
+                    </section>
+
+                    <section class="fiche-personnage-section">
+                        <h3>Combat</h3>
+                        <div class="liste-stats nv-class-stats-two-columns">
+                            ${NV_creerLigneStatClasse("PV MAX", preview.pvMax)}
+                            ${NV_creerLigneStatClasse("MANA MAX", preview.manaMax)}
+                            ${NV_creerLigneStatClasse("STAMINA MAX", preview.staminaMax)}
+                            ${NV_creerLigneStatClasse("ATK", preview.attaquePhysique)}
+                            ${NV_creerLigneStatClasse("MAG", preview.attaqueMagique)}
+                            ${NV_creerLigneStatClasse("DEF", preview.defensePhysique)}
+                            ${NV_creerLigneStatClasse("RES", preview.defenseMagique)}
+                            ${NV_creerLigneStatClasse("CRITIQUE", `${preview.critique}%`)}
+                            ${NV_creerLigneStatClasse("ESQUIVE", `${preview.esquive}%`)}
+                            ${NV_creerLigneStatClasse("SPE", preview.vitesse)}
+                        </div>
+                    </section>
+                </div>
+
+                <p class="nv-class-start-skill"><strong>Depart :</strong> ${NV_escape(competences)}</p>
             </article>
         `;
     }
@@ -442,10 +470,15 @@ Module joueur base uniquement sur classes_metin2.js.
         if (personnage) personnage.innerHTML = `<div class="nv-start-side"><strong>NightVenture</strong><br>En attente de partie.</div>`;
     }
 
-    function NV_ouvrirChoixClasse() {
+    function NV_ouvrirChoixClasse(classeId = null) {
         NV_ETAT.mode = "new_game";
         document.body.classList.add("nv-start-mode");
         NV_syncClassesMetin2();
+
+        const classes = NV_obtenirClasses();
+        const classeSelectionneeId = Game.cache.classesParId[classeId] ? classeId : (NV_ETAT.classeNouvellePartieSelectionnee || classes[0].id);
+        NV_ETAT.classeNouvellePartieSelectionnee = Game.cache.classesParId[classeSelectionneeId] ? classeSelectionneeId : "guerrier";
+
         const html = `
             <section class="nv-start-screen nv-classe-screen">
                 <div class="nv-start-hero">
@@ -456,7 +489,8 @@ Module joueur base uniquement sur classes_metin2.js.
                     <label>Nom du personnage<input id="nvNomPersonnage" type="text" value="Nighttug58" maxlength="32"></label>
                     <button onclick="NV_ouvrirEcranAccueil()">Retour</button>
                 </div>
-                <div class="nv-classes-grid">${NV_obtenirClasses().map(NV_creerCarteClasse).join("")}</div>
+                <div class="nv-class-select-bar">${NV_creerBoutonsClasses(NV_ETAT.classeNouvellePartieSelectionnee)}</div>
+                <div class="nv-selected-class-panel">${NV_creerFicheClasseSelectionnee(NV_ETAT.classeNouvellePartieSelectionnee)}</div>
             </section>
         `;
         afficherVuePrincipale(html);
@@ -551,7 +585,7 @@ Module joueur base uniquement sur classes_metin2.js.
             .nv-newgame-name input { padding: 10px; }
             .nv-stats-primaires, .nv-stats-combat, .nv-tree-class-selector { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
             .nv-stats-primaires span, .nv-stats-combat span { padding: 4px 7px; border: 1px solid rgba(245,211,122,0.12); border-radius: 999px; }
-            .nv-classe-card__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            .nv-classe-card__actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
             .nv-tree-class-selector .active { box-shadow: 0 0 8px var(--gold-bright, #ffd700); }
         `;
         document.head.appendChild(style);
