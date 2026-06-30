@@ -1,6 +1,6 @@
 /*
 NightVenture - Combat bar overlays
-Affiche les variations de PV/Mana/Stamina directement au centre des barres.
+Affiche les variations de PV/Mana/Stamina en overlay centre sur les barres.
 */
 
 function creerPopupVariationBarreCombat(combat, camp, cle, actuelle, precedente) {
@@ -28,11 +28,13 @@ function creerBarreCombatEtat(combat, camp, cle, classe, libelle) {
     const popup = creerPopupVariationBarreCombat(combat, camp, cle, actuelle, precedente);
 
     return `
-        <div class="barre barre--combat" data-resource="${camp}-${cle}">
-            <div class="${classe} ${animee ? "combat-bar-fill--animated" : ""}" style="--bar-from:${pourcentageAvant}%; --bar-to:${pourcentage}%; width:${pourcentage}%;"></div>
-            <div class="barre__texte">
-                <span class="barre__libelle">${libelle}</span>
-                <span class="barre__valeur">${Math.round(actuelle)} / ${Math.round(maximum)} (${Math.round(pourcentage)}%)</span>
+        <div class="combat-resource-slot ${popup ? "combat-resource-slot--popup" : ""}" data-resource-slot="${camp}-${cle}">
+            <div class="barre barre--combat" data-resource="${camp}-${cle}">
+                <div class="${classe} ${animee ? "combat-bar-fill--animated" : ""}" style="--bar-from:${pourcentageAvant}%; --bar-to:${pourcentage}%; width:${pourcentage}%;"></div>
+                <div class="barre__texte">
+                    <span class="barre__libelle">${libelle}</span>
+                    <span class="barre__valeur">${Math.round(actuelle)} / ${Math.round(maximum)} (${Math.round(pourcentage)}%)</span>
+                </div>
             </div>
             ${popup}
         </div>
