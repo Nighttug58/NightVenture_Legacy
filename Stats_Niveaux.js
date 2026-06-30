@@ -5,7 +5,26 @@ NightVenture - Statistiques et niveaux
 - Vue statistiques
 - XP / montee de niveau
 - Points de caracteristiques
+
+Ce module reste neutre hors partie : aucun crash si le personnage n'existe pas.
 */
+
+function NV_statsPersonnageActif() {
+    return Boolean(Game?.data?.personnage);
+}
+
+function NV_retourAccueilDepuisStats() {
+    if (Game?.ui) Game.ui.vueActive = "menu";
+
+    if (typeof window.NV_ouvrirEcranAccueil === "function") {
+        window.NV_ouvrirEcranAccueil();
+        return;
+    }
+
+    if (typeof afficherVuePrincipale === "function") {
+        afficherVuePrincipale(`<div class="item-card"><h2>Accueil</h2><p>Aucune partie active.</p></div>`);
+    }
+}
 
 function pvMaxTotal() { return 100 + statTotale("vitalite") * 10 + statTotale("pvMax"); }
 function manaMaxTotal() { return 50 + statTotale("intelligence") * 10 + statTotale("manaMax"); }
@@ -21,17 +40,20 @@ function bonusOrTotal() { return statTotale("bonusOr") + statTotale("chance"); }
 function staminaMaxTotal() { return 100 + statTotale("staminaMax") + statTotale("dexterite") * 5; }
 
 function statTotale(nomStat) {
-    let total = Number(Game.data.personnage[nomStat] || 0);
+    const personnage = Game?.data?.personnage;
+    if (!personnage) return 0;
 
-    Object.values(Game.data.personnage.equipement ?? {}).forEach(idObjet => {
+    let total = Number(personnage[nomStat] || 0);
+
+    Object.values(personnage.equipement ?? {}).forEach(idObjet => {
         if (!idObjet) return;
-        const objet = trouverObjet(idObjet);
+        const objet = typeof trouverObjet === "function" ? trouverObjet(idObjet) : Game.cache?.objetsParId?.[idObjet];
         if (!objet) return;
         total += Number(objet[nomStat] || 0);
     });
 
-    (Game.data.personnage.talents ?? []).forEach(talentJoueur => {
-        const talent = Game.cache.talentsParId[talentJoueur.id];
+    (personnage.talents ?? []).forEach(talentJoueur => {
+        const talent = Game.cache?.talentsParId?.[talentJoueur.id];
         if (!talent) return;
         total += Number(talent[nomStat] || 0) * Number(talentJoueur.niveau || 0);
     });
@@ -41,6 +63,11 @@ function statTotale(nomStat) {
 
 /* STATS Interface Utilisateur & Affichage des Stats */
 function ouvrirStatistiques() {
+    if (!NV_statsPersonnageActif()) {
+        NV_retourAccueilDepuisStats();
+        return;
+    }
+
     changerVue("statistiques");
 
     const personnage = Game.data.personnage;
@@ -243,6 +270,8 @@ function ouvrirStatistiques() {
 
 /* NIVEAUX Logique Systeme & Moteur d'XP */
 function verifierMonteeNiveau() {
+    if (!NV_statsPersonnageActif()) return;
+
     let coutXp = xpNiveauSuivant();
     const personnage = Game.data.personnage;
 
@@ -273,6 +302,11 @@ function verifierMonteeNiveau() {
 }
 
 function xpNiveauSuivant() {
+    if (!NV_statsPersonnageActif()) {
+        const premierNiveau = Game?.data?.niveaux?.[0];
+        return premierNiveau ? Number(premierNiveau.xpRequise || 0) : 999999;
+    }
+
     const niveau = Game.data.niveaux.find(n => Number(n.niveau) === Number(Game.data.personnage.niveau));
     if (!niveau) {
         const dernierNiveau = Game.data.niveaux[Game.data.niveaux.length - 1];
@@ -282,6 +316,8 @@ function xpNiveauSuivant() {
 }
 
 function ajouterPointStat(nomStat) {
+    if (!NV_statsPersonnageActif()) return;
+
     if (Game.data.personnage.pointsCaracteristiques <= 0) {
         ajouterJournal("Aucun point disponible.");
         return;
@@ -296,6 +332,8 @@ function ajouterPointStat(nomStat) {
 
 /* NIVEAUX Elements de Liaison d'Interface */
 function verifierNiveau() {
+    if (!NV_statsPersonnageActif()) return;
+
     verifierMonteeNiveau();
     rafraichirInterface();
 }
