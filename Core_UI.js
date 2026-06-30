@@ -188,6 +188,93 @@ function NV_installerBoutonPleinEcran() {
     NV_mettreAJourBoutonPleinEcran();
 }
 
+function NV_injecterCorrectifBottomNavViewport() {
+    if (document.getElementById("nvBottomNavViewportFix")) return;
+
+    const style = document.createElement("style");
+    style.id = "nvBottomNavViewportFix";
+    style.textContent = `
+        body.nv-mode-playing #topCharacterBar {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            transform: none !important;
+            filter: none !important;
+            contain: initial !important;
+            isolation: auto !important;
+        }
+
+        body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation {
+            position: fixed !important;
+            left: max(8px, env(safe-area-inset-left)) !important;
+            right: max(8px, env(safe-area-inset-right)) !important;
+            bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+            top: auto !important;
+            z-index: 900 !important;
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 6px !important;
+            width: auto !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 7px !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            border: 1px solid rgba(245, 211, 122, 0.16) !important;
+            border-radius: 18px !important;
+            background: rgba(10, 9, 8, 0.18) !important;
+            backdrop-filter: blur(5px) !important;
+            -webkit-backdrop-filter: blur(5px) !important;
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28) !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation::-webkit-scrollbar {
+            display: none;
+        }
+
+        body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button,
+        body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation label[for="loadFile"] {
+            flex: 0 0 auto !important;
+            width: auto !important;
+            min-width: max-content !important;
+            max-width: 132px !important;
+            min-height: 34px !important;
+            padding: 7px 10px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            border-radius: 999px !important;
+            font-size: 0.74rem !important;
+            line-height: 1 !important;
+        }
+
+        @media (max-width: 480px), (orientation: portrait) {
+            body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation {
+                left: max(6px, env(safe-area-inset-left)) !important;
+                right: max(6px, env(safe-area-inset-right)) !important;
+                bottom: calc(6px + env(safe-area-inset-bottom)) !important;
+                gap: 5px !important;
+                padding: 6px !important;
+                border-radius: 16px !important;
+            }
+
+            body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button,
+            body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation label[for="loadFile"] {
+                min-height: 32px !important;
+                padding: 6px 9px !important;
+                max-width: 118px !important;
+                font-size: 0.70rem !important;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+}
+
 async function NV_toggleFullscreen() {
     const cible = document.documentElement;
 
@@ -220,8 +307,11 @@ document.addEventListener("msfullscreenchange", NV_mettreAJourBoutonPleinEcran);
 document.addEventListener("DOMContentLoaded", function () {
     NV_installerBoutonPleinEcran();
     NV_mettreAJourBoutonPleinEcran();
+    setTimeout(NV_injecterCorrectifBottomNavViewport, 0);
+    setTimeout(NV_injecterCorrectifBottomNavViewport, 250);
 });
 
 window.NV_toggleFullscreen = NV_toggleFullscreen;
 window.NV_mettreAJourBoutonPleinEcran = NV_mettreAJourBoutonPleinEcran;
 window.NV_installerBoutonPleinEcran = NV_installerBoutonPleinEcran;
+window.NV_injecterCorrectifBottomNavViewport = NV_injecterCorrectifBottomNavViewport;
