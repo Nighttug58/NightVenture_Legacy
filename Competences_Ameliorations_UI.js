@@ -1,7 +1,7 @@
 /*
 NightVenture - Competences Ameliorations UI
 Branche les boutons d'utilisation des livres, pierres et noyaux sur la page Competences.
-Version robuste : handler global + delegation + logs de debug.
+Version stable : pas de reinjection en boucle, boutons toujours cliquables, logs de debug.
 */
 
 (function () {
@@ -49,7 +49,8 @@ Version robuste : handler global + delegation + logs de debug.
                 termine: true,
                 niveau,
                 niveauMax: max,
-                texte: "Competence Masterisee"
+                texte: "Competence Masterisee",
+                signature: `${idCompetence}|done|${niveau}|${max}`
             };
         }
 
@@ -63,7 +64,8 @@ Version robuste : handler global + delegation + logs de debug.
                 niveauMax: max,
                 type: "livre_competence",
                 label: "Utiliser le livre",
-                texte: "Augmente le niveau max de cette competence de +1, jusqu'au niveau 10."
+                texte: "Augmente cette competence de +1, jusqu'au niveau 10.",
+                signature: `${idCompetence}|${itemId}|${niveau}|${max}|${NV_quantiteInventaire(itemId)}`
             };
         }
 
@@ -74,7 +76,8 @@ Version robuste : handler global + delegation + logs de debug.
                 niveauMax: max,
                 type: "pierre_ame",
                 label: "Utiliser Pierre d'ame",
-                texte: "Augmente le niveau max de cette competence de +1, jusqu'au niveau 15."
+                texte: "Augmente cette competence de +1, jusqu'au niveau 15.",
+                signature: `${idCompetence}|pierre_ame|${niveau}|${max}|${NV_quantiteInventaire("pierre_ame")}`
             };
         }
 
@@ -84,7 +87,8 @@ Version robuste : handler global + delegation + logs de debug.
             niveauMax: max,
             type: "noyau_demoniaque",
             label: "Utiliser Noyau demoniaque",
-            texte: "Masterise la competence et debloque le niveau 16."
+            texte: "Masterise la competence et debloque le niveau 16.",
+            signature: `${idCompetence}|noyau_demoniaque|${niveau}|${max}|${NV_quantiteInventaire("noyau_demoniaque")}`
         };
     }
 
@@ -92,7 +96,7 @@ Version robuste : handler global + delegation + logs de debug.
         const info = NV_itemRequisPourCompetence(idCompetence);
         if (info.termine) {
             return `
-                <div class="competence-card__upgrade-actions competence-card__upgrade-actions--done">
+                <div class="competence-card__upgrade-actions competence-card__upgrade-actions--done" data-upgrade-signature="${NV_escapeHtml(info.signature)}">
                     <strong>${NV_escapeHtml(info.texte || "Competence Masterisee")}</strong>
                 </div>
             `;
@@ -109,7 +113,7 @@ Version robuste : handler global + delegation + logs de debug.
         else if (quantite <= 0) raison = "Objet requis absent de l'inventaire.";
 
         return `
-            <div class="competence-card__upgrade-actions">
+            <div class="competence-card__upgrade-actions" data-upgrade-signature="${NV_escapeHtml(info.signature)}">
                 <div class="competence-card__upgrade-info">
                     <strong>${NV_escapeHtml(objet?.nom || info.itemId || "Objet requis")}</strong>
                     <small>${NV_escapeHtml(info.texte)}</small>
@@ -117,12 +121,12 @@ Version robuste : handler global + delegation + logs de debug.
                 </div>
                 <button
                     type="button"
-                    class="competence-card__upgrade-button"
+                    class="competence-card__upgrade-button ${utilisable ? "" : "competence-card__upgrade-button--blocked"}"
                     data-skill-upgrade-button="true"
                     data-competence-id="${NV_escapeHtml(idCompetence)}"
                     data-item-id="${NV_escapeHtml(info.itemId || "")}"
+                    data-upgrade-usable="${utilisable ? "1" : "0"}"
                     onclick="return NV_cliquerBoutonAmeliorationCompetence(event, this);"
-                    ${utilisable ? "" : "disabled"}
                 >${NV_escapeHtml(info.label)}</button>
                 ${raison ? `<small class="competence-card__upgrade-warning">${NV_escapeHtml(raison)}</small>` : ""}
             </div>
@@ -146,12 +150,21 @@ Version robuste : handler global + delegation + logs de debug.
             if (!idCompetence) return;
 
             carte.dataset.competenceId = idCompetence;
-            carte.querySelector(".competence-card__upgrade-actions")?.remove();
 
             const contenu = carte.querySelector(".competence-card__content");
             if (!contenu) return;
 
-            contenu.insertAdjacentHTML("beforeend", NV_creerActionsAmelioration(idCompetence));
+            const html = NV_creerActionsAmelioration(idCompetence);
+            const signatureMatch = html.match(/data-upgrade-signature="([^"]*)"/);
+            const nouvelleSignature = signatureMatch?.[1] || "";
+            const blocExistant = carte.querySelector(".competence-card__upgrade-actions");
+
+            if (blocExistant && blocExistant.dataset.upgradeSignature === nouvelleSignature) {
+                return;
+            }
+
+            blocExistant?.remove();
+            contenu.insertAdjacentHTML("beforeend", html);
         });
     }
 
@@ -174,7 +187,7 @@ Version robuste : handler global + delegation + logs de debug.
         const itemId = bouton?.dataset?.itemId || "";
         const competenceId = bouton?.dataset?.competenceId || bouton?.closest?.(".competence-card")?.dataset?.competenceId || "";
 
-        console.log("NV upgrade click", { itemId, competenceId, bouton });
+        console.log("NV upgrade click", { itemId, competenceId, usable: bouton?.dataset?.upgradeUsable, bouton });
 
         if (!itemId || !competenceId) {
             const message = "Bouton d'amelioration incomplet : item ou competence manquant.";
@@ -193,7 +206,7 @@ Version robuste : handler global + delegation + logs de debug.
         const resultat = window.utiliserObjetAmeliorationCompetence(itemId, competenceId);
         console.log("NV upgrade result", resultat);
 
-        if (!resultat?.ok && typeof ajouterJournal === "function" && resultat?.message) {
+        if (typeof ajouterJournal === "function" && resultat?.message) {
             ajouterJournal(resultat.message);
         }
 
@@ -213,7 +226,16 @@ Version robuste : handler global + delegation + logs de debug.
         NV_cliquerBoutonAmeliorationCompetence(event, bouton);
     }, true);
 
-    const observer = new MutationObserver(NV_planifierInjectionBoutonsAmelioration);
+    const observer = new MutationObserver(mutations => {
+        const doitInjecter = mutations.some(mutation => {
+            return [...mutation.addedNodes, ...mutation.removedNodes].some(node => {
+                if (!node?.querySelector && !node?.matches) return false;
+                if (node.matches?.(".competence-card") || node.matches?.(".competence-grid")) return true;
+                return Boolean(node.querySelector?.(".competence-card, .competence-grid"));
+            });
+        });
+        if (doitInjecter) NV_planifierInjectionBoutonsAmelioration();
+    });
 
     function NV_demarrerObserverAmelioration() {
         const cible = document.getElementById("vuePrincipale") || document.body;
