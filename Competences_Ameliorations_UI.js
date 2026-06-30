@@ -1,6 +1,7 @@
 /*
 NightVenture - Competences Ameliorations UI
-Point 6 : branche les boutons d'utilisation des livres, pierres et noyaux sur la page Competences.
+Branche les boutons d'utilisation des livres, pierres et noyaux sur la page Competences.
+Version robuste : handler global + delegation + logs de debug.
 */
 
 (function () {
@@ -115,10 +116,12 @@ Point 6 : branche les boutons d'utilisation des livres, pierres et noyaux sur la
                     <span>Possede : ${quantite}</span>
                 </div>
                 <button
+                    type="button"
                     class="competence-card__upgrade-button"
                     data-skill-upgrade-button="true"
                     data-competence-id="${NV_escapeHtml(idCompetence)}"
-                    data-item-id="${NV_escapeHtml(info.itemId || "") }"
+                    data-item-id="${NV_escapeHtml(info.itemId || "")}"
+                    onclick="return NV_cliquerBoutonAmeliorationCompetence(event, this);"
                     ${utilisable ? "" : "disabled"}
                 >${NV_escapeHtml(info.label)}</button>
                 ${raison ? `<small class="competence-card__upgrade-warning">${NV_escapeHtml(raison)}</small>` : ""}
@@ -161,32 +164,70 @@ Point 6 : branche les boutons d'utilisation des livres, pierres et noyaux sur la
         });
     }
 
-    document.addEventListener("click", event => {
-        const bouton = event.target?.closest?.("[data-skill-upgrade-button]");
-        if (!bouton) return;
+    function NV_cliquerBoutonAmeliorationCompetence(event, bouton) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+        }
 
-        event.preventDefault();
-        event.stopPropagation();
+        const itemId = bouton?.dataset?.itemId || "";
+        const competenceId = bouton?.dataset?.competenceId || bouton?.closest?.(".competence-card")?.dataset?.competenceId || "";
 
-        const itemId = bouton.dataset.itemId;
-        const competenceId = bouton.dataset.competenceId;
-        if (!itemId || !competenceId || typeof utiliserObjetAmeliorationCompetence !== "function") return;
+        console.log("NV upgrade click", { itemId, competenceId, bouton });
 
-        const resultat = utiliserObjetAmeliorationCompetence(itemId, competenceId);
+        if (!itemId || !competenceId) {
+            const message = "Bouton d'amelioration incomplet : item ou competence manquant.";
+            console.warn(message, { itemId, competenceId });
+            if (typeof ajouterJournal === "function") ajouterJournal(message);
+            return false;
+        }
+
+        if (typeof window.utiliserObjetAmeliorationCompetence !== "function") {
+            const message = "Fonction utiliserObjetAmeliorationCompetence introuvable.";
+            console.error(message);
+            if (typeof ajouterJournal === "function") ajouterJournal(message);
+            return false;
+        }
+
+        const resultat = window.utiliserObjetAmeliorationCompetence(itemId, competenceId);
+        console.log("NV upgrade result", resultat);
+
         if (!resultat?.ok && typeof ajouterJournal === "function" && resultat?.message) {
             ajouterJournal(resultat.message);
         }
 
-        if (typeof ouvrirCompetencesJoueur === "function") ouvrirCompetencesJoueur();
+        if (typeof window.ouvrirCompetencesJoueur === "function") {
+            window.ouvrirCompetencesJoueur();
+        } else if (typeof window.rafraichirInterface === "function") {
+            window.rafraichirInterface();
+        }
+
         NV_planifierInjectionBoutonsAmelioration();
+        return false;
+    }
+
+    document.addEventListener("click", event => {
+        const bouton = event.target?.closest?.("[data-skill-upgrade-button]");
+        if (!bouton) return;
+        NV_cliquerBoutonAmeliorationCompetence(event, bouton);
     }, true);
 
     const observer = new MutationObserver(NV_planifierInjectionBoutonsAmelioration);
-    window.addEventListener("DOMContentLoaded", () => {
+
+    function NV_demarrerObserverAmelioration() {
         const cible = document.getElementById("vuePrincipale") || document.body;
+        if (!cible) return;
         observer.observe(cible, { childList: true, subtree: true });
         NV_planifierInjectionBoutonsAmelioration();
-    });
+    }
+
+    if (document.readyState === "loading") {
+        window.addEventListener("DOMContentLoaded", NV_demarrerObserverAmelioration);
+    } else {
+        NV_demarrerObserverAmelioration();
+    }
 
     window.NV_injecterBoutonsAmeliorationCompetences = NV_injecterBoutonsAmeliorationCompetences;
+    window.NV_cliquerBoutonAmeliorationCompetence = NV_cliquerBoutonAmeliorationCompetence;
 })();
