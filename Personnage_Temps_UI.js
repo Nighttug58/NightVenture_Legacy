@@ -17,13 +17,13 @@ function calculerPourcentage(valeur, maximum) {
 function obtenirInformationsTemps() {
     const personnage = Game?.data?.personnage;
     if (!personnage) {
-        return { jour: 1, heureAffichee: "0h00", periode: "☀️ Jour" };
+        return { jour: 1, heureAffichee: "0h00", periode: "Jour" };
     }
 
     const jour = personnage.jour ?? 1;
     const heure = personnage.heure ?? 0;
     const minute = personnage.minute ?? 0;
-    const periode = heure >= 6 && heure < 18 ? "☀️ Jour" : "🌙 Nuit";
+    const periode = heure >= 6 && heure < 18 ? "Jour" : "Nuit";
     const heureAffichee = `${heure}h${String(minute).padStart(2, "0")}`;
 
     return { jour, heureAffichee, periode };
@@ -80,13 +80,13 @@ function afficherPersonnage() {
             </div>
 
             <div class="personnage-compact__ressources">
-                ${creerBarreRessource("barre-pv", pourcentagePV, personnage.pv, pvMaximum, "❤️ PV")}
-                ${creerBarreRessource("barre-mana", pourcentageMana, personnage.mana, manaMaximum, "🔵 Mana")}
-                ${creerBarreRessource("barre-stamina", pourcentageStamina, staminaActuelle, staminaMaximum, "🟢 Stamina")}
+                ${creerBarreRessource("barre-pv", pourcentagePV, personnage.pv, pvMaximum, "PV")}
+                ${creerBarreRessource("barre-mana", pourcentageMana, personnage.mana, manaMaximum, "Mana")}
+                ${creerBarreRessource("barre-stamina", pourcentageStamina, staminaActuelle, staminaMaximum, "Stamina")}
             </div>
 
             <div class="personnage-compact__xp">
-                ${creerBarreRessource("barre-xp", pourcentageXP, personnage.xp ?? 0, xpMaximum, "🟡 XP")}
+                ${creerBarreRessource("barre-xp", pourcentageXP, personnage.xp ?? 0, xpMaximum, "XP")}
             </div>
         </div>
     `;
