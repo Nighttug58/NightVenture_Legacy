@@ -166,6 +166,28 @@ function NV_mettreAJourBoutonPleinEcran() {
     bouton.classList.toggle("nv-fullscreen-active", actif);
 }
 
+function NV_installerBoutonPleinEcran() {
+    const barre = document.getElementById("barreVuePrincipale");
+    if (!barre || document.getElementById("btnFullscreenToggle")) return;
+
+    const bouton = document.createElement("button");
+    bouton.id = "btnFullscreenToggle";
+    bouton.type = "button";
+    bouton.className = "btn-action-personnage nv-fullscreen-button";
+    bouton.setAttribute("aria-pressed", "false");
+    bouton.textContent = "Plein écran";
+    bouton.addEventListener("click", NV_toggleFullscreen);
+
+    const boutonSauvegarde = document.getElementById("saveButton");
+    if (boutonSauvegarde && boutonSauvegarde.parentElement === barre) {
+        barre.insertBefore(bouton, boutonSauvegarde);
+    } else {
+        barre.appendChild(bouton);
+    }
+
+    NV_mettreAJourBoutonPleinEcran();
+}
+
 async function NV_toggleFullscreen() {
     const cible = document.documentElement;
 
@@ -195,7 +217,11 @@ async function NV_toggleFullscreen() {
 document.addEventListener("fullscreenchange", NV_mettreAJourBoutonPleinEcran);
 document.addEventListener("webkitfullscreenchange", NV_mettreAJourBoutonPleinEcran);
 document.addEventListener("msfullscreenchange", NV_mettreAJourBoutonPleinEcran);
-document.addEventListener("DOMContentLoaded", NV_mettreAJourBoutonPleinEcran);
+document.addEventListener("DOMContentLoaded", function () {
+    NV_installerBoutonPleinEcran();
+    NV_mettreAJourBoutonPleinEcran();
+});
 
 window.NV_toggleFullscreen = NV_toggleFullscreen;
 window.NV_mettreAJourBoutonPleinEcran = NV_mettreAJourBoutonPleinEcran;
+window.NV_installerBoutonPleinEcran = NV_installerBoutonPleinEcran;
