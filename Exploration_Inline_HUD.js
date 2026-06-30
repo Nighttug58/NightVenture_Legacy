@@ -2,16 +2,6 @@
 (function () {
     "use strict";
 
-    const KEY = "nightventure.hud.collapsed";
-
-    function isCollapsed() {
-        try { return localStorage.getItem(KEY) === "1"; } catch (e) { return false; }
-    }
-
-    function setCollapsed(value) {
-        try { localStorage.setItem(KEY, value ? "1" : "0"); } catch (e) {}
-    }
-
     function pct(value, max) {
         max = Math.max(1, Number(max) || 1);
         return Math.min(100, Math.max(0, ((Number(value) || 0) / max) * 100));
@@ -26,7 +16,7 @@
         if (document.getElementById("nvExplorationInlineHudStyle")) return;
         const style = document.createElement("style");
         style.id = "nvExplorationInlineHudStyle";
-        style.textContent = "body.nv-mode-playing #topCharacterBar #personnage,body.nv-mode-playing #topCharacterBar .nv-hud-world-info,body.nv-mode-playing #topCharacterBar .nv-hud-collapse-button{display:none!important}body.nv-mode-playing #topCharacterBar{position:static!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}.nv-inline-hud{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding:10px}.nv-inline-hud-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.nv-inline-hud-title{min-width:0}.nv-inline-hud-title small{display:block;color:#c7bdad;font-size:.68rem;font-weight:800;text-transform:uppercase}.nv-inline-hud-title strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f5d37a;font-size:1.1rem}.nv-inline-hud-title span{display:block;color:#f1eadf;font-size:.76rem;font-weight:800}.nv-inline-hud button{min-height:30px!important;padding:5px 9px!important;border-radius:999px!important;font-size:.7rem!important;white-space:nowrap}.nv-inline-res{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.nv-inline-res-item{padding:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(0,0,0,.13);min-width:0}.nv-inline-res-label{display:flex;justify-content:space-between;gap:3px;margin-bottom:4px;color:#c7bdad;font-size:.56rem;font-weight:900}.nv-inline-res-bar{height:7px;overflow:hidden;border-radius:999px;background:rgba(0,0,0,.34)}.nv-inline-res-fill{height:100%;border-radius:999px;background:rgba(245,211,122,.78)}.nv-inline-extra{display:flex;flex-wrap:wrap;gap:5px}.nv-inline-extra span{padding:3px 7px;border-radius:999px;background:rgba(0,0,0,.14);color:#c7bdad;font-size:.68rem;font-weight:800}.nv-inline-hud.is-collapsed .nv-inline-extra{display:none}";
+        style.textContent = "body.nv-mode-playing #topCharacterBar #personnage,body.nv-mode-playing #topCharacterBar .nv-hud-world-info,body.nv-mode-playing #topCharacterBar .nv-hud-collapse-button{display:none!important}body.nv-mode-playing #topCharacterBar{position:static!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}.nv-inline-hud{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding:10px}.nv-inline-hud-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.nv-inline-hud-title{min-width:0}.nv-inline-hud-title strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f5d37a;font-size:1.05rem;line-height:1.1}.nv-inline-hud-title span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c7bdad;font-size:.74rem;font-weight:800;margin-top:3px}.nv-inline-hud button{min-height:30px!important;padding:5px 10px!important;border-radius:999px!important;font-size:.72rem!important;white-space:nowrap}.nv-inline-res{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.nv-inline-res-item{padding:5px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(0,0,0,.13);min-width:0}.nv-inline-res-label{display:flex;justify-content:space-between;gap:3px;margin-bottom:4px;color:#c7bdad;font-size:.56rem;font-weight:900}.nv-inline-res-bar{height:7px;overflow:hidden;border-radius:999px;background:rgba(0,0,0,.34)}.nv-inline-res-fill{height:100%;border-radius:999px;background:rgba(245,211,122,.78)}.nv-inline-res-item:nth-child(1) .nv-inline-res-fill{background:rgba(210,75,67,.82)}.nv-inline-res-item:nth-child(2) .nv-inline-res-fill{background:rgba(87,137,220,.82)}.nv-inline-res-item:nth-child(3) .nv-inline-res-fill{background:rgba(96,176,98,.82)}.nv-inline-meta{display:flex;flex-wrap:wrap;gap:5px}.nv-inline-meta span{padding:3px 7px;border-radius:999px;background:rgba(0,0,0,.14);color:#c7bdad;font-size:.68rem;font-weight:800}.nv-exploration-hero-mobile__actions button[onclick*=ouvrirZones]{display:none!important}";
         document.head.appendChild(style);
     }
 
@@ -42,29 +32,30 @@
         if (!p) return null;
         const zone = typeof obtenirZoneActuelle === "function" ? obtenirZoneActuelle() : Game?.cache?.zonesParId?.[p.zoneActuelle];
         const region = typeof obtenirRegionMondeActuelle === "function" ? obtenirRegionMondeActuelle() : null;
-        const collapsed = isCollapsed();
         const pvMax = maxFrom("pvMaxTotal", p.pvMax || p.pv || 1);
         const manaMax = maxFrom("manaMaxTotal", p.manaMax || p.mana || 1);
         const staMax = maxFrom("staminaMaxTotal", p.staminaMax || p.stamina || 1);
         const xpMax = maxFrom("xpNiveauSuivant", p.xpMax || p.xp || 1);
         const hud = document.createElement("div");
-        hud.className = "item-card nv-inline-hud" + (collapsed ? " is-collapsed" : "");
-        hud.innerHTML = "<div class='nv-inline-hud-top'><div class='nv-inline-hud-title'><small>Zone actuelle</small><strong></strong><span></span></div><button type='button'></button></div><div class='nv-inline-res'></div><div class='nv-inline-extra'></div>";
-        hud.querySelector("strong").textContent = zone?.nom || "Zone inconnue";
-        hud.querySelector(".nv-inline-hud-title span").textContent = (p.nom || "Héros") + " - Niveau " + (p.niveau || 1);
-        const button = hud.querySelector("button");
-        button.textContent = collapsed ? "Afficher HUD" : "Masquer HUD";
-        button.addEventListener("click", function () {
-            setCollapsed(!isCollapsed());
-            if (typeof ouvrirExploration === "function") ouvrirExploration();
+        hud.className = "item-card nv-inline-hud";
+        hud.innerHTML = "<div class='nv-inline-hud-top'><div class='nv-inline-hud-title'><strong></strong><span></span></div><button type='button'>Carte</button></div><div class='nv-inline-meta'></div><div class='nv-inline-res'></div>";
+        hud.querySelector("strong").textContent = (p.nom || "Héros") + " - " + (p.classe || "Aventurier") + " - Level" + (p.niveau || 1);
+        hud.querySelector(".nv-inline-hud-title span").textContent = "Or : " + (p.or || 0);
+        hud.querySelector("button").addEventListener("click", function () {
+            if (typeof ouvrirZones === "function") ouvrirZones();
         });
+        const meta = hud.querySelector(".nv-inline-meta");
+        const zoneChip = document.createElement("span");
+        zoneChip.textContent = zone?.nom || "Zone inconnue";
+        const regionChip = document.createElement("span");
+        regionChip.textContent = region?.nom || "Région inconnue";
+        meta.appendChild(zoneChip);
+        meta.appendChild(regionChip);
         const row = hud.querySelector(".nv-inline-res");
         row.appendChild(resource("PV", p.pv || pvMax, pvMax));
         row.appendChild(resource("Mana", p.mana || manaMax, manaMax));
         row.appendChild(resource("Sta", p.stamina || staMax, staMax));
         row.appendChild(resource("XP", p.xp || 0, xpMax));
-        const extra = hud.querySelector(".nv-inline-extra");
-        extra.innerHTML = "<span>Classe : " + (p.classe || "Aventurier") + "</span><span>Région : " + (region?.nom || "Inconnue") + "</span><span>Or : " + (p.or || 0) + "</span>";
         return hud;
     }
 
