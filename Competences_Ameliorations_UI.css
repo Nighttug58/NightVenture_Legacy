@@ -1,0 +1,43 @@
+/* NightVenture - Competences Ameliorations UI */
+
+.competence-card__upgrade-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(245, 211, 122, 0.2);
+    border-radius: 10px;
+}
+
+.competence-card__upgrade-actions--done {
+    color: var(--gold-bright);
+    text-align: center;
+    border-color: rgba(255, 215, 0, 0.5);
+    box-shadow: inset 0 0 16px rgba(255, 215, 0, 0.08);
+}
+
+.competence-card__upgrade-info {
+    display: grid;
+    gap: 3px;
+}
+
+.competence-card__upgrade-info strong {
+    color: var(--gold-bright);
+}
+
+.competence-card__upgrade-info small,
+.competence-card__upgrade-info span,
+.competence-card__upgrade-warning {
+    color: var(--text-muted);
+    font-size: 0.84rem;
+}
+
+.competence-card__upgrade-warning {
+    color: #d8a85f;
+}
+
+.competence-card__upgrade-button {
+    width: 100%;
+    margin-top: 0 !important;
+}
