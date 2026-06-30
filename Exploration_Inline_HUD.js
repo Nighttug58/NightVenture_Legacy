@@ -63,9 +63,12 @@
         injectStyle();
         if (Game?.ui?.vueActive !== "exploration") return;
         const root = document.querySelector("#vuePrincipale .nv-exploration-mobile");
-        if (!root || root.querySelector(".nv-inline-hud")) return;
+        if (!root) return;
         const hud = buildHud();
-        if (hud) root.prepend(hud);
+        if (!hud) return;
+        const current = root.querySelector(".nv-inline-hud");
+        if (current) current.replaceWith(hud);
+        else root.prepend(hud);
     }
 
     function patch() {
@@ -79,6 +82,19 @@
         afficherVuePrincipale.__NV_INLINE_HUD = true;
     }
 
-    function install() { injectStyle(); patch(); requestAnimationFrame(integrate); }
+    function startTicker() {
+        if (window.__NV_INLINE_HUD_TICKER) return;
+        window.__NV_INLINE_HUD_TICKER = setInterval(function () {
+            if (Game?.ui?.vueActive === "exploration") integrate();
+        }, 350);
+    }
+
+    function install() {
+        injectStyle();
+        patch();
+        startTicker();
+        requestAnimationFrame(integrate);
+    }
+
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install); else install();
 })();
