@@ -93,7 +93,7 @@ function appliquerEffetObjet(objet) {
                 personnage.pv - avant;
 
             ajouterJournal(`${objet.nom} utilisée.`);
-            ajouterJournal(`❤️ +${gainReel} PV`);
+            ajouterJournal(`PV +${gainReel}`);
 
             effetApplique =
                 true;
@@ -117,7 +117,7 @@ function appliquerEffetObjet(objet) {
                 personnage.mana - avant;
 
             ajouterJournal(`${objet.nom} utilisée.`);
-            ajouterJournal(`🔵 +${gainReel} Mana`);
+            ajouterJournal(`Mana +${gainReel}`);
 
             effetApplique =
                 true;
@@ -144,7 +144,7 @@ function appliquerEffetObjet(objet) {
                 personnage.stamina - avant;
 
             ajouterJournal(`${objet.nom} utilisée.`);
-            ajouterJournal(`🟢 +${gainReel} Stamina`);
+            ajouterJournal(`Stamina +${gainReel}`);
 
             effetApplique =
                 true;
@@ -162,7 +162,7 @@ function appliquerEffetObjet(objet) {
             objet.xp;
 
         ajouterJournal(`${objet.nom} utilisée.`);
-        ajouterJournal(`⭐ +${objet.xp} XP`);
+        ajouterJournal(`XP +${objet.xp}`);
 
         verifierMonteeNiveau();
 
@@ -175,7 +175,7 @@ function appliquerEffetObjet(objet) {
             objet.or;
 
         ajouterJournal(`${objet.nom} utilisée.`);
-        ajouterJournal(`🟡 +${objet.or} or`);
+        ajouterJournal(`Or +${objet.or}`);
 
         effetApplique =
             true;
@@ -219,7 +219,7 @@ function appliquerEffetObjet(objet) {
             (personnage[cle] || 0) + valeur;
 
         ajouterJournal(`${objet.nom} utilisée.`);
-        ajouterJournal(`📈 ${nom} +${valeur}`);
+        ajouterJournal(`Stat : ${nom} +${valeur}`);
 
         effetApplique =
             true;
@@ -693,7 +693,7 @@ function ouvrirInventaire() {
 
     afficherVuePrincipale(`
         <div class="item-card">
-            <h2>🎒 Inventaire</h2>
+            <h2>Inventaire</h2>
             <p>
                 Le nouveau module d'inventaire en grille n'est pas encore chargé.
             </p>
@@ -701,7 +701,7 @@ function ouvrirInventaire() {
                 Vérifie que <strong>Inventory_Grid_Metin2.js</strong>
                 est bien ajouté après <strong>script.js</strong>.
             </p>
-            <button onclick="ouvrirExploration()">⬅ Retour</button>
+            <button onclick="ouvrirExploration()">Retour</button>
         </div>
     `);
 }
@@ -726,7 +726,7 @@ function ouvrirMarchand(idPnj) {
 
     afficherVuePrincipale(`
         <div class="item-card">
-            <h2>🛒 Marchand</h2>
+            <h2>Marchand</h2>
             <p>
                 Le nouveau module d'inventaire/marchand en grille n'est pas encore chargé.
             </p>
@@ -734,7 +734,7 @@ function ouvrirMarchand(idPnj) {
                 Vérifie que <strong>Inventory_Grid_Metin2.js</strong>
                 est bien ajouté après <strong>script.js</strong>.
             </p>
-            <button onclick="ouvrirExploration()">⬅ Retour</button>
+            <button onclick="ouvrirExploration()">Retour</button>
         </div>
     `);
 }
@@ -768,7 +768,7 @@ function acheterObjet(idObjet, quantite = 1) {
         Game.ui.marchandActuel.inventaire = Game.ui.marchandActuel.inventaire.filter(item => item.id !== idObjet);
     }
 
-    ajouterJournal(`🛒 Achat : ${objet.nom} x${quantite}`);
+    ajouterJournal(`Achat : ${objet.nom} x${quantite}`);
     actualiserMarchand();
 }
 
@@ -794,7 +794,7 @@ function vendreObjet(idObjet, quantite = 1) {
     if (itemMarchand) itemMarchand.quantite += quantite;
     else Game.ui.marchandActuel.inventaire.push({ id: idObjet, quantite: quantite });
 
-    ajouterJournal(`💰 Vente : ${objet.nom} x${quantite}`);
+    ajouterJournal(`Vente : ${objet.nom} x${quantite}`);
     actualiserMarchand();
 }
 
@@ -803,5 +803,5 @@ function restockerMarchands() {
         if (!Array.isArray(personnagePnj.stockInitial)) return;
         personnagePnj.inventaire = JSON.parse(JSON.stringify(personnagePnj.stockInitial));
     });
-    ajouterJournal("🛒 Les marchands ont renouvelé leurs stocks.");
+    ajouterJournal("Les marchands ont renouvelé leurs stocks.");
 }
