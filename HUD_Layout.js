@@ -1,55 +1,56 @@
 (function () {
     "use strict";
 
-    const NV_HUD_LAYOUT_VERSION =
-        "v0.9.8.1-hud-rework-horizontal";
+    const NV_HUD_LAYOUT_VERSION = "v0.9.8.2-hud-mode-aware";
 
     const NV_HUD_STATE = {
         navigationOriginalParent: null,
         navigationOriginalNextSibling: null,
-        intervalId: null
+        intervalId: null,
+        observer: null,
+        installe: false
     };
 
     function NVHUD_hasGame() {
-        return typeof Game !== "undefined" && Game?.data?.personnage;
+        return typeof Game !== "undefined" && Boolean(Game?.data?.personnage);
+    }
+
+    function NVHUD_estModePlaying() {
+        return Boolean(document.body?.classList?.contains("nv-mode-playing"))
+            && !document.body.classList.contains("nv-start-mode");
+    }
+
+    function NVHUD_peutAfficherHud() {
+        return NVHUD_hasGame() && NVHUD_estModePlaying();
     }
 
     function NVHUD_zoneActuelle() {
+        if (!NVHUD_hasGame()) return null;
+
         if (typeof obtenirZoneActuelle === "function") {
             return obtenirZoneActuelle();
         }
 
-        const idZone =
-            Game.data?.personnage?.zoneActuelle;
-
+        const idZone = Game.data?.personnage?.zoneActuelle;
         return Game.cache?.zonesParId?.[idZone] || null;
     }
 
     function NVHUD_regionActuelle() {
+        if (!NVHUD_hasGame()) return null;
+
         if (typeof obtenirRegionMondeActuelle === "function") {
             return obtenirRegionMondeActuelle();
         }
 
-        const idRegion =
-            Game.data?.personnage?.regionMondeActuelle;
-
+        const idRegion = Game.data?.personnage?.regionMondeActuelle;
         return (Game.data?.regionsMonde || []).find(region => region.id === idRegion) || null;
     }
 
     function NVHUD_infosTemps() {
-        const personnage =
-            Game.data.personnage;
-
-        const heure =
-            Number(personnage.heure || 0);
-
-        const minute =
-            Number(personnage.minute || 0);
-
-        const periode =
-            heure >= 6 && heure < 18
-                ? "☀️ Jour"
-                : "🌙 Nuit";
+        const personnage = Game.data.personnage;
+        const heure = Number(personnage.heure || 0);
+        const minute = Number(personnage.minute || 0);
+        const periode = heure >= 6 && heure < 18 ? "☀️ Jour" : "🌙 Nuit";
 
         return {
             jour: personnage.jour ?? 1,
@@ -58,29 +59,28 @@
         };
     }
 
-    function NVHUD_creerOuTrouverHudMonde() {
-        const personnageCompact =
-            document.querySelector("#topCharacterBar .personnage-compact");
+    function NVHUD_preparerNavigationOriginale() {
+        const navigation = document.getElementById("barreVuePrincipale");
+        if (!navigation || NV_HUD_STATE.navigationOriginalParent) return;
 
+        NV_HUD_STATE.navigationOriginalParent = navigation.parentElement;
+        NV_HUD_STATE.navigationOriginalNextSibling = navigation.nextSibling;
+    }
+
+    function NVHUD_creerOuTrouverHudMonde() {
+        if (!NVHUD_peutAfficherHud()) return null;
+
+        const personnageCompact = document.querySelector("#topCharacterBar .personnage-compact");
         if (!personnageCompact) return null;
 
-        let hud =
-            document.getElementById("nvHudWorldInfo");
-
+        let hud = document.getElementById("nvHudWorldInfo");
         if (hud) return hud;
 
-        hud =
-            document.createElement("div");
+        hud = document.createElement("div");
+        hud.id = "nvHudWorldInfo";
+        hud.className = "nv-hud-world-info";
 
-        hud.id =
-            "nvHudWorldInfo";
-
-        hud.className =
-            "nv-hud-world-info";
-
-        const xp =
-            personnageCompact.querySelector(".personnage-compact__xp");
-
+        const xp = personnageCompact.querySelector(".personnage-compact__xp");
         if (xp) {
             xp.insertAdjacentElement("afterend", hud);
         } else {
@@ -91,430 +91,403 @@
     }
 
     function NVHUD_mettreAJourInfosMonde() {
-        if (!NVHUD_hasGame()) return;
+        if (!NVHUD_peutAfficherHud()) return;
 
-        const hud =
-            NVHUD_creerOuTrouverHudMonde();
-
+        const hud = NVHUD_creerOuTrouverHudMonde();
         if (!hud) return;
 
-        const personnage =
-            Game.data.personnage;
-
-        const region =
-            NVHUD_regionActuelle()?.nom || "Région inconnue";
-
-        const zone =
-            NVHUD_zoneActuelle()?.nom || "Zone inconnue";
-
-        const temps =
-            NVHUD_infosTemps();
+        const personnage = Game.data.personnage;
+        const region = NVHUD_regionActuelle()?.nom || "Région inconnue";
+        const zone = NVHUD_zoneActuelle()?.nom || "Zone inconnue";
+        const temps = NVHUD_infosTemps();
 
         hud.innerHTML = `
             <div class="nv-hud-world-info__location">
-                <span class="nv-hud-chip nv-hud-chip--region">
-                    📍 ${region}
-                </span>
-
-                <span class="nv-hud-chip nv-hud-chip--zone">
-                    ${zone}
-                </span>
+                <span class="nv-hud-chip nv-hud-chip--region">📍 ${region}</span>
+                <span class="nv-hud-chip nv-hud-chip--zone">${zone}</span>
             </div>
-
             <div class="nv-hud-world-info__state">
-                <span class="nv-hud-chip nv-hud-chip--gold">
-                    🟡 ${personnage.or ?? 0} or
-                </span>
-
-                <span class="nv-hud-chip">
-                    ${temps.periode}
-                </span>
-
-                <span class="nv-hud-chip">
-                    Jour ${temps.jour} — ${temps.heureAffichee}
-                </span>
+                <span class="nv-hud-chip nv-hud-chip--gold">🟡 ${personnage.or ?? 0} or</span>
+                <span class="nv-hud-chip">${temps.periode}</span>
+                <span class="nv-hud-chip">Jour ${temps.jour} — ${temps.heureAffichee}</span>
             </div>
         `;
     }
 
     function NVHUD_deplacerNavigationDansHeader() {
-        const header =
-            document.getElementById("topCharacterBar");
+        if (!NVHUD_peutAfficherHud()) return;
 
-        const personnage =
-            document.getElementById("personnage");
-
-        const navigation =
-            document.getElementById("barreVuePrincipale");
+        const header = document.getElementById("topCharacterBar");
+        const personnage = document.getElementById("personnage");
+        const navigation = document.getElementById("barreVuePrincipale");
 
         if (!header || !personnage || !navigation) return;
-
-        if (!NV_HUD_STATE.navigationOriginalParent) {
-            NV_HUD_STATE.navigationOriginalParent =
-                navigation.parentElement;
-
-            NV_HUD_STATE.navigationOriginalNextSibling =
-                navigation.nextSibling;
-        }
+        NVHUD_preparerNavigationOriginale();
 
         if (navigation.parentElement === header) return;
 
         navigation.classList.add("nv-hud-navigation");
-
-        /*
-            On place la navigation directement sous le bloc personnage.
-            Visuellement, elle arrive sous la XP car elle est dans le header,
-            après #personnage.
-        */
         personnage.insertAdjacentElement("afterend", navigation);
     }
 
     function NVHUD_desactiverSidebarGauche() {
-        const navigationPrincipale =
-            document.getElementById("navigationPrincipale");
+        if (!NVHUD_peutAfficherHud()) return;
 
-        const infosMonde =
-            document.getElementById("infosMondeSidebar");
+        const navigationPrincipale = document.getElementById("navigationPrincipale");
+        const infosMonde = document.getElementById("infosMondeSidebar");
+        const equipement = document.getElementById("equipementSidebar");
+        const journal = document.getElementById("journalSection");
 
-        const equipement =
-            document.getElementById("equipementSidebar");
+        if (infosMonde) infosMonde.innerHTML = "";
+        if (equipement) equipement.innerHTML = "";
+        if (journal) journal.classList.add("nv-hud-hidden-sidebar-part");
+        if (navigationPrincipale) navigationPrincipale.classList.add("nv-hud-sidebar-disabled");
+    }
 
-        const journal =
-            document.getElementById("journalSection");
+    function NVHUD_nettoyerHorsPartie() {
+        const hud = document.getElementById("nvHudWorldInfo");
+        if (hud) hud.remove();
 
-        if (infosMonde) {
-            infosMonde.innerHTML =
-                "";
+        const navigation = document.getElementById("barreVuePrincipale");
+        const navigationPrincipale = document.getElementById("navigationPrincipale");
+        const journal = document.getElementById("journalSection");
+        const infosMonde = document.getElementById("infosMondeSidebar");
+        const equipement = document.getElementById("equipementSidebar");
+
+        if (navigation) {
+            navigation.classList.remove("nv-hud-navigation");
+            const parentOriginal = NV_HUD_STATE.navigationOriginalParent;
+            if (parentOriginal && navigation.parentElement !== parentOriginal) {
+                const nextSibling = NV_HUD_STATE.navigationOriginalNextSibling;
+                if (nextSibling && nextSibling.parentElement === parentOriginal) {
+                    parentOriginal.insertBefore(navigation, nextSibling);
+                } else {
+                    parentOriginal.appendChild(navigation);
+                }
+            }
         }
 
-        if (equipement) {
-            equipement.innerHTML =
-                "";
+        if (navigationPrincipale) navigationPrincipale.classList.remove("nv-hud-sidebar-disabled");
+        if (journal) journal.classList.remove("nv-hud-hidden-sidebar-part");
+        if (infosMonde && !NVHUD_peutAfficherHud()) infosMonde.innerHTML = "";
+        if (equipement && !NVHUD_peutAfficherHud()) equipement.innerHTML = "";
+    }
+
+    function NVHUD_appliquerLayoutSiPossible() {
+        if (!NVHUD_peutAfficherHud()) {
+            NVHUD_arreterTick();
+            NVHUD_nettoyerHorsPartie();
+            return;
         }
 
-        if (journal) {
-            journal.classList.add("nv-hud-hidden-sidebar-part");
-        }
-
-        if (navigationPrincipale) {
-            navigationPrincipale.classList.add("nv-hud-sidebar-disabled");
-        }
+        NVHUD_injecterStyle();
+        NVHUD_mettreAJourInfosMonde();
+        NVHUD_deplacerNavigationDansHeader();
+        NVHUD_desactiverSidebarGauche();
+        NVHUD_demarrerTick();
     }
 
     function NVHUD_patchAfficherEquipementSidebar() {
-        if (typeof afficherEquipementSidebar !== "function" || afficherEquipementSidebar.__NVHUD_0981_PATCH) return;
+        if (typeof afficherEquipementSidebar !== "function" || afficherEquipementSidebar.__NVHUD_0982_PATCH) return;
 
+        const original = afficherEquipementSidebar;
         afficherEquipementSidebar = function () {
-            const equipement =
-                document.getElementById("equipementSidebar");
-
-            if (equipement) {
-                equipement.innerHTML =
-                    "";
+            if (!NVHUD_peutAfficherHud()) {
+                return original.apply(this, arguments);
             }
+
+            const equipement = document.getElementById("equipementSidebar");
+            if (equipement) equipement.innerHTML = "";
+            return undefined;
         };
 
-        afficherEquipementSidebar.__NVHUD_0981_PATCH =
-            true;
+        afficherEquipementSidebar.__NVHUD_0982_PATCH = true;
     }
 
     function NVHUD_patchAfficherPersonnage() {
-        if (typeof afficherPersonnage !== "function" || afficherPersonnage.__NVHUD_0981_PATCH) return;
+        if (typeof afficherPersonnage !== "function" || afficherPersonnage.__NVHUD_0982_PATCH) return;
 
-        const original =
-            afficherPersonnage;
-
+        const original = afficherPersonnage;
         afficherPersonnage = function () {
-            const resultat =
-                original();
-
-            /*
-                Le core écrit encore dans #infosMondeSidebar.
-                On reprend ces infos dans le HUD haut puis on vide la sidebar.
-            */
-            NVHUD_mettreAJourInfosMonde();
-            NVHUD_deplacerNavigationDansHeader();
-            NVHUD_desactiverSidebarGauche();
-
+            const resultat = original.apply(this, arguments);
+            NVHUD_appliquerLayoutSiPossible();
             return resultat;
         };
 
-        afficherPersonnage.__NVHUD_0981_PATCH =
-            true;
+        afficherPersonnage.__NVHUD_0982_PATCH = true;
     }
 
     function NVHUD_patchAfficherVuePrincipale() {
-        if (typeof afficherVuePrincipale !== "function" || afficherVuePrincipale.__NVHUD_0981_PATCH) return;
+        if (typeof afficherVuePrincipale !== "function" || afficherVuePrincipale.__NVHUD_0982_PATCH) return;
 
-        const original =
-            afficherVuePrincipale;
-
+        const original = afficherVuePrincipale;
         afficherVuePrincipale = function (html) {
-            const resultat =
-                original(html);
-
-            setTimeout(() => {
-                NVHUD_mettreAJourInfosMonde();
-                NVHUD_deplacerNavigationDansHeader();
-                NVHUD_desactiverSidebarGauche();
-            }, 0);
-
+            const resultat = original.apply(this, arguments);
+            requestAnimationFrame(NVHUD_appliquerLayoutSiPossible);
             return resultat;
         };
 
-        afficherVuePrincipale.__NVHUD_0981_PATCH =
-            true;
+        afficherVuePrincipale.__NVHUD_0982_PATCH = true;
     }
 
     function NVHUD_demarrerTick() {
-        if (NV_HUD_STATE.intervalId) {
-            clearInterval(NV_HUD_STATE.intervalId);
-        }
+        if (NV_HUD_STATE.intervalId || !NVHUD_peutAfficherHud()) return;
 
-        NV_HUD_STATE.intervalId =
-            setInterval(() => {
-                if (!NVHUD_hasGame()) return;
+        NV_HUD_STATE.intervalId = setInterval(() => {
+            if (!NVHUD_peutAfficherHud()) {
+                NVHUD_arreterTick();
+                NVHUD_nettoyerHorsPartie();
+                return;
+            }
 
-                NVHUD_mettreAJourInfosMonde();
-                NVHUD_deplacerNavigationDansHeader();
-                NVHUD_desactiverSidebarGauche();
-            }, 500);
+            NVHUD_mettreAJourInfosMonde();
+            NVHUD_deplacerNavigationDansHeader();
+            NVHUD_desactiverSidebarGauche();
+        }, 500);
+    }
+
+    function NVHUD_arreterTick() {
+        if (!NV_HUD_STATE.intervalId) return;
+        clearInterval(NV_HUD_STATE.intervalId);
+        NV_HUD_STATE.intervalId = null;
+    }
+
+    function NVHUD_observerModeUI() {
+        if (NV_HUD_STATE.observer || !document.body) return;
+
+        NV_HUD_STATE.observer = new MutationObserver(() => {
+            requestAnimationFrame(NVHUD_appliquerLayoutSiPossible);
+        });
+
+        NV_HUD_STATE.observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ["class"]
+        });
     }
 
     function NVHUD_injecterStyle() {
         if (document.getElementById("nvHudLayoutStyle")) return;
 
-        const style =
-            document.createElement("style");
+        const style = document.createElement("style");
+        style.id = "nvHudLayoutStyle";
+        style.textContent = `
+            /* HUD horizontal NightVenture — actif seulement en nv-mode-playing */
 
-        style.id =
-            "nvHudLayoutStyle";
+            body.nv-mode-playing #appShell {
+                padding: 16px 18px;
+            }
 
-        style.textContent =
-            `
-                /*
-                    HUD horizontal NightVenture
-                    - sidebar gauche désactivée
-                    - navigation sous le bandeau personnage
-                    - infos monde dans le bandeau haut
-                */
+            body.nv-mode-playing #topCharacterBar {
+                position: sticky;
+                top: 0;
+                z-index: 200;
+                padding: 12px 14px 14px;
+            }
 
-                #appShell {
-                    padding: 16px 18px;
+            body.nv-mode-playing #gameLayout {
+                display: block !important;
+            }
+
+            body.nv-mode-playing #navigationPrincipale.nv-hud-sidebar-disabled {
+                display: none !important;
+            }
+
+            body.nv-mode-playing #infosMondeSidebar,
+            body.nv-mode-playing #equipementSidebar,
+            body.nv-mode-playing .nv-hud-hidden-sidebar-part {
+                display: none !important;
+            }
+
+            body.nv-mode-playing #main {
+                width: 100%;
+                max-width: none;
+            }
+
+            body.nv-mode-playing #vuePrincipale {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            body.nv-mode-playing #topCharacterBar #personnage {
+                width: 100%;
+            }
+
+            body.nv-mode-playing #topCharacterBar .personnage-compact {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            body.nv-mode-playing #topCharacterBar .personnage-compact__haut {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 14px;
+            }
+
+            body.nv-mode-playing #topCharacterBar .personnage-compact__ressources {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            body.nv-mode-playing #topCharacterBar .personnage-compact__xp {
+                margin-top: 0;
+            }
+
+            body.nv-mode-playing .nv-hud-world-info {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 8px 9px;
+                border-radius: 14px;
+                border: 1px solid rgba(255,255,255,0.07);
+                background:
+                    radial-gradient(circle at top right, rgba(245, 211, 122, 0.055), transparent 48%),
+                    rgba(0,0,0,0.16);
+            }
+
+            body.nv-mode-playing .nv-hud-world-info__location,
+            body.nv-mode-playing .nv-hud-world-info__state {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 6px;
+                min-width: 0;
+            }
+
+            body.nv-mode-playing .nv-hud-world-info__location {
+                flex: 1 1 auto;
+            }
+
+            body.nv-mode-playing .nv-hud-world-info__state {
+                justify-content: flex-end;
+                flex: 0 0 auto;
+            }
+
+            body.nv-mode-playing .nv-hud-chip {
+                display: inline-flex;
+                align-items: center;
+                max-width: 100%;
+                padding: 4px 8px;
+                border-radius: 999px;
+                border: 1px solid rgba(255,255,255,0.07);
+                background: rgba(0,0,0,0.20);
+                color: var(--text-muted, #c7bdad);
+                font-size: 0.78rem;
+                font-weight: 700;
+                line-height: 1.1;
+                white-space: nowrap;
+            }
+
+            body.nv-mode-playing .nv-hud-chip--region {
+                color: var(--gold, #f5d37a);
+                border-color: rgba(245, 211, 122, 0.20);
+                background: rgba(245, 211, 122, 0.08);
+            }
+
+            body.nv-mode-playing .nv-hud-chip--zone {
+                color: var(--text, #f1eadf);
+            }
+
+            body.nv-mode-playing .nv-hud-chip--gold {
+                color: #ffd86a;
+                border-color: rgba(255, 216, 106, 0.18);
+                background: rgba(255, 216, 106, 0.07);
+            }
+
+            body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                gap: 7px;
+                width: 100%;
+                margin: 10px 0 0;
+                padding: 8px 8px 0;
+                border-top: 1px solid rgba(255,255,255,0.07);
+            }
+
+            body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button {
+                width: auto !important;
+                min-height: 32px;
+                padding: 7px 10px;
+                border-radius: 999px;
+                font-size: 0.83rem;
+                line-height: 1;
+                flex: 0 0 auto;
+            }
+
+            body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button.vue-active,
+            body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button.actif,
+            body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button.active {
+                box-shadow:
+                    0 0 0 1px rgba(245, 211, 122, 0.22),
+                    0 0 12px rgba(245, 211, 122, 0.10);
+            }
+
+            @media (max-width: 980px) {
+                body.nv-mode-playing #appShell {
+                    padding: 10px;
                 }
 
-                #topCharacterBar {
-                    position: sticky;
-                    top: 0;
-                    z-index: 200;
-                    padding: 12px 14px 14px;
-                }
-
-                #gameLayout {
-                    display: block !important;
-                }
-
-                #navigationPrincipale.nv-hud-sidebar-disabled {
-                    display: none !important;
-                }
-
-                #infosMondeSidebar,
-                #equipementSidebar,
-                .nv-hud-hidden-sidebar-part {
-                    display: none !important;
-                }
-
-                #main {
-                    width: 100%;
-                    max-width: none;
-                }
-
-                #vuePrincipale {
-                    width: 100%;
-                    box-sizing: border-box;
-                }
-
-                #topCharacterBar #personnage {
-                    width: 100%;
-                }
-
-                #topCharacterBar .personnage-compact {
-                    display: flex;
+                body.nv-mode-playing #topCharacterBar .personnage-compact__haut {
+                    align-items: flex-start;
                     flex-direction: column;
-                    gap: 10px;
                 }
 
-                #topCharacterBar .personnage-compact__haut {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 14px;
+                body.nv-mode-playing #topCharacterBar .personnage-compact__actions {
+                    justify-content: flex-start;
                 }
 
-                #topCharacterBar .personnage-compact__ressources {
-                    grid-template-columns: repeat(3, minmax(0, 1fr));
-                    gap: 10px;
+                body.nv-mode-playing .nv-hud-world-info {
+                    align-items: stretch;
+                    flex-direction: column;
                 }
 
-                #topCharacterBar .personnage-compact__xp {
-                    margin-top: 0;
+                body.nv-mode-playing .nv-hud-world-info__state {
+                    justify-content: flex-start;
+                }
+            }
+
+            @media (max-width: 720px) {
+                body.nv-mode-playing #topCharacterBar .personnage-compact__ressources {
+                    grid-template-columns: 1fr;
                 }
 
-                .nv-hud-world-info {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 10px;
-                    padding: 8px 9px;
-                    border-radius: 14px;
-                    border: 1px solid rgba(255,255,255,0.07);
-                    background:
-                        radial-gradient(circle at top right, rgba(245, 211, 122, 0.055), transparent 48%),
-                        rgba(0,0,0,0.16);
+                body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation {
+                    justify-content: flex-start;
+                    overflow-x: auto;
+                    flex-wrap: nowrap;
+                    padding-bottom: 4px;
                 }
 
-                .nv-hud-world-info__location,
-                .nv-hud-world-info__state {
-                    display: flex;
-                    align-items: center;
-                    flex-wrap: wrap;
-                    gap: 6px;
-                    min-width: 0;
-                }
-
-                .nv-hud-world-info__location {
-                    flex: 1 1 auto;
-                }
-
-                .nv-hud-world-info__state {
-                    justify-content: flex-end;
-                    flex: 0 0 auto;
-                }
-
-                .nv-hud-chip {
-                    display: inline-flex;
-                    align-items: center;
-                    max-width: 100%;
-                    padding: 4px 8px;
-                    border-radius: 999px;
-                    border: 1px solid rgba(255,255,255,0.07);
-                    background: rgba(0,0,0,0.20);
-                    color: var(--text-muted, #c7bdad);
-                    font-size: 0.78rem;
-                    font-weight: 700;
-                    line-height: 1.1;
+                body.nv-mode-playing #barreVuePrincipale.nv-hud-navigation button {
                     white-space: nowrap;
                 }
-
-                .nv-hud-chip--region {
-                    color: var(--gold, #f5d37a);
-                    border-color: rgba(245, 211, 122, 0.20);
-                    background: rgba(245, 211, 122, 0.08);
-                }
-
-                .nv-hud-chip--zone {
-                    color: var(--text, #f1eadf);
-                }
-
-                .nv-hud-chip--gold {
-                    color: #ffd86a;
-                    border-color: rgba(255, 216, 106, 0.18);
-                    background: rgba(255, 216, 106, 0.07);
-                }
-
-                #barreVuePrincipale.nv-hud-navigation {
-                    display: flex !important;
-                    flex-direction: row !important;
-                    flex-wrap: wrap;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 7px;
-                    width: 100%;
-                    margin: 10px 0 0;
-                    padding: 8px 8px 0;
-                    border-top: 1px solid rgba(255,255,255,0.07);
-                }
-
-                #barreVuePrincipale.nv-hud-navigation button {
-                    width: auto !important;
-                    min-height: 32px;
-                    padding: 7px 10px;
-                    border-radius: 999px;
-                    font-size: 0.83rem;
-                    line-height: 1;
-                    flex: 0 0 auto;
-                }
-
-                #barreVuePrincipale.nv-hud-navigation button.vue-active,
-                #barreVuePrincipale.nv-hud-navigation button.actif,
-                #barreVuePrincipale.nv-hud-navigation button.active {
-                    box-shadow:
-                        0 0 0 1px rgba(245, 211, 122, 0.22),
-                        0 0 12px rgba(245, 211, 122, 0.10);
-                }
-
-                @media (max-width: 980px) {
-                    #appShell {
-                        padding: 10px;
-                    }
-
-                    #topCharacterBar .personnage-compact__haut {
-                        align-items: flex-start;
-                        flex-direction: column;
-                    }
-
-                    #topCharacterBar .personnage-compact__actions {
-                        justify-content: flex-start;
-                    }
-
-                    .nv-hud-world-info {
-                        align-items: stretch;
-                        flex-direction: column;
-                    }
-
-                    .nv-hud-world-info__state {
-                        justify-content: flex-start;
-                    }
-                }
-
-                @media (max-width: 720px) {
-                    #topCharacterBar .personnage-compact__ressources {
-                        grid-template-columns: 1fr;
-                    }
-
-                    #barreVuePrincipale.nv-hud-navigation {
-                        justify-content: flex-start;
-                        overflow-x: auto;
-                        flex-wrap: nowrap;
-                        padding-bottom: 4px;
-                    }
-
-                    #barreVuePrincipale.nv-hud-navigation button {
-                        white-space: nowrap;
-                    }
-                }
-            `;
+            }
+        `;
 
         document.head.appendChild(style);
     }
 
     function NVHUD_installer() {
-        if (!NVHUD_hasGame()) {
-            setTimeout(NVHUD_installer, 120);
+        if (NV_HUD_STATE.installe) {
+            NVHUD_appliquerLayoutSiPossible();
             return;
         }
 
+        NV_HUD_STATE.installe = true;
+        NVHUD_preparerNavigationOriginale();
         NVHUD_injecterStyle();
         NVHUD_patchAfficherEquipementSidebar();
         NVHUD_patchAfficherPersonnage();
         NVHUD_patchAfficherVuePrincipale();
+        NVHUD_observerModeUI();
+        NVHUD_appliquerLayoutSiPossible();
 
-        NVHUD_mettreAJourInfosMonde();
-        NVHUD_deplacerNavigationDansHeader();
-        NVHUD_desactiverSidebarGauche();
-        NVHUD_demarrerTick();
-
-        console.log(`✅ HUD_Layout.js chargé — ${NV_HUD_LAYOUT_VERSION}`);
+        console.log(`✅ HUD_Layout.js charge — ${NV_HUD_LAYOUT_VERSION}`);
     }
 
     if (document.readyState === "loading") {
@@ -523,9 +496,7 @@
         NVHUD_installer();
     }
 
-    window.NV_HUD_LAYOUT_VERSION =
-        NV_HUD_LAYOUT_VERSION;
-
-    window.NVHUD_mettreAJourInfosMonde =
-        NVHUD_mettreAJourInfosMonde;
+    window.NV_HUD_LAYOUT_VERSION = NV_HUD_LAYOUT_VERSION;
+    window.NVHUD_mettreAJourInfosMonde = NVHUD_mettreAJourInfosMonde;
+    window.NVHUD_appliquerLayoutSiPossible = NVHUD_appliquerLayoutSiPossible;
 })();
