@@ -6,6 +6,7 @@ NightVenture — Personnage, temps et UI ressources
 - Cartes statistiques
 
 L'ancienne sidebar équipement/monde n'est plus générée ici.
+Les actions principales du personnage sont maintenant dans #barreVuePrincipale.
 */
 
 function calculerPourcentage(valeur, maximum) {
@@ -75,28 +76,6 @@ function afficherPersonnage() {
                         <span>Level ${niveauPersonnage}</span>
                         <span>${personnage.classe || "Aventurier"}</span>
                     </div>
-                </div>
-
-                <div class="personnage-compact__actions">
-                    <button id="btnStatistiquesTop" class="btn-vue btn-action-personnage" onclick="ouvrirStatistiques()">
-                        📈 Statistiques
-                        <span id="notifStatistiques" class="notification-bulle"></span>
-                    </button>
-
-                    <button id="btnTalentsTop" class="btn-vue btn-action-personnage" onclick="ouvrirTalents()">
-                        🌟 Talents
-                        <span id="notifTalents" class="notification-bulle"></span>
-                    </button>
-
-                    <button id="saveButton" class="btn-action-personnage" onclick="sauvegarderJeu()">
-                        💾 Sauvegarder
-                    </button>
-
-                    <label for="loadFile" class="btn-action-personnage bouton-charger-haut">
-                        📂 Charger
-                    </label>
-
-                    <input type="file" id="loadFile" accept=".json" hidden onchange="chargerSauvegardeDepuisInput(event)">
                 </div>
             </div>
 
