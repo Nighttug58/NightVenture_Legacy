@@ -1,18 +1,19 @@
 /*
-NightVenture — Gameplay Integration
-Boss persistants + mini-boss uniques + combats de zone.
+NightVenture — Gameplay Integration v0.9.4 no emoji direct
+- Boss persistants
+- Mini-boss uniques
+- Combats de zone
+- Récompenses uniques
+- Auberge gratuite
+- Progression combat
 
-A charger apres :
-- script.js
-- Combat_Utils.js
-- Combat_Bridge.js
-- Combats.js
+Version directe sans wrapper ni module runtime.
 */
 
 (function () {
     "use strict";
 
-    const GI_VERSION = "v0.9.4-clean-threats";
+    const GI_VERSION = "v0.9.4-no-emoji-direct";
 
     const GI_CONFIG = {
         utiliserCombatV2: true,
@@ -34,23 +35,40 @@ A charger apres :
         return typeof Game !== "undefined" && Boolean(Game?.data?.personnage);
     }
 
+    function GI_obtenirPersonnage() {
+        return GI_hasGame() ? Game.data.personnage : null;
+    }
+
     function GI_ajouterJournal(message) {
+        const texte = String(message ?? "").trim();
+        if (!texte) return;
+
         if (typeof ajouterJournal === "function") {
-            ajouterJournal(message);
+            ajouterJournal(texte);
             return;
         }
 
         if (GI_hasGame()) {
             Game.data.historique ??= {};
             Game.data.historique.journal ??= [];
-            Game.data.historique.journal.push(message);
+            Game.data.historique.journal.push(texte);
         }
 
-        console.log(message);
+        console.log(texte);
     }
 
-    function GI_obtenirPersonnage() {
-        return GI_hasGame() ? Game.data.personnage : null;
+    function GI_echapper(valeur) {
+        if (typeof echapperHTML === "function") return echapperHTML(valeur);
+        return String(valeur ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function GI_cloner(objet) {
+        return typeof structuredClone === "function" ? structuredClone(objet) : JSON.parse(JSON.stringify(objet));
     }
 
     function GI_initialiserEtat() {
@@ -59,6 +77,7 @@ A charger apres :
 
         personnage.progressionCombat ??= {};
         const etat = personnage.progressionCombat;
+
         etat.version = GI_VERSION;
         etat.bossPersistants ??= {};
         etat.miniBossUniques ??= {};
@@ -66,6 +85,7 @@ A charger apres :
         etat.definitionsObjetsUniques ??= {};
         etat.zonesDebloqueesParBoss ??= {};
         etat.stats ??= {};
+
         etat.stats.combatsStandards = Number(etat.stats.combatsStandards ?? etat.stats.combatsProceduraux ?? 0);
         delete etat.stats.combatsProceduraux;
         etat.stats.bossRencontres = Number(etat.stats.bossRencontres || 0);
@@ -88,7 +108,8 @@ A charger apres :
         if (!idZone) return null;
         if (Game.cache?.zonesParId?.[idZone]) return Game.cache.zonesParId[idZone];
         if (typeof obtenirZonesActuelles === "function") {
-            return obtenirZonesActuelles().find(zone => zone.id === idZone) || null;
+            const zone = obtenirZonesActuelles().find(element => element.id === idZone);
+            if (zone) return zone;
         }
         return (Game.data?.zones || Game.data?.monde?.zones || []).find(zone => zone.id === idZone) || null;
     }
@@ -116,10 +137,6 @@ A charger apres :
         return table[table.length - 1];
     }
 
-    function GI_cloner(objet) {
-        return typeof structuredClone === "function" ? structuredClone(objet) : JSON.parse(JSON.stringify(objet));
-    }
-
     function GI_enregistrerMonstreDansCache(monstre) {
         if (!monstre?.id) return monstre;
         Game.cache ??= {};
@@ -130,6 +147,7 @@ A charger apres :
 
     function GI_creerMonstreZone(typeMenace, zone) {
         const niveauJoueur = Math.max(1, Number(GI_obtenirPersonnage()?.niveau) || 1);
+
         const multiplicateurs = {
             faible: 0.75,
             normal: 1,
@@ -138,6 +156,7 @@ A charger apres :
             mini_boss: 1.9,
             boss: 2.8
         };
+
         const noms = {
             faible: "Créature affaiblie",
             normal: "Créature",
@@ -148,7 +167,12 @@ A charger apres :
         };
 
         const mult = multiplicateurs[typeMenace] || 1;
-        const fenetre = typeMenace === "boss" ? GI_CONFIG.niveauBoss : typeMenace === "mini_boss" ? GI_CONFIG.niveauMiniBoss : GI_CONFIG.niveauCombat;
+        const fenetre = typeMenace === "boss"
+            ? GI_CONFIG.niveauBoss
+            : typeMenace === "mini_boss"
+                ? GI_CONFIG.niveauMiniBoss
+                : GI_CONFIG.niveauCombat;
+
         const offset = Math.floor(Math.random() * (Number(fenetre.offsetHaut) - Number(fenetre.offsetBas) + 1)) + Number(fenetre.offsetBas);
         const niveau = Math.max(1, niveauJoueur + offset);
         const pv = Math.round((35 + niveau * 12) * mult);
@@ -208,7 +232,7 @@ A charger apres :
             return;
         }
 
-        GI_ajouterJournal("⚠ Aucun moteur de combat disponible.");
+        GI_ajouterJournal("Attention : aucun moteur de combat disponible.");
     }
 
     function GI_genererCombatStandard(zone) {
@@ -221,7 +245,7 @@ A charger apres :
         const etat = GI_initialiserEtat();
         if (etat?.stats) etat.stats.combatsStandards++;
 
-        GI_ajouterJournal(`⚔ ${monstre.nom} apparaît. [${monstre.nomMenace || choixMenace.id}]`);
+        GI_ajouterJournal(`Combat : ${monstre.nom} apparaît. [${monstre.nomMenace || choixMenace.id}]`);
         GI_demarrerCombat(monstre);
     }
 
@@ -230,6 +254,8 @@ A charger apres :
 
     function GI_creerOuObtenirMiniBoss(zone) {
         const etat = GI_initialiserEtat();
+        if (!etat) return { dejaVaincu: false, entree: null, monstre: null };
+
         const cle = GI_cleMiniBoss(zone);
         let entree = etat.miniBossUniques[cle];
 
@@ -262,27 +288,31 @@ A charger apres :
         monstre.integrationType = "mini_boss_unique";
         monstre.integrationCle = cle;
         GI_enregistrerMonstreDansCache(monstre);
+
         return { dejaVaincu: false, entree, monstre };
     }
 
     function GI_declencherMiniBoss(zone) {
         const etat = GI_initialiserEtat();
         const resultat = GI_creerOuObtenirMiniBoss(zone);
+        if (!etat || !resultat) return;
 
         if (resultat.dejaVaincu) {
-            GI_ajouterJournal(`🏆 Le mini-boss de ${GI_nomZone(zone)} a déjà été vaincu.`);
+            GI_ajouterJournal(`Mini-boss déjà vaincu : ${GI_nomZone(zone)}.`);
             GI_genererCombatStandard(zone);
             return;
         }
 
         resultat.entree.rencontres++;
         etat.stats.miniBossRencontres++;
-        GI_ajouterJournal(`🔴 Mini-boss unique : ${resultat.monstre.nom}`);
+        GI_ajouterJournal(`Mini-boss unique : ${resultat.monstre.nom}`);
         GI_demarrerCombat(resultat.monstre);
     }
 
     function GI_creerOuObtenirBoss(zone) {
         const etat = GI_initialiserEtat();
+        if (!etat) return { dejaVaincu: false, entree: null, monstre: null };
+
         const cle = GI_cleBoss(zone);
         let entree = etat.bossPersistants[cle];
 
@@ -324,28 +354,33 @@ A charger apres :
         monstre.integrationType = "boss_persistant";
         monstre.integrationCle = cle;
         GI_enregistrerMonstreDansCache(monstre);
+
         return { dejaVaincu: false, entree, monstre };
     }
 
     function GI_declencherBoss(zone) {
         const etat = GI_initialiserEtat();
         const resultat = GI_creerOuObtenirBoss(zone);
+        if (!etat || !resultat) return;
 
         if (resultat.dejaVaincu) {
-            GI_ajouterJournal(`👑 Le boss de ${GI_nomZone(zone)} est déjà vaincu.`);
+            GI_ajouterJournal(`Boss déjà vaincu : ${GI_nomZone(zone)}.`);
             return;
         }
 
         resultat.entree.rencontres++;
         etat.stats.bossRencontres++;
-        GI_ajouterJournal(`👑 Boss persistant : ${resultat.monstre.nom}`);
+        GI_ajouterJournal(`Boss persistant : ${resultat.monstre.nom}`);
         GI_demarrerCombat(resultat.monstre);
     }
 
     function GI_devraitDeclencherMiniBossDepuisCombat(zone) {
         const etat = GI_initialiserEtat();
+        if (!etat) return false;
+
         const cle = GI_cleMiniBoss(zone);
         if (etat.miniBossUniques[cle]?.vaincu) return false;
+
         const chance = Number(zone?.chanceMiniBoss ?? GI_CONFIG.chanceMiniBossDepuisCombat) || 0;
         return chance > 0 && Math.random() * 100 < chance;
     }
@@ -384,6 +419,7 @@ A charger apres :
 
     function GI_ajouterObjetInventaireSafe(idObjet, quantite = 1) {
         if (!idObjet || quantite <= 0) return;
+
         if (typeof ajouterObjetInventaire === "function") {
             ajouterObjetInventaire(idObjet, quantite);
             return;
@@ -391,6 +427,7 @@ A charger apres :
 
         const personnage = GI_obtenirPersonnage();
         if (!personnage) return;
+
         personnage.inventaire ??= [];
         const item = personnage.inventaire.find(entree => entree.id === idObjet);
         if (item) item.quantite += quantite;
@@ -403,7 +440,7 @@ A charger apres :
         const nomZone = entree?.zoneNom || "zone inconnue";
         const objet = {
             id,
-            nom: type === "boss" ? `Relique du boss — ${nomZone}` : `Trophée du mini-boss — ${nomZone}`,
+            nom: type === "boss" ? `Relique du boss - ${nomZone}` : `Trophée du mini-boss - ${nomZone}`,
             type: "trophee",
             rarete: type === "boss" ? "legendaire" : "rare",
             prix: type === "boss" ? 500 : 160,
@@ -427,15 +464,24 @@ A charger apres :
         const orBase = Math.max(0, Number(ennemi?.or || entree?.monstre?.or || 0));
 
         if (type === "boss") {
-            return { xp: Math.round(Math.max(80 + niveau * 18, xpBase * 0.80)), or: Math.round(Math.max(60 + niveau * 10, orBase)) };
+            return {
+                xp: Math.round(Math.max(80 + niveau * 18, xpBase * 0.80)),
+                or: Math.round(Math.max(60 + niveau * 10, orBase))
+            };
         }
-        return { xp: Math.round(Math.max(35 + niveau * 10, xpBase * 0.45)), or: Math.round(Math.max(25 + niveau * 5, orBase * 0.60)) };
+
+        return {
+            xp: Math.round(Math.max(35 + niveau * 10, xpBase * 0.45)),
+            or: Math.round(Math.max(25 + niveau * 5, orBase * 0.60))
+        };
     }
 
     function GI_obtenirConfigRecompense(type, entree) {
         const zone = GI_obtenirZoneParId(entree?.zoneId);
         if (!zone) return null;
-        return type === "boss" ? (zone.recompenseBoss || zone.recompenseBossPersistant || null) : (zone.recompenseMiniBoss || zone.recompenseMiniboss || null);
+        return type === "boss"
+            ? (zone.recompenseBoss || zone.recompenseBossPersistant || null)
+            : (zone.recompenseMiniBoss || zone.recompenseMiniboss || null);
     }
 
     function GI_listeZonesDebloqueesConfig(zone, config) {
@@ -445,6 +491,7 @@ A charger apres :
             if (Array.isArray(valeur)) return valeur.forEach(ajouter);
             valeurs.push(String(valeur));
         }
+
         ajouter(config?.zoneDebloquee);
         ajouter(config?.zonesDebloquees);
         ajouter(config?.debloqueZone);
@@ -452,21 +499,24 @@ A charger apres :
         ajouter(zone?.debloqueApresBoss);
         ajouter(zone?.debloqueZonesApresBoss);
         ajouter(zone?.zoneDebloqueeApresBoss);
+
         return [...new Set(valeurs)];
     }
 
     function GI_debloquerZone(idZone, sourceTexte = "boss") {
         const personnage = GI_obtenirPersonnage();
         if (!personnage || !idZone) return false;
+
         personnage.zonesDebloquees ??= [];
         if (personnage.zonesDebloquees.includes(idZone)) return false;
+
         personnage.zonesDebloquees.push(idZone);
         const zone = GI_obtenirZoneParId(idZone);
-        GI_ajouterJournal(`🗺 Zone débloquée (${sourceTexte}) : ${zone?.nom || idZone}`);
+        GI_ajouterJournal(`Zone débloquée (${sourceTexte}) : ${zone?.nom || idZone}`);
         return true;
     }
 
-    function GI_debloquerZonesApresBoss(entree, ennemi) {
+    function GI_debloquerZonesApresBoss(entree) {
         const etat = GI_initialiserEtat();
         const zone = GI_obtenirZoneParId(entree?.zoneId);
         const config = GI_obtenirConfigRecompense("boss", entree);
@@ -474,11 +524,13 @@ A charger apres :
 
         if (zonesADebloquer.length === 0 && Array.isArray(zone?.connexions)) {
             const personnage = GI_obtenirPersonnage();
-            zonesADebloquer = zone.connexions.filter(idZone => !(personnage.zonesDebloquees || []).includes(idZone)).slice(0, 1);
+            zonesADebloquer = zone.connexions
+                .filter(idZone => !(personnage.zonesDebloquees || []).includes(idZone))
+                .slice(0, 1);
         }
 
         if (zonesADebloquer.length === 0) {
-            GI_ajouterJournal("🗺 Aucun nouveau passage débloqué par ce boss.");
+            GI_ajouterJournal("Aucun nouveau passage débloqué par ce boss.");
             return [];
         }
 
@@ -487,10 +539,12 @@ A charger apres :
             if (GI_debloquerZone(idZone, "boss vaincu")) debloquees.push(idZone);
         });
 
-        if (debloquees.length > 0) {
+        if (debloquees.length > 0 && etat) {
             etat.zonesDebloqueesParBoss[entree.cle] ??= [];
             debloquees.forEach(idZone => {
-                if (!etat.zonesDebloqueesParBoss[entree.cle].includes(idZone)) etat.zonesDebloqueesParBoss[entree.cle].push(idZone);
+                if (!etat.zonesDebloqueesParBoss[entree.cle].includes(idZone)) {
+                    etat.zonesDebloqueesParBoss[entree.cle].push(idZone);
+                }
             });
         }
 
@@ -503,7 +557,7 @@ A charger apres :
 
         const cleRecompense = `${type}:${entree.cle}`;
         if (etat.recompensesUniques[cleRecompense]?.recuperee) {
-            GI_ajouterJournal("🎁 Récompense unique déjà récupérée — aucun farm possible.");
+            GI_ajouterJournal("Récompense unique déjà récupérée : aucun farm possible.");
             return false;
         }
 
@@ -512,7 +566,7 @@ A charger apres :
         const xp = Number(config?.xpBonus ?? config?.xp ?? bonus.xp) || 0;
         const or = Number(config?.orBonus ?? config?.or ?? bonus.or) || 0;
         const objetUnique = GI_creerObjetRecompenseUnique(type, entree, ennemi);
-        etat.definitionsObjetsUniques[objetUnique.id] = objetUnique;
+        if (objetUnique?.id) etat.definitionsObjetsUniques[objetUnique.id] = objetUnique;
 
         const objets = [];
         if (objetUnique?.id) objets.push({ id: objetUnique.id, quantite: 1, unique: true });
@@ -543,12 +597,12 @@ A charger apres :
         };
 
         GI_ajouterJournal("━━━━━━━━━━━━━━━━━━━━");
-        GI_ajouterJournal(type === "boss" ? "🎁 Récompense unique de boss obtenue !" : "🎁 Récompense unique de mini-boss obtenue !");
-        if (xp > 0) GI_ajouterJournal(`⭐ Bonus unique : +${xp} XP`);
-        if (or > 0) GI_ajouterJournal(`🟡 Bonus unique : +${or} or`);
+        GI_ajouterJournal(type === "boss" ? "Récompense unique de boss obtenue !" : "Récompense unique de mini-boss obtenue !");
+        if (xp > 0) GI_ajouterJournal(`Bonus unique : XP +${xp}`);
+        if (or > 0) GI_ajouterJournal(`Bonus unique : Or +${or}`);
         objets.forEach(item => {
             const objet = Game.cache?.objetsParId?.[item.id] || null;
-            GI_ajouterJournal(`📦 ${objet?.nom || item.id} x${item.quantite}`);
+            GI_ajouterJournal(`Butin : ${objet?.nom || item.id} x${item.quantite}`);
         });
         GI_ajouterJournal("━━━━━━━━━━━━━━━━━━━━");
 
@@ -560,6 +614,7 @@ A charger apres :
     function GI_gererVictoireIntegration(combat) {
         const ennemi = combat?.ennemi;
         if (!ennemi) return;
+
         const monstreCache = Game.cache?.monstresParId?.[ennemi.id] || null;
         const integrationType = monstreCache?.integrationType || ennemi.integrationType || null;
         const cle = monstreCache?.integrationCle || ennemi.integrationCle || null;
@@ -569,11 +624,12 @@ A charger apres :
         if (integrationType === "boss_persistant") {
             const entree = etat.bossPersistants[cle];
             if (!entree || entree.vaincu) return;
+
             entree.vaincu = true;
             entree.vaincuJour = GI_obtenirPersonnage()?.jour ?? null;
             entree.vaincuNiveauJoueur = GI_obtenirPersonnage()?.niveau ?? null;
             etat.stats.bossVaincus++;
-            GI_ajouterJournal(`👑 Boss persistant vaincu définitivement : ${ennemi.nom}`);
+            GI_ajouterJournal(`Boss persistant vaincu définitivement : ${ennemi.nom}`);
             GI_donnerRecompenseUnique("boss", entree, ennemi);
             GI_debloquerZonesApresBoss(entree, ennemi);
         }
@@ -581,11 +637,12 @@ A charger apres :
         if (integrationType === "mini_boss_unique") {
             const entree = etat.miniBossUniques[cle];
             if (!entree || entree.vaincu) return;
+
             entree.vaincu = true;
             entree.vaincuJour = GI_obtenirPersonnage()?.jour ?? null;
             entree.vaincuNiveauJoueur = GI_obtenirPersonnage()?.niveau ?? null;
             etat.stats.miniBossVaincus++;
-            GI_ajouterJournal(`🔴 Mini-boss unique vaincu définitivement : ${ennemi.nom}`);
+            GI_ajouterJournal(`Mini-boss unique vaincu définitivement : ${ennemi.nom}`);
             GI_donnerRecompenseUnique("mini_boss", entree, ennemi);
         }
     }
@@ -593,6 +650,7 @@ A charger apres :
     function GI_gererEchecIntegration(combat, resultat) {
         const ennemi = combat?.ennemi;
         if (!ennemi) return;
+
         const monstreCache = Game.cache?.monstresParId?.[ennemi.id] || null;
         const integrationType = monstreCache?.integrationType || ennemi.integrationType || null;
         const cle = monstreCache?.integrationCle || ennemi.integrationCle || null;
@@ -602,32 +660,36 @@ A charger apres :
         if (integrationType === "boss_persistant") {
             const entree = etat.bossPersistants[cle];
             if (!entree || entree.vaincu) return;
+
             if (resultat === "fuite") entree.fuites++;
             else entree.defaitesJoueur++;
 
             if (GI_CONFIG.bossConservePVEntreTentatives) {
-                const pvRestants = Math.max(1, Math.min(Math.round(Number(ennemi.pv) || 1), Math.round(Number(ennemi.pvMax || entree.monstre.pvMax || ennemi.pv) || 1)));
+                const pvMax = Math.round(Number(ennemi.pvMax || entree.monstre.pvMax || ennemi.pv) || 1);
+                const pvRestants = Math.max(1, Math.min(Math.round(Number(ennemi.pv) || 1), pvMax));
                 entree.monstre.pv = pvRestants;
                 entree.monstre.pvActuels = pvRestants;
                 entree.monstre.derniereMiseAJourPV = Date.now();
-                GI_ajouterJournal(`👑 Le boss reste blessé : ${pvRestants}/${entree.monstre.pvMax || ennemi.pvMax || "?"} PV.`);
+                GI_ajouterJournal(`Le boss reste blessé : ${pvRestants}/${entree.monstre.pvMax || ennemi.pvMax || "?"} PV.`);
             } else {
-                GI_ajouterJournal("👑 Le boss reste présent. Il faudra revenir mieux préparé.");
+                GI_ajouterJournal("Le boss reste présent. Il faudra revenir mieux préparé.");
             }
         }
 
         if (integrationType === "mini_boss_unique") {
             const entree = etat.miniBossUniques[cle];
             if (!entree || entree.vaincu) return;
+
             if (resultat === "fuite") entree.fuites++;
             else entree.defaitesJoueur++;
             if (GI_CONFIG.miniBossConservePVEntreTentatives) entree.monstre.pv = Math.max(1, Math.round(Number(ennemi.pv) || 1));
-            GI_ajouterJournal("🔴 Le mini-boss est toujours présent dans la zone.");
+            GI_ajouterJournal("Le mini-boss est toujours présent dans la zone.");
         }
     }
 
     function GI_patchTerminerCombatV2() {
         if (typeof terminerCombat !== "function" || terminerCombat.__GI_patche) return;
+
         const originalTerminerCombat = terminerCombat;
         terminerCombat = function (resultat) {
             const combatAvant = Game.combat?.actif || null;
@@ -641,6 +703,7 @@ A charger apres :
 
     function GI_patchExecuterEvenementZone() {
         if (typeof executerEvenementZone !== "function" || executerEvenementZone.__GI_patche) return;
+
         const originalExecuterEvenementZone = executerEvenementZone;
         executerEvenementZone = function (evenement, zone) {
             GI_initialiserEtat();
@@ -691,7 +754,7 @@ A charger apres :
         if (!GI_obtenirPersonnage()) return "";
         return `
             <div class="item-card" id="giAubergeGratuite">
-                <h3>🛏 Auberge</h3>
+                <h3>Auberge</h3>
                 <p>Repos gratuit : soigne complètement le personnage et fait passer 24 heures.</p>
                 <button onclick="GI_dormirAubergeGratuite()">Dormir 24h gratuitement</button>
             </div>
@@ -704,28 +767,28 @@ A charger apres :
         const mini = GI_obtenirEntreeMiniBossZoneActuelle();
         if (!zone && !boss && !mini) return "";
 
-        let html = `<div class="item-card" id="giMenacesZone"><h3>🎯 Menaces de zone</h3>`;
+        let html = `<div class="item-card" id="giMenacesZone"><h3>Menaces de zone</h3>`;
 
         if (boss) {
             html += `
-                <p>👑 Boss : <strong>${boss.monstre?.nom || "Boss inconnu"}</strong></p>
-                <p>État : ${boss.vaincu ? "🏆 Vaincu" : "⏳ Présent"}</p>
+                <p>Boss : <strong>${GI_echapper(boss.monstre?.nom || "Boss inconnu")}</strong></p>
+                <p>État : ${boss.vaincu ? "Vaincu" : "Présent"}</p>
                 <p>PV persistants : <strong>${Math.max(0, Math.round(Number(boss.monstre?.pv ?? boss.monstre?.pvMax ?? 0)))}</strong> / ${Math.max(1, Math.round(Number(boss.monstre?.pvMax ?? boss.monstre?.pv ?? 1)))}</p>
                 <p>Rencontres : ${boss.rencontres || 0} — Défaites : ${boss.defaitesJoueur || 0}</p>
             `;
-            if (!boss.vaincu) html += `<button onclick="GI_relancerBossActuel()">👑 Affronter / réessayer le boss</button>`;
+            if (!boss.vaincu) html += `<button onclick="GI_relancerBossActuel()">Affronter / réessayer le boss</button>`;
         } else {
-            html += `<p>👑 Aucun boss persistant encore révélé dans cette zone.</p>`;
-            html += `<button onclick="GI_declencherBossZoneActuelle()">👑 Révéler le boss de la zone</button>`;
+            html += `<p>Aucun boss persistant encore révélé dans cette zone.</p>`;
+            html += `<button onclick="GI_declencherBossZoneActuelle()">Révéler le boss de la zone</button>`;
         }
 
         if (mini) {
             html += `
                 <hr>
-                <p>🔴 Mini-boss : <strong>${mini.monstre?.nom || "Mini-boss inconnu"}</strong></p>
-                <p>État : ${mini.vaincu ? "🏆 Vaincu" : "⏳ Présent"}</p>
+                <p>Mini-boss : <strong>${GI_echapper(mini.monstre?.nom || "Mini-boss inconnu")}</strong></p>
+                <p>État : ${mini.vaincu ? "Vaincu" : "Présent"}</p>
             `;
-            if (!mini.vaincu) html += `<button onclick="GI_relancerMiniBossActuel()">🔴 Affronter / réessayer le mini-boss</button>`;
+            if (!mini.vaincu) html += `<button onclick="GI_relancerMiniBossActuel()">Affronter / réessayer le mini-boss</button>`;
         }
 
         html += `</div>`;
@@ -744,10 +807,12 @@ A charger apres :
     function GI_avancerTemps24h() {
         const personnage = GI_obtenirPersonnage();
         if (!personnage) return;
+
         if (typeof avancerTemps === "function") {
             avancerTemps(24);
             return;
         }
+
         const heureActuelle = Number(personnage.heure) || 0;
         const nouvelleHeure = heureActuelle + 24;
         personnage.heure = nouvelleHeure % 24;
@@ -757,7 +822,7 @@ A charger apres :
     window.GI_dormirAubergeGratuite = function () {
         const personnage = GI_obtenirPersonnage();
         if (!personnage) {
-            GI_ajouterJournal("⚠ Impossible de dormir : personnage introuvable.");
+            GI_ajouterJournal("Impossible de dormir : personnage introuvable.");
             return;
         }
 
@@ -768,10 +833,10 @@ A charger apres :
         personnage.status = personnage.status || {};
         GI_avancerTemps24h();
 
-        GI_ajouterJournal("🛏 Tu dors 24 heures à l'auberge.");
-        GI_ajouterJournal("❤️ PV restaurés au maximum.");
-        if ("mana" in personnage) GI_ajouterJournal("🔵 Mana restaurée au maximum.");
-        if ("stamina" in personnage) GI_ajouterJournal("🟢 Stamina restaurée au maximum.");
+        GI_ajouterJournal("Tu dors 24 heures à l'auberge.");
+        GI_ajouterJournal("PV restaurés au maximum.");
+        if ("mana" in personnage) GI_ajouterJournal("Mana restaurée au maximum.");
+        if ("stamina" in personnage) GI_ajouterJournal("Stamina restaurée au maximum.");
         if (typeof afficherPersonnage === "function") afficherPersonnage();
         if (typeof ouvrirExploration === "function") ouvrirExploration();
     };
@@ -782,195 +847,170 @@ A charger apres :
             else GI_declencherMiniBoss(zone);
             return;
         }
+
         if (entree.vaincu) {
-            GI_ajouterJournal(`${type === "boss" ? "👑" : "🔴"} ${entree.monstre?.nom || "Cette menace"} est déjà vaincue.`);
+            GI_ajouterJournal(`${entree.monstre?.nom || "Cette menace"} est déjà vaincue.`);
             return;
         }
+
         if (type === "boss") GI_declencherBoss(zone);
         else GI_declencherMiniBoss(zone);
     }
 
     window.GI_relancerBossActuel = function () {
         const zone = GI_obtenirZoneActuelle();
-        if (!zone) return GI_ajouterJournal("⚠ Zone actuelle introuvable.");
+        if (!zone) return GI_ajouterJournal("Zone actuelle introuvable.");
         const etat = GI_initialiserEtat();
-        GI_relancerMenace("boss", etat.bossPersistants?.[GI_cleBoss(zone)], zone);
+        GI_relancerMenace("boss", etat?.bossPersistants?.[GI_cleBoss(zone)], zone);
     };
 
     window.GI_relancerMiniBossActuel = function () {
         const zone = GI_obtenirZoneActuelle();
-        if (!zone) return GI_ajouterJournal("⚠ Zone actuelle introuvable.");
+        if (!zone) return GI_ajouterJournal("Zone actuelle introuvable.");
         const etat = GI_initialiserEtat();
-        GI_relancerMenace("mini_boss", etat.miniBossUniques?.[GI_cleMiniBoss(zone)], zone);
+        GI_relancerMenace("mini_boss", etat?.miniBossUniques?.[GI_cleMiniBoss(zone)], zone);
     };
 
     window.GI_relancerBossParCle = function (cle) {
         const etat = GI_initialiserEtat();
         const entree = etat?.bossPersistants?.[cle];
-        if (!entree) return GI_ajouterJournal("⚠ Boss introuvable.");
+        if (!entree) return GI_ajouterJournal("Boss introuvable.");
         GI_relancerMenace("boss", entree, GI_obtenirZoneParId(entree.zoneId) || GI_obtenirZoneActuelle());
     };
 
     window.GI_relancerMiniBossParCle = function (cle) {
         const etat = GI_initialiserEtat();
         const entree = etat?.miniBossUniques?.[cle];
-        if (!entree) return GI_ajouterJournal("⚠ Mini-boss introuvable.");
+        if (!entree) return GI_ajouterJournal("Mini-boss introuvable.");
         GI_relancerMenace("mini_boss", entree, GI_obtenirZoneParId(entree.zoneId) || GI_obtenirZoneActuelle());
-    };
-
-    function GI_creerCarteProgression() {
-        const etat = GI_initialiserEtat();
-        if (!etat) return "";
-        const bossTotal = Object.keys(etat.bossPersistants || {}).length;
-        const bossVaincus = GI_compterVaincus(etat.bossPersistants);
-        const miniTotal = Object.keys(etat.miniBossUniques || {}).length;
-        const miniVaincus = GI_compterVaincus(etat.miniBossUniques);
-        const recompenses = Object.values(etat.recompensesUniques || {}).filter(entree => entree?.recuperee).length;
-
-        return `
-            <div class="item-card">
-                <h3>⚔ Progression des menaces</h3>
-                <p>👑 Boss vaincus : <strong>${bossVaincus}</strong> / ${bossTotal}</p>
-                <p>🔴 Mini-boss vaincus : <strong>${miniVaincus}</strong> / ${miniTotal}</p>
-                <p>🎁 Récompenses uniques : <strong>${recompenses}</strong></p>
-                <button onclick="GI_ouvrirProgressionCombat()">📊 Voir la progression combat</button>
-            </div>
-        `;
-    }
-
-    function GI_patchOuvrirExploration() {
-        if (typeof ouvrirExploration !== "function" || ouvrirExploration.__GI_patche) return;
-        const originalOuvrirExploration = ouvrirExploration;
-        ouvrirExploration = function () {
-            originalOuvrirExploration();
-            const conteneur = document.getElementById("vuePrincipale");
-            if (!conteneur || document.getElementById("giProgressionMenaces")) return;
-            const wrapper = document.createElement("div");
-            wrapper.id = "giProgressionMenaces";
-            wrapper.innerHTML = GI_creerCarteProgression() + GI_creerCarteMenacesZone() + GI_creerCarteAuberge();
-            conteneur.appendChild(wrapper);
-        };
-        ouvrirExploration.__GI_patche = true;
-    }
-
-    window.GI_ouvrirProgressionCombat = function () {
-        const etat = GI_initialiserEtat();
-        if (!etat) return;
-        const lignesBoss = Object.values(etat.bossPersistants || {});
-        const lignesMini = Object.values(etat.miniBossUniques || {});
-
-        function creerLigne(entree, icone) {
-            const nom = entree?.monstre?.nom || "Inconnu";
-            const etatTexte = entree.vaincu ? "🏆 Vaincu" : "⏳ Présent";
-            const cleSafe = String(entree.cle || "").replace(/'/g, "\\'");
-            const bouton = entree.vaincu ? "" : icone === "👑" ? `<button onclick="GI_relancerBossParCle('${cleSafe}')">👑 Réessayer ce boss</button>` : `<button onclick="GI_relancerMiniBossParCle('${cleSafe}')">🔴 Réessayer ce mini-boss</button>`;
-            return `
-                <div class="item-card">
-                    <h3>${icone} ${nom}</h3>
-                    <p>Zone : ${entree.zoneNom || entree.zoneId}</p>
-                    <p>État : <strong>${etatTexte}</strong></p>
-                    <p>PV : ${Math.max(0, Math.round(Number(entree.monstre?.pv ?? entree.monstre?.pvMax ?? 0)))} / ${Math.max(1, Math.round(Number(entree.monstre?.pvMax ?? entree.monstre?.pv ?? 1)))}</p>
-                    <p>Rencontres : ${entree.rencontres || 0}</p>
-                    <p>Défaites joueur : ${entree.defaitesJoueur || 0}</p>
-                    <p>Fuites : ${entree.fuites || 0}</p>
-                    ${bouton}
-                </div>
-            `;
-        }
-
-        let html = `
-            <div class="item-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:15px;">
-                    <h2 style="margin:0;">📊 Progression combat</h2>
-                    <button onclick="ouvrirExploration()">⬅ Retour</button>
-                </div>
-                <p>Version : ${GI_VERSION}</p>
-            </div>
-            <div class="item-card">
-                <h3>Résumé</h3>
-                <p>👑 Boss : ${GI_compterVaincus(etat.bossPersistants)} / ${Object.keys(etat.bossPersistants || {}).length} vaincus</p>
-                <p>🔴 Mini-boss : ${GI_compterVaincus(etat.miniBossUniques)} / ${Object.keys(etat.miniBossUniques || {}).length} vaincus</p>
-                <p>🎁 Récompenses uniques : ${Object.values(etat.recompensesUniques || {}).filter(r => r?.recuperee).length}</p>
-                <p>🗺 Déblocages de zones par boss : ${Object.values(etat.zonesDebloqueesParBoss || {}).reduce((total, liste) => total + (Array.isArray(liste) ? liste.length : 0), 0)}</p>
-                <p>Combats standards lancés : ${etat.stats?.combatsStandards || 0}</p>
-            </div>
-        `;
-
-        html += `<div class="item-card"><h2>👑 Boss persistants</h2></div>`;
-        html += lignesBoss.length ? lignesBoss.map(entree => creerLigne(entree, "👑")).join("") : `<div class="item-card">Aucun boss encore rencontré.</div>`;
-        html += `<div class="item-card"><h2>🔴 Mini-boss uniques</h2></div>`;
-        html += lignesMini.length ? lignesMini.map(entree => creerLigne(entree, "🔴")).join("") : `<div class="item-card">Aucun mini-boss encore rencontré.</div>`;
-
-        if (typeof changerVue === "function") changerVue("progression_combat");
-        if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(html);
-        else document.getElementById("vuePrincipale").innerHTML = html;
-    };
-
-    window.GI_reinitialiserProgressionCombat = function () {
-        const personnage = GI_obtenirPersonnage();
-        if (!personnage) return;
-        const ok = confirm("Réinitialiser la progression boss / mini-boss ? Cela ne touche pas au niveau, inventaire, or ou quêtes.");
-        if (!ok) return;
-        personnage.progressionCombat = null;
-        GI_initialiserEtat();
-        GI_ajouterJournal("♻ Progression boss / mini-boss réinitialisée.");
-        if (typeof ouvrirExploration === "function") ouvrirExploration();
     };
 
     window.GI_declencherBossZoneActuelle = function () {
         const zone = GI_obtenirZoneActuelle();
-        if (!zone) return GI_ajouterJournal("⚠ Zone actuelle introuvable.");
+        if (!zone) return GI_ajouterJournal("Zone actuelle introuvable.");
         GI_declencherBoss(zone);
     };
 
     window.GI_declencherMiniBossZoneActuelle = function () {
         const zone = GI_obtenirZoneActuelle();
-        if (!zone) return GI_ajouterJournal("⚠ Zone actuelle introuvable.");
+        if (!zone) return GI_ajouterJournal("Zone actuelle introuvable.");
         GI_declencherMiniBoss(zone);
     };
 
-    window.GI_setPVBossActuel = function (pv) {
-        const etat = GI_initialiserEtat();
-        const zone = GI_obtenirZoneActuelle();
-        if (!etat || !zone) return GI_ajouterJournal("⚠ Zone actuelle introuvable.");
-        const entree = etat.bossPersistants?.[GI_cleBoss(zone)];
-        if (!entree) return GI_ajouterJournal("⚠ Aucun boss révélé dans cette zone.");
-        const pvMax = Math.max(1, Math.round(Number(entree.monstre?.pvMax || entree.monstre?.pv || 1)));
-        const pvCorriges = Math.max(1, Math.min(Math.round(Number(pv) || 1), pvMax));
-        entree.monstre.pv = pvCorriges;
-        entree.monstre.pvMax = pvMax;
-        entree.monstre.pvActuels = pvCorriges;
-        entree.monstre.derniereMiseAJourPV = Date.now();
-        GI_ajouterJournal(`🩸 PV du boss ajustés : ${pvCorriges}/${pvMax}.`);
-        if (typeof ouvrirExploration === "function") ouvrirExploration();
-    };
+    function GI_injecterCartesExploration() {
+        const conteneur = document.getElementById("vuePrincipale");
+        if (!conteneur || !GI_obtenirPersonnage()) return;
+        if (document.getElementById("giAubergeGratuite") || document.getElementById("giMenacesZone")) return;
 
-    window.GI_soignerBossActuel = function () {
+        const html = GI_creerCarteAuberge() + GI_creerCarteMenacesZone();
+        if (!html.trim()) return;
+
+        const wrapper = document.createElement("div");
+        wrapper.id = "giGameplayIntegrationCards";
+        wrapper.innerHTML = html;
+        conteneur.appendChild(wrapper);
+    }
+
+    function GI_patchOuvrirExploration() {
+        if (typeof ouvrirExploration !== "function" || ouvrirExploration.__GI_patche) return;
+
+        const originalOuvrirExploration = ouvrirExploration;
+        ouvrirExploration = function (...args) {
+            const resultat = originalOuvrirExploration.apply(this, args);
+            setTimeout(GI_injecterCartesExploration, 0);
+            return resultat;
+        };
+        ouvrirExploration.__GI_patche = true;
+    }
+
+    function GI_creerCarteProgressionBoss(entree, type) {
+        const nom = entree?.monstre?.nom || (type === "boss" ? "Boss inconnu" : "Mini-boss inconnu");
+        const etat = entree?.vaincu ? "Vaincu" : "Présent";
+        const bouton = entree?.vaincu
+            ? ""
+            : type === "boss"
+                ? `<button onclick="GI_relancerBossParCle('${entree.cle}')">Affronter</button>`
+                : `<button onclick="GI_relancerMiniBossParCle('${entree.cle}')">Affronter</button>`;
+
+        return `
+            <div class="item-card">
+                <h3>${GI_echapper(nom)}</h3>
+                <p>Type : ${type === "boss" ? "Boss" : "Mini-boss"}</p>
+                <p>Zone : ${GI_echapper(entree?.zoneNom || entree?.zoneId || "Zone inconnue")}</p>
+                <p>État : ${etat}</p>
+                <p>Rencontres : ${entree?.rencontres || 0}</p>
+                <p>Défaites joueur : ${entree?.defaitesJoueur || 0}</p>
+                <p>Fuites : ${entree?.fuites || 0}</p>
+                ${bouton}
+            </div>
+        `;
+    }
+
+    window.GI_ouvrirProgressionCombat = function () {
+        if (typeof changerVue === "function") changerVue("progression_combat");
         const etat = GI_initialiserEtat();
-        const zone = GI_obtenirZoneActuelle();
-        if (!etat || !zone) return;
-        const entree = etat.bossPersistants?.[GI_cleBoss(zone)];
-        if (!entree) return GI_ajouterJournal("⚠ Aucun boss révélé dans cette zone.");
-        const pvMax = Math.max(1, Math.round(Number(entree.monstre?.pvMax || entree.monstre?.pv || 1)));
-        entree.monstre.pv = pvMax;
-        entree.monstre.pvMax = pvMax;
-        GI_ajouterJournal(`❤️ Boss restauré à ${pvMax}/${pvMax} PV.`);
-        if (typeof ouvrirExploration === "function") ouvrirExploration();
+        if (!etat) return;
+
+        const boss = Object.values(etat.bossPersistants || {});
+        const miniBoss = Object.values(etat.miniBossUniques || {});
+        const recompenses = Object.values(etat.recompensesUniques || {});
+
+        const html = `
+            <div class="item-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:15px;">
+                    <div>
+                        <h2 style="margin:0;">Progression combat</h2>
+                        <p style="margin:6px 0 0;">Boss persistants, mini-boss uniques et récompenses.</p>
+                    </div>
+                    <button onclick="ouvrirExploration()">Retour</button>
+                </div>
+            </div>
+
+            <div class="item-card">
+                <h3>Résumé</h3>
+                <p>Combats standards : ${etat.stats.combatsStandards || 0}</p>
+                <p>Boss vaincus : ${GI_compterVaincus(etat.bossPersistants)} / ${boss.length}</p>
+                <p>Mini-boss vaincus : ${GI_compterVaincus(etat.miniBossUniques)} / ${miniBoss.length}</p>
+                <p>Récompenses uniques récupérées : ${recompenses.filter(r => r?.recuperee).length}</p>
+            </div>
+
+            <div class="item-card">
+                <h3>Boss persistants</h3>
+                ${boss.length ? boss.map(entree => GI_creerCarteProgressionBoss(entree, "boss")).join("") : "<p>Aucun boss révélé.</p>"}
+            </div>
+
+            <div class="item-card">
+                <h3>Mini-boss uniques</h3>
+                ${miniBoss.length ? miniBoss.map(entree => GI_creerCarteProgressionBoss(entree, "mini_boss")).join("") : "<p>Aucun mini-boss révélé.</p>"}
+            </div>
+        `;
+
+        if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(html);
     };
 
     function GI_installer() {
+        if (!GI_hasGame()) {
+            setTimeout(GI_installer, 120);
+            return;
+        }
+
         GI_initialiserEtat();
         GI_patchExecuterEvenementZone();
         GI_patchTerminerCombatV2();
         GI_patchOuvrirExploration();
-        console.log("✅ Gameplay_Integration.js chargé — " + GI_VERSION);
+        setTimeout(GI_injecterCartesExploration, 0);
+        console.log("Gameplay_Integration.js chargé — " + GI_VERSION);
     }
+
+    window.GI_VERSION = GI_VERSION;
+    window.GI_genererCombatStandard = GI_genererCombatStandard;
+    window.GI_declencherMiniBoss = GI_declencherMiniBoss;
+    window.GI_declencherBoss = GI_declencherBoss;
+    window.GI_initialiserEtat = GI_initialiserEtat;
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", GI_installer);
     } else {
         GI_installer();
     }
-
-    window.GI_VERSION = GI_VERSION;
 })();
