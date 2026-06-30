@@ -19,6 +19,10 @@ NightVenture — Quêtes Extension No Emoji Runtime
             .trim();
     }
 
+    function NQX_cleanArg(value) {
+        return typeof value === "string" ? NQX_cleanText(value) : value;
+    }
+
     function NQX_cleanNodeText(node) {
         if (!node || node.nodeType !== Node.TEXT_NODE) return;
 
@@ -57,6 +61,19 @@ NightVenture — Quêtes Extension No Emoji Runtime
         }
 
         nodes.forEach(NQX_cleanNodeText);
+    }
+
+    function NQX_patchConsole() {
+        if (!window.console || typeof window.console.log !== "function") return;
+        if (window.console.log.__NQX_NO_EMOJI_PATCH) return;
+
+        const original = window.console.log;
+
+        window.console.log = function (...args) {
+            return original.apply(this, args.map(NQX_cleanArg));
+        };
+
+        window.console.log.__NQX_NO_EMOJI_PATCH = true;
     }
 
     function NQX_patchJournal() {
@@ -132,6 +149,7 @@ NightVenture — Quêtes Extension No Emoji Runtime
     }
 
     function NQX_install() {
+        NQX_patchConsole();
         NQX_patchJournal();
         NQX_patchQuestStateLabel();
         NQX_patchQuestButtonBadge();
