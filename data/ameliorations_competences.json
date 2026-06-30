@@ -9,7 +9,7 @@
       "rarete": "rare",
       "niveauMaxDepart": 10,
       "niveauMaxFinal": 15,
-      "gainNiveauMax": 5,
+      "gainNiveauMax": 1,
       "itemIdPattern": "livre_competence_{competenceId}",
       "tableDrop": null
     },
