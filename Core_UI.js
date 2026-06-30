@@ -147,3 +147,55 @@ function mettreAJourNotifications() {
     if (notifStats) notifStats.style.display = Number(personnage.pointsCaracteristiques || 0) > 0 ? "block" : "none";
     if (notifTalents) notifTalents.style.display = Number(personnage.pointsTalent || 0) > 0 ? "block" : "none";
 }
+
+function NV_estPleinEcranActif() {
+    return Boolean(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement
+    );
+}
+
+function NV_mettreAJourBoutonPleinEcran() {
+    const bouton = document.getElementById("btnFullscreenToggle");
+    if (!bouton) return;
+
+    const actif = NV_estPleinEcranActif();
+    bouton.textContent = actif ? "Quitter plein écran" : "Plein écran";
+    bouton.setAttribute("aria-pressed", actif ? "true" : "false");
+    bouton.classList.toggle("nv-fullscreen-active", actif);
+}
+
+async function NV_toggleFullscreen() {
+    const cible = document.documentElement;
+
+    try {
+        if (NV_estPleinEcranActif()) {
+            if (document.exitFullscreen) await document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+        } else {
+            if (cible.requestFullscreen) await cible.requestFullscreen();
+            else if (cible.webkitRequestFullscreen) cible.webkitRequestFullscreen();
+            else if (cible.msRequestFullscreen) cible.msRequestFullscreen();
+            else {
+                throw new Error("API plein écran non disponible sur ce navigateur.");
+            }
+        }
+    } catch (erreur) {
+        console.warn("Plein écran indisponible :", erreur);
+        if (typeof ajouterJournal === "function") {
+            ajouterJournal("Plein écran indisponible sur ce navigateur ou ce mode d'affichage.");
+        }
+    } finally {
+        NV_mettreAJourBoutonPleinEcran();
+    }
+}
+
+document.addEventListener("fullscreenchange", NV_mettreAJourBoutonPleinEcran);
+document.addEventListener("webkitfullscreenchange", NV_mettreAJourBoutonPleinEcran);
+document.addEventListener("msfullscreenchange", NV_mettreAJourBoutonPleinEcran);
+document.addEventListener("DOMContentLoaded", NV_mettreAJourBoutonPleinEcran);
+
+window.NV_toggleFullscreen = NV_toggleFullscreen;
+window.NV_mettreAJourBoutonPleinEcran = NV_mettreAJourBoutonPleinEcran;
