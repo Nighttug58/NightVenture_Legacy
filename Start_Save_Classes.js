@@ -1,14 +1,16 @@
 /*
 NightVenture - Start / Save / Classes
 Module joueur base uniquement sur classes_metin2.js.
+Version corrigee pour les 40 competences Metin2 + fallback Guerrier.
 */
 
 (function () {
     "use strict";
 
-    const NV_START_VERSION = "metin2-classes-v1";
+    const NV_START_VERSION = "metin2-classes-v2";
     const NV_SAVE_KEY = "NightVenture_Save_v0_9_4";
     const NV_BASE_ACTIONS = ["attaque_simple", "defendre", "fuir", "utiliser_objet"];
+    const NV_CLASSE_FALLBACK = "guerrier";
 
     const NV_EQUIPEMENT_DEPART = {
         guerrier: ["epee_rouillee", "armure_cuir", "potion_soin"],
@@ -21,7 +23,7 @@ Module joueur base uniquement sur classes_metin2.js.
         mode: "menu",
         autosaveTimer: null,
         classeCompetencesSelectionnee: null,
-        classeNouvellePartieSelectionnee: "guerrier"
+        classeNouvellePartieSelectionnee: NV_CLASSE_FALLBACK
     };
 
     function NV_escape(texte) {
@@ -50,17 +52,33 @@ Module joueur base uniquement sur classes_metin2.js.
         if (!Array.isArray(window.NV_CLASSES_METIN2) || window.NV_CLASSES_METIN2.length !== 4) {
             throw new Error("classes_metin2.js doit declarer exactement 4 classes.");
         }
+        window.NV_CLASSES_METIN2.forEach(classe => {
+            if (!classe?.id || !Array.isArray(classe.specialisations) || classe.specialisations.length < 1) {
+                throw new Error("Chaque classe Metin2 doit declarer des specialisations.");
+            }
+        });
         return window.NV_CLASSES_METIN2;
     }
 
     function NV_exigerCompetencesMetin2() {
-        if (!Array.isArray(window.NV_COMPETENCES_METIN2) || window.NV_COMPETENCES_METIN2.length !== 4) {
-            throw new Error("classes_metin2.js doit declarer exactement 4 competences de depart.");
+        if (!Array.isArray(window.NV_COMPETENCES_METIN2) || window.NV_COMPETENCES_METIN2.length < 40) {
+            throw new Error("classes_metin2.js doit declarer les competences Metin2 runtime, minimum 40 competences.");
         }
+
+        const ids = new Set();
+        window.NV_COMPETENCES_METIN2.forEach(competence => {
+            if (!competence?.id) throw new Error("Une competence Metin2 n'a pas d'id.");
+            if (ids.has(competence.id)) throw new Error("Competence Metin2 dupliquee : " + competence.id);
+            ids.add(competence.id);
+        });
         return window.NV_COMPETENCES_METIN2;
     }
 
     function NV_syncClassesMetin2() {
+        if (typeof window.NV_enregistrerClassesEtCompetences === "function") {
+            window.NV_enregistrerClassesEtCompetences();
+        }
+
         const classes = NV_cloner(NV_exigerClassesMetin2());
         const competences = NV_cloner(NV_exigerCompetencesMetin2());
 
@@ -70,6 +88,9 @@ Module joueur base uniquement sur classes_metin2.js.
         Game.cache.competencesParId = {};
 
         classes.forEach(classe => {
+            const specDepart = classe.specialisations.find(s => s.id === classe.specialisationDepart) || classe.specialisations[0];
+            classe.specialisationDepart = specDepart?.id || null;
+            classe.competencesDepart = Array.isArray(specDepart?.competences) ? [...specDepart.competences] : [];
             Game.cache.classesParId[classe.id] = classe;
         });
 
@@ -85,14 +106,20 @@ Module joueur base uniquement sur classes_metin2.js.
 
     function NV_obtenirClasse(classeId) {
         NV_syncClassesMetin2();
-        const classe = Game.cache.classesParId[classeId];
-        if (!classe) throw new Error("Classe inconnue : " + classeId);
+        const id = Game.cache.classesParId[classeId] ? classeId : NV_CLASSE_FALLBACK;
+        const classe = Game.cache.classesParId[id];
+        if (!classe) throw new Error("Classe fallback introuvable : " + id);
         return classe;
     }
 
     function NV_obtenirCompetence(idCompetence) {
         NV_syncClassesMetin2();
         return Game.cache.competencesParId[idCompetence] || null;
+    }
+
+    function NV_specialisationDepartClasse(classe) {
+        if (!classe) return null;
+        return classe.specialisations?.find(s => s.id === classe.specialisationDepart) || classe.specialisations?.[0] || null;
     }
 
     function NV_pointsStatsNiveau(niveau) {
@@ -110,8 +137,8 @@ Module joueur base uniquement sur classes_metin2.js.
             vitesse: Number(classe.base.vitesse) || 0
         };
 
-        const poids = classe.poids;
-        const totalPoids = Object.keys(stats).reduce((total, stat) => total + (Number(poids[stat]) || 0), 0);
+        const poids = classe.poids || {};
+        const totalPoids = Object.keys(stats).reduce((total, stat) => total + (Number(poids[stat]) || 0), 0) || 1;
         const points = NV_pointsStatsNiveau(niveau);
         const restes = [];
         let attribues = 0;
@@ -160,7 +187,8 @@ Module joueur base uniquement sur classes_metin2.js.
 
     function NV_listeCompetencesClasse(classeId, inclureBase = true) {
         const classe = NV_obtenirClasse(classeId);
-        return [...new Set([...(inclureBase ? NV_BASE_ACTIONS : []), ...(classe.competencesDepart || [])])];
+        const spec = NV_specialisationDepartClasse(classe);
+        return [...new Set([...(inclureBase ? NV_BASE_ACTIONS : []), ...(spec?.competences || classe.competencesDepart || [])])];
     }
 
     function NV_nomActionBase(idAction) {
@@ -186,11 +214,9 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_creerInventaireDepart(classeId) {
-        const ids = NV_EQUIPEMENT_DEPART[classeId];
+        const ids = NV_EQUIPEMENT_DEPART[classeId] || NV_EQUIPEMENT_DEPART[NV_CLASSE_FALLBACK];
         const quantites = {};
-        ids.forEach(id => {
-            quantites[id] = (quantites[id] || 0) + (id === "potion_soin" ? 5 : 1);
-        });
+        ids.forEach(id => { quantites[id] = (quantites[id] || 0) + (id === "potion_soin" ? 5 : 1); });
         return Object.entries(quantites).map(([id, quantite]) => ({ id, quantite }));
     }
 
@@ -203,7 +229,8 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_creerPersonnageNouveau(classeId, nom) {
-        const classe = NV_obtenirClasse(classeId);
+        const classe = NV_obtenirClasse(classeId || NV_CLASSE_FALLBACK);
+        const spec = NV_specialisationDepartClasse(classe);
         const repartition = NV_repartirPointsStatsSelonClasse(1, classe.id);
         const bonus = classe.bonusCombat || {};
         const previewDepart = NV_calculerPreviewClasse(classe.id);
@@ -214,10 +241,13 @@ Module joueur base uniquement sur classes_metin2.js.
             classeNom: classe.nom,
             classeIcone: classe.icone,
             classeDescription: classe.description,
+            specialisationId: spec?.id || null,
+            specialisationNom: spec?.nom || null,
             niveau: 1,
             xp: 0,
             pointsCaracteristiques: 0,
             pointsTalent: 0,
+            pointsCompetence: 0,
             force: Number(repartition.force) || 0,
             dexterite: Number(repartition.dexterite) || 0,
             intelligence: Number(repartition.intelligence) || 0,
@@ -247,6 +277,8 @@ Module joueur base uniquement sur classes_metin2.js.
             quetes: [],
             talents: [],
             competences: NV_listeCompetencesClasse(classe.id, true),
+            competencesProgression: {},
+            competencesNiveaux: {},
             progressionQuetes: { arcsRecompenses: {} },
             progressionCombat: { bossPersistants: {}, miniBossUniques: {} },
             equipement: { arme: null, casque: null, armure: null, gants: null, chaussures: null, collier: null, bague1: null, bague2: null, artefact: null },
@@ -274,21 +306,27 @@ Module joueur base uniquement sur classes_metin2.js.
 
     function NV_normaliserPersonnage(personnage = Game.data?.personnage) {
         if (!personnage) return null;
-        const classeId = Game.cache.classesParId[personnage.classeId] ? personnage.classeId : "guerrier";
+        NV_syncClassesMetin2();
+        const classeId = Game.cache.classesParId[personnage.classeId] ? personnage.classeId : NV_CLASSE_FALLBACK;
         const classe = NV_obtenirClasse(classeId);
+        const spec = classe.specialisations?.find(s => s.id === personnage.specialisationId) || NV_specialisationDepartClasse(classe);
         const ressources = NV_calculerRessourcesDepuisPersonnage(personnage);
+
         personnage.nom ??= "Nighttug58";
         personnage.classeId = classe.id;
         personnage.classe = classe.nom;
         personnage.classeNom = classe.nom;
         personnage.classeIcone = classe.icone;
         personnage.classeDescription = classe.description;
+        personnage.specialisationId = spec?.id || null;
+        personnage.specialisationNom = spec?.nom || null;
         personnage.vitesse ??= NV_calculerPreviewClasse(classe.id).vitesse;
         personnage.niveau ??= 1;
         personnage.xp ??= 0;
         personnage.or ??= 0;
         personnage.pointsCaracteristiques ??= 0;
         personnage.pointsTalent ??= 0;
+        personnage.pointsCompetence ??= 0;
         personnage.regionMondeActuelle ??= Game.data?.regionsMonde?.[0]?.id || "aetheria";
         personnage.zoneActuelle ??= NV_obtenirZoneDepart();
         personnage.zonesDebloquees ??= NV_obtenirZonesDebloqueesDefaut();
@@ -300,7 +338,9 @@ Module joueur base uniquement sur classes_metin2.js.
         personnage.progressionQuetes ??= { arcsRecompenses: {} };
         personnage.progressionCombat ??= { bossPersistants: {}, miniBossUniques: {} };
         personnage.equipement ??= { arme: null, casque: null, armure: null, gants: null, chaussures: null, collier: null, bague1: null, bague2: null, artefact: null };
-        personnage.competences = NV_listeCompetencesClasse(classe.id, true);
+        personnage.competences = [...new Set([...NV_BASE_ACTIONS, ...(spec?.competences || classe.competencesDepart || [])])];
+        personnage.competencesProgression ??= {};
+        personnage.competencesNiveaux ??= {};
         personnage.pv = NV_clamp(personnage.pv ?? ressources.pv, 1, ressources.pv);
         personnage.mana = NV_clamp(personnage.mana ?? ressources.mana, 0, ressources.mana);
         personnage.stamina = NV_clamp(personnage.stamina ?? ressources.stamina, 0, ressources.stamina);
@@ -309,7 +349,13 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_creerSauvegarde() {
-        return { versionNightVenture: NV_START_VERSION, dateSauvegarde: new Date().toISOString(), personnage: NV_normaliserPersonnage(Game.data?.personnage), historique: Game.data?.historique || { journal: [] }, monde: Game.data?.monde || {} };
+        return {
+            versionNightVenture: NV_START_VERSION,
+            dateSauvegarde: new Date().toISOString(),
+            personnage: NV_normaliserPersonnage(Game.data?.personnage),
+            historique: Game.data?.historique || { journal: [] },
+            monde: Game.data?.monde || {}
+        };
     }
 
     function NV_sauvegarderLocalSilencieux() {
@@ -318,7 +364,7 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_appliquerSauvegarde(save, message = "Sauvegarde chargee.") {
-        Game.data.personnage = save?.personnage || NV_creerPersonnageNouveau("guerrier", "Nighttug58");
+        Game.data.personnage = save?.personnage || NV_creerPersonnageNouveau(NV_CLASSE_FALLBACK, "Nighttug58");
         Game.data.historique = save?.historique || { journal: [] };
         Game.data.monde = save?.monde || {};
         NV_normaliserPersonnage(Game.data.personnage);
@@ -366,15 +412,17 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_creerFicheClasseSelectionnee(classeId) {
-        const classe = NV_obtenirClasse(classeId);
+        const classe = NV_obtenirClasse(classeId || NV_CLASSE_FALLBACK);
         const preview = NV_calculerPreviewClasse(classe.id);
-        const competences = NV_listeCompetencesClasse(classe.id, false).map(NV_resumeCompetence).join(" / ") || "Actions de base";
+        const spec = NV_specialisationDepartClasse(classe);
+        const competences = (spec?.competences || []).map(NV_resumeCompetence).join(" / ") || "Actions de base";
         return `
             <article class="item-card nv-classe-card nv-classe-card--selected">
                 <div class="nv-classe-card__header">
                     <div>
                         <h3>${NV_escape(classe.nom)}</h3>
                         <p>${NV_escape(classe.description)}</p>
+                        <small>Specialisation de depart : ${NV_escape(spec?.nom || "Aucune")}</small>
                     </div>
                     <button onclick="NV_lancerNouvellePartie('${classe.id}')">Commencer ${NV_escape(classe.nom)}</button>
                 </div>
@@ -438,8 +486,8 @@ Module joueur base uniquement sur classes_metin2.js.
         document.body.classList.add("nv-start-mode");
         NV_syncClassesMetin2();
         const classes = NV_obtenirClasses();
-        const classeSelectionneeId = Game.cache.classesParId[classeId] ? classeId : (NV_ETAT.classeNouvellePartieSelectionnee || classes[0].id);
-        NV_ETAT.classeNouvellePartieSelectionnee = Game.cache.classesParId[classeSelectionneeId] ? classeSelectionneeId : "guerrier";
+        const classeSelectionneeId = Game.cache.classesParId[classeId] ? classeId : (Game.cache.classesParId[NV_ETAT.classeNouvellePartieSelectionnee] ? NV_ETAT.classeNouvellePartieSelectionnee : NV_CLASSE_FALLBACK);
+        NV_ETAT.classeNouvellePartieSelectionnee = classeSelectionneeId;
         const html = `
             <section class="nv-start-screen nv-classe-screen">
                 <div class="nv-start-hero"><h1>Nouvelle partie</h1><p>Choisis une classe inspiree de Metin2.</p></div>
@@ -447,8 +495,8 @@ Module joueur base uniquement sur classes_metin2.js.
                     <label>Nom du personnage<input id="nvNomPersonnage" type="text" value="${NV_escape(nomActuel)}" maxlength="32"></label>
                     <button onclick="NV_ouvrirEcranAccueil()">Retour</button>
                 </div>
-                <div class="nv-class-select-bar">${NV_creerBoutonsClasses(NV_ETAT.classeNouvellePartieSelectionnee)}</div>
-                <div class="nv-selected-class-panel">${NV_creerFicheClasseSelectionnee(NV_ETAT.classeNouvellePartieSelectionnee)}</div>
+                <div class="nv-class-select-bar">${NV_creerBoutonsClasses(classeSelectionneeId)}</div>
+                <div class="nv-selected-class-panel">${NV_creerFicheClasseSelectionnee(classeSelectionneeId)}</div>
             </section>
         `;
         afficherVuePrincipale(html);
@@ -456,7 +504,8 @@ Module joueur base uniquement sur classes_metin2.js.
 
     function NV_lancerNouvellePartie(classeId) {
         const nom = document.getElementById("nvNomPersonnage")?.value || "Nighttug58";
-        Game.data.personnage = NV_creerPersonnageNouveau(classeId, nom);
+        const id = Game.cache.classesParId[classeId] ? classeId : NV_CLASSE_FALLBACK;
+        Game.data.personnage = NV_creerPersonnageNouveau(id, nom);
         Game.data.historique ??= {};
         Game.data.historique.journal = [];
         NV_ETAT.mode = "playing";
@@ -468,9 +517,13 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_ouvrirCompetencesClasses(classeId = null) {
+        if (typeof ouvrirCompetencesJoueur === "function" && Game.data?.personnage) {
+            ouvrirCompetencesJoueur();
+            return;
+        }
         changerVue("competences_classes");
         const classes = NV_obtenirClasses();
-        const classeSelectionnee = classeId || NV_ETAT.classeCompetencesSelectionnee || Game.data?.personnage?.classeId || classes[0].id;
+        const classeSelectionnee = classeId || NV_ETAT.classeCompetencesSelectionnee || Game.data?.personnage?.classeId || NV_CLASSE_FALLBACK;
         NV_ETAT.classeCompetencesSelectionnee = classeSelectionnee;
         const classe = NV_obtenirClasse(classeSelectionnee);
         const competences = NV_listeCompetencesClasse(classe.id, true);
@@ -498,9 +551,9 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_patchRafraichirInterface() {
-        if (typeof rafraichirInterface !== "function" || rafraichirInterface.__NV_START_PATCH) return;
-        NV_originalRafraichirInterface._fn = rafraichirInterface;
-        rafraichirInterface = function () {
+        if (typeof window.rafraichirInterface !== "function" || window.rafraichirInterface.__NV_START_PATCH) return;
+        NV_originalRafraichirInterface._fn = window.rafraichirInterface;
+        window.rafraichirInterface = function () {
             NV_syncClassesMetin2();
             NV_normaliserPersonnage(Game.data?.personnage);
             if (NV_ETAT.mode !== "playing") { NV_ouvrirEcranAccueil(); return; }
@@ -508,7 +561,7 @@ Module joueur base uniquement sur classes_metin2.js.
             NV_originalRafraichirInterface();
             NV_demanderAutosave("rafraichirInterface");
         };
-        rafraichirInterface.__NV_START_PATCH = true;
+        window.rafraichirInterface.__NV_START_PATCH = true;
     }
 
     function NV_demanderAutosave() {
@@ -530,9 +583,10 @@ Module joueur base uniquement sur classes_metin2.js.
             .nv-newgame-name { display: grid; grid-template-columns: minmax(240px, 1fr) auto; gap: 10px; margin-bottom: 14px; }
             .nv-newgame-name label { display: flex; flex-direction: column; gap: 6px; }
             .nv-newgame-name input { padding: 10px; }
-            .nv-tree-class-selector { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-            .nv-classe-card__actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
-            .nv-tree-class-selector .active { box-shadow: 0 0 8px var(--gold-bright, #ffd700); }
+            .nv-class-select-bar, .nv-tree-class-selector { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+            .nv-class-select-bar .active, .nv-tree-class-selector .active { box-shadow: 0 0 8px var(--gold-bright, #ffd700); }
+            .nv-classe-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+            .nv-class-stats-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
         `;
         document.head.appendChild(style);
     }
