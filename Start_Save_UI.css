@@ -32,3 +32,56 @@
 .nv-start-actions .nv-start-label:active {
     transform: translateY(1px);
 }
+
+.nv-classe-screen .nv-classe-card .nv-stats-primaires,
+.nv-classe-screen .nv-classe-card .nv-stats-combat {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 10px 0;
+}
+
+.nv-classe-screen .nv-classe-card .nv-stats-primaires::before {
+    content: "Caracteristiques";
+    display: block;
+    margin: 4px 0 2px;
+    color: var(--gold, #f5d37a);
+    font-weight: bold;
+}
+
+.nv-classe-screen .nv-classe-card .nv-stats-combat::before {
+    content: "Combat";
+    display: block;
+    margin: 8px 0 2px;
+    color: var(--gold, #f5d37a);
+    font-weight: bold;
+}
+
+.nv-classe-screen .nv-classe-card .nv-stats-primaires span,
+.nv-classe-screen .nv-classe-card .nv-stats-combat span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid rgba(245, 211, 122, 0.14);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.16);
+    color: var(--text-muted, #bcbcbc);
+}
+
+.nv-classe-screen .nv-classe-card .nv-stats-primaires strong,
+.nv-classe-screen .nv-classe-card .nv-stats-combat strong {
+    color: var(--gold, #f5d37a);
+}
+
+.nv-classe-screen .nv-classe-card__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.nv-classe-screen .nv-classe-card__actions .nv-btn-secondary {
+    display: none !important;
+}
