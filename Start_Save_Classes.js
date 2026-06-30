@@ -29,6 +29,16 @@ Module maitre du demarrage joueur.
         classeNouvellePartieSelectionnee: NV_CLASSE_FALLBACK
     };
 
+    function NV_appliquerModeUI(mode) {
+        const modeNormalise = ["menu", "new_game", "playing"].includes(mode) ? mode : "menu";
+        NV_ETAT.mode = modeNormalise;
+        Game.ui.mode = modeNormalise;
+
+        document.body.classList.remove("nv-mode-menu", "nv-mode-new-game", "nv-mode-playing");
+        document.body.classList.add(modeNormalise === "new_game" ? "nv-mode-new-game" : `nv-mode-${modeNormalise}`);
+        document.body.classList.toggle("nv-start-mode", modeNormalise !== "playing");
+    }
+
     function NV_escape(texte) {
         return String(texte ?? "")
             .replaceAll("&", "&amp;")
@@ -389,9 +399,8 @@ Module maitre du demarrage joueur.
         Game.data.historique = save.historique || { journal: [] };
         Game.data.monde = save.monde || {};
         NV_normaliserPersonnage(Game.data.personnage);
-        NV_ETAT.mode = "playing";
+        NV_appliquerModeUI("playing");
         Game.ui.vueActive = "exploration";
-        document.body.classList.remove("nv-start-mode");
         if (typeof ajouterJournal === "function") ajouterJournal(message);
         NV_sauvegarderLocalSilencieux();
         NV_originalRafraichirInterface();
@@ -500,10 +509,9 @@ Module maitre du demarrage joueur.
     }
 
     function NV_ouvrirEcranAccueil() {
-        NV_ETAT.mode = "menu";
+        NV_appliquerModeUI("menu");
         Game.ui.vueActive = "menu";
         Game.data.personnage = null;
-        document.body.classList.add("nv-start-mode");
         NV_syncClassesMetin2();
         const sauvegardeExiste = Boolean(localStorage.getItem(NV_SAVE_KEY));
         const html = `
@@ -525,10 +533,9 @@ Module maitre du demarrage joueur.
 
     function NV_ouvrirChoixClasse(classeId = null) {
         const nomActuel = document.getElementById("nvNomPersonnage")?.value || "Nighttug58";
-        NV_ETAT.mode = "new_game";
+        NV_appliquerModeUI("new_game");
         Game.ui.vueActive = "new_game";
         Game.data.personnage = null;
-        document.body.classList.add("nv-start-mode");
         NV_syncClassesMetin2();
         const classeSelectionneeId = Game.cache.classesParId[classeId]
             ? classeId
@@ -557,9 +564,8 @@ Module maitre du demarrage joueur.
         Game.data.historique ??= {};
         Game.data.historique.journal = [];
         NV_normaliserPersonnage(Game.data.personnage);
-        NV_ETAT.mode = "playing";
+        NV_appliquerModeUI("playing");
         Game.ui.vueActive = "exploration";
-        document.body.classList.remove("nv-start-mode");
         if (typeof ajouterJournal === "function") ajouterJournal("Nouvelle partie commencee : " + Game.data.personnage.classeNom);
         NV_sauvegarderLocalSilencieux();
         NV_originalRafraichirInterface();
@@ -609,7 +615,7 @@ Module maitre du demarrage joueur.
             }
             NV_syncClassesMetin2();
             NV_normaliserPersonnage(Game.data.personnage);
-            document.body.classList.remove("nv-start-mode");
+            NV_appliquerModeUI("playing");
             NV_originalRafraichirInterface();
             NV_demanderAutosave("rafraichirInterface");
         };
@@ -627,8 +633,6 @@ Module maitre du demarrage joueur.
         const style = document.createElement("style");
         style.id = "nvStartSaveStyle";
         style.textContent = `
-            body.nv-start-mode #barreVuePrincipale,
-            body.nv-start-mode #journalSection { display: none !important; }
             .nv-start-screen { max-width: 1180px; margin: 0 auto; padding: 24px; }
             .nv-start-hero, .nv-start-note, .nv-classe-card { padding: 14px; margin-bottom: 12px; background: rgba(0,0,0,0.18); border: 1px solid rgba(245,211,122,0.18); border-radius: 10px; }
             .nv-start-actions, .nv-classes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
@@ -663,6 +667,7 @@ Module maitre du demarrage joueur.
     }
 
     function NV_boot() {
+        NV_appliquerModeUI("menu");
         NV_injecterStyle();
         NV_patchRafraichirInterface();
         NV_patchSaveButtons();
@@ -692,6 +697,7 @@ Module maitre du demarrage joueur.
     window.NV_normaliserPersonnage = NV_normaliserPersonnage;
     window.NV_demanderAutosave = NV_demanderAutosave;
     window.NV_apresChargementDonnees = NV_apresChargementDonnees;
+    window.NV_appliquerModeUI = NV_appliquerModeUI;
     window.NV_START_VERSION = NV_START_VERSION;
 
     NV_boot();
