@@ -50,7 +50,6 @@ Module joueur base uniquement sur classes_metin2.js.
         if (!Array.isArray(window.NV_CLASSES_METIN2) || window.NV_CLASSES_METIN2.length !== 4) {
             throw new Error("classes_metin2.js doit declarer exactement 4 classes.");
         }
-
         return window.NV_CLASSES_METIN2;
     }
 
@@ -58,7 +57,6 @@ Module joueur base uniquement sur classes_metin2.js.
         if (!Array.isArray(window.NV_COMPETENCES_METIN2) || window.NV_COMPETENCES_METIN2.length !== 4) {
             throw new Error("classes_metin2.js doit declarer exactement 4 competences de depart.");
         }
-
         return window.NV_COMPETENCES_METIN2;
     }
 
@@ -88,9 +86,7 @@ Module joueur base uniquement sur classes_metin2.js.
     function NV_obtenirClasse(classeId) {
         NV_syncClassesMetin2();
         const classe = Game.cache.classesParId[classeId];
-        if (!classe) {
-            throw new Error("Classe inconnue : " + classeId);
-        }
+        if (!classe) throw new Error("Classe inconnue : " + classeId);
         return classe;
     }
 
@@ -134,20 +130,13 @@ Module joueur base uniquement sur classes_metin2.js.
             restant -= 1;
         });
 
-        return {
-            ...stats,
-            pointsDisponibles: points,
-            classeId: classe.id,
-            classeNom: classe.nom,
-            classeDescription: classe.description
-        };
+        return { ...stats, pointsDisponibles: points, classeId: classe.id, classeNom: classe.nom, classeDescription: classe.description };
     }
 
     function NV_calculerPreviewClasse(classeId) {
         const classe = NV_obtenirClasse(classeId);
         const repartition = NV_repartirPointsStatsSelonClasse(1, classe.id);
         const bonus = classe.bonusCombat || {};
-
         return {
             classe,
             force: repartition.force,
@@ -174,12 +163,7 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_nomActionBase(idAction) {
-        const noms = {
-            attaque_simple: "Attaque simple",
-            defendre: "Defendre",
-            fuir: "Fuir",
-            utiliser_objet: "Utiliser un objet"
-        };
+        const noms = { attaque_simple: "Attaque simple", defendre: "Defendre", fuir: "Fuir", utiliser_objet: "Utiliser un objet" };
         return noms[idAction] || idAction;
     }
 
@@ -221,7 +205,6 @@ Module joueur base uniquement sur classes_metin2.js.
         const classe = NV_obtenirClasse(classeId);
         const repartition = NV_repartirPointsStatsSelonClasse(1, classe.id);
         const bonus = classe.bonusCombat || {};
-
         const personnage = {
             nom: nom?.trim() || "Nighttug58",
             classe: classe.nom,
@@ -269,7 +252,6 @@ Module joueur base uniquement sur classes_metin2.js.
             favoris: [],
             effetsActifs: []
         };
-
         const ressources = NV_calculerRessourcesDepuisPersonnage(personnage);
         personnage.pv = ressources.pv;
         personnage.mana = ressources.mana;
@@ -290,11 +272,9 @@ Module joueur base uniquement sur classes_metin2.js.
 
     function NV_normaliserPersonnage(personnage = Game.data?.personnage) {
         if (!personnage) return null;
-
         const classeId = Game.cache.classesParId[personnage.classeId] ? personnage.classeId : "guerrier";
         const classe = NV_obtenirClasse(classeId);
         const ressources = NV_calculerRessourcesDepuisPersonnage(personnage);
-
         personnage.nom ??= "Nighttug58";
         personnage.classeId = classe.id;
         personnage.classe = classe.nom;
@@ -326,13 +306,7 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_creerSauvegarde() {
-        return {
-            versionNightVenture: NV_START_VERSION,
-            dateSauvegarde: new Date().toISOString(),
-            personnage: NV_normaliserPersonnage(Game.data?.personnage),
-            historique: Game.data?.historique || { journal: [] },
-            monde: Game.data?.monde || {}
-        };
+        return { versionNightVenture: NV_START_VERSION, dateSauvegarde: new Date().toISOString(), personnage: NV_normaliserPersonnage(Game.data?.personnage), historique: Game.data?.historique || { journal: [] }, monde: Game.data?.monde || {} };
     }
 
     function NV_sauvegarderLocalSilencieux() {
@@ -354,10 +328,7 @@ Module joueur base uniquement sur classes_metin2.js.
 
     function NV_chargerLocal() {
         const texte = localStorage.getItem(NV_SAVE_KEY);
-        if (!texte) {
-            alert("Aucune sauvegarde navigateur trouvee.");
-            return;
-        }
+        if (!texte) { alert("Aucune sauvegarde navigateur trouvee."); return; }
         NV_appliquerSauvegarde(JSON.parse(texte), "Sauvegarde navigateur chargee.");
     }
 
@@ -388,19 +359,13 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_creerBoutonsClasses(classeSelectionneeId) {
-        return NV_obtenirClasses().map(classe => `
-            <button
-                class="nv-class-select-button ${classe.id === classeSelectionneeId ? "active" : ""}"
-                onclick="NV_ouvrirChoixClasse('${classe.id}')"
-            >${NV_escape(classe.nom)}</button>
-        `).join("");
+        return NV_obtenirClasses().map(classe => `<button class="nv-class-select-button ${classe.id === classeSelectionneeId ? "active" : ""}" onclick="NV_ouvrirChoixClasse('${classe.id}')">${NV_escape(classe.nom)}</button>`).join("");
     }
 
     function NV_creerFicheClasseSelectionnee(classeId) {
         const classe = NV_obtenirClasse(classeId);
         const preview = NV_calculerPreviewClasse(classe.id);
         const competences = NV_listeCompetencesClasse(classe.id, false).map(NV_resumeCompetence).join(" / ") || "Actions de base";
-
         return `
             <article class="item-card nv-classe-card nv-classe-card--selected">
                 <div class="nv-classe-card__header">
@@ -410,7 +375,6 @@ Module joueur base uniquement sur classes_metin2.js.
                     </div>
                     <button onclick="NV_lancerNouvellePartie('${classe.id}')">Commencer ${NV_escape(classe.nom)}</button>
                 </div>
-
                 <div class="nv-class-stats-layout">
                     <section class="fiche-personnage-section">
                         <h3>Caracteristiques</h3>
@@ -422,7 +386,6 @@ Module joueur base uniquement sur classes_metin2.js.
                             ${NV_creerLigneStatClasse("CHA", preview.chance)}
                         </div>
                     </section>
-
                     <section class="fiche-personnage-section">
                         <h3>Combat</h3>
                         <div class="liste-stats nv-class-stats-two-columns">
@@ -439,7 +402,6 @@ Module joueur base uniquement sur classes_metin2.js.
                         </div>
                     </section>
                 </div>
-
                 <p class="nv-class-start-skill"><strong>Depart :</strong> ${NV_escape(competences)}</p>
             </article>
         `;
@@ -452,10 +414,7 @@ Module joueur base uniquement sur classes_metin2.js.
         const sauvegardeExiste = Boolean(localStorage.getItem(NV_SAVE_KEY));
         const html = `
             <section class="nv-start-screen">
-                <div class="nv-start-hero">
-                    <h1>NightVenture</h1>
-                    <p>Choisis une nouvelle partie ou charge une sauvegarde existante.</p>
-                </div>
+                <div class="nv-start-hero"><h1>NightVenture</h1><p>Choisis une nouvelle partie ou charge une sauvegarde existante.</p></div>
                 <div class="nv-start-actions">
                     <button onclick="NV_ouvrirChoixClasse()">Nouvelle partie</button>
                     <button onclick="NV_chargerLocal()" ${sauvegardeExiste ? "" : "disabled"}>Continuer sauvegarde navigateur</button>
@@ -471,22 +430,18 @@ Module joueur base uniquement sur classes_metin2.js.
     }
 
     function NV_ouvrirChoixClasse(classeId = null) {
+        const nomActuel = document.getElementById("nvNomPersonnage")?.value || "Nighttug58";
         NV_ETAT.mode = "new_game";
         document.body.classList.add("nv-start-mode");
         NV_syncClassesMetin2();
-
         const classes = NV_obtenirClasses();
         const classeSelectionneeId = Game.cache.classesParId[classeId] ? classeId : (NV_ETAT.classeNouvellePartieSelectionnee || classes[0].id);
         NV_ETAT.classeNouvellePartieSelectionnee = Game.cache.classesParId[classeSelectionneeId] ? classeSelectionneeId : "guerrier";
-
         const html = `
             <section class="nv-start-screen nv-classe-screen">
-                <div class="nv-start-hero">
-                    <h1>Nouvelle partie</h1>
-                    <p>Choisis une classe inspiree de Metin2.</p>
-                </div>
+                <div class="nv-start-hero"><h1>Nouvelle partie</h1><p>Choisis une classe inspiree de Metin2.</p></div>
                 <div class="nv-newgame-name">
-                    <label>Nom du personnage<input id="nvNomPersonnage" type="text" value="Nighttug58" maxlength="32"></label>
+                    <label>Nom du personnage<input id="nvNomPersonnage" type="text" value="${NV_escape(nomActuel)}" maxlength="32"></label>
                     <button onclick="NV_ouvrirEcranAccueil()">Retour</button>
                 </div>
                 <div class="nv-class-select-bar">${NV_creerBoutonsClasses(NV_ETAT.classeNouvellePartieSelectionnee)}</div>
@@ -517,17 +472,9 @@ Module joueur base uniquement sur classes_metin2.js.
         const classe = NV_obtenirClasse(classeSelectionnee);
         const competences = NV_listeCompetencesClasse(classe.id, true);
         const html = `
-            <div class="item-card">
-                <h2>Competences</h2>
-                <p>${NV_escape(classe.nom)} - ${NV_escape(classe.description)}</p>
-                <button onclick="ouvrirExploration()">Retour</button>
-            </div>
-            <div class="nv-tree-class-selector">
-                ${classes.map(c => `<button class="${c.id === classe.id ? "active" : ""}" onclick="NV_ouvrirCompetencesClasses('${c.id}')">${NV_escape(c.nom)}</button>`).join("")}
-            </div>
-            <div class="item-card">
-                ${competences.map(id => `<p><strong>${NV_escape(NV_resumeCompetence(id))}</strong></p>`).join("")}
-            </div>
+            <div class="item-card"><h2>Competences</h2><p>${NV_escape(classe.nom)} - ${NV_escape(classe.description)}</p><button onclick="ouvrirExploration()">Retour</button></div>
+            <div class="nv-tree-class-selector">${classes.map(c => `<button class="${c.id === classe.id ? "active" : ""}" onclick="NV_ouvrirCompetencesClasses('${c.id}')">${NV_escape(c.nom)}</button>`).join("")}</div>
+            <div class="item-card">${competences.map(id => `<p><strong>${NV_escape(NV_resumeCompetence(id))}</strong></p>`).join("")}</div>
         `;
         afficherVuePrincipale(html);
     }
@@ -553,10 +500,7 @@ Module joueur base uniquement sur classes_metin2.js.
         rafraichirInterface = function () {
             NV_syncClassesMetin2();
             NV_normaliserPersonnage(Game.data?.personnage);
-            if (NV_ETAT.mode !== "playing") {
-                NV_ouvrirEcranAccueil();
-                return;
-            }
+            if (NV_ETAT.mode !== "playing") { NV_ouvrirEcranAccueil(); return; }
             document.body.classList.remove("nv-start-mode");
             NV_originalRafraichirInterface();
             NV_demanderAutosave("rafraichirInterface");
@@ -583,8 +527,7 @@ Module joueur base uniquement sur classes_metin2.js.
             .nv-newgame-name { display: grid; grid-template-columns: minmax(240px, 1fr) auto; gap: 10px; margin-bottom: 14px; }
             .nv-newgame-name label { display: flex; flex-direction: column; gap: 6px; }
             .nv-newgame-name input { padding: 10px; }
-            .nv-stats-primaires, .nv-stats-combat, .nv-tree-class-selector { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-            .nv-stats-primaires span, .nv-stats-combat span { padding: 4px 7px; border: 1px solid rgba(245,211,122,0.12); border-radius: 999px; }
+            .nv-tree-class-selector { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
             .nv-classe-card__actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
             .nv-tree-class-selector .active { box-shadow: 0 0 8px var(--gold-bright, #ffd700); }
         `;
@@ -604,13 +547,8 @@ Module joueur base uniquement sur classes_metin2.js.
         NV_syncClassesMetin2();
         NV_patchRafraichirInterface();
         NV_patchSaveButtons();
-        window.addEventListener("beforeunload", () => {
-            if (NV_ETAT.mode === "playing") NV_sauvegarderLocalSilencieux();
-        });
-        setTimeout(() => {
-            NV_ajouterBoutonCompetences();
-            if (NV_ETAT.mode !== "playing") NV_ouvrirEcranAccueil();
-        }, 150);
+        window.addEventListener("beforeunload", () => { if (NV_ETAT.mode === "playing") NV_sauvegarderLocalSilencieux(); });
+        setTimeout(() => { NV_ajouterBoutonCompetences(); if (NV_ETAT.mode !== "playing") NV_ouvrirEcranAccueil(); }, 150);
     }
 
     window.NV_ouvrirEcranAccueil = NV_ouvrirEcranAccueil;
@@ -619,10 +557,7 @@ Module joueur base uniquement sur classes_metin2.js.
     window.NV_chargerLocal = NV_chargerLocal;
     window.NV_supprimerSauvegardeLocale = NV_supprimerSauvegardeLocale;
     window.NV_chargerFichier = NV_chargerFichier;
-    window.NV_chargerFichierDepuisInputAccueil = async function (event) {
-        await NV_chargerFichier(event.target.files?.[0]);
-        event.target.value = "";
-    };
+    window.NV_chargerFichierDepuisInputAccueil = async function (event) { await NV_chargerFichier(event.target.files?.[0]); event.target.value = ""; };
     window.NV_sauvegarderLocalSilencieux = NV_sauvegarderLocalSilencieux;
     window.NV_telechargerSauvegarde = NV_telechargerSauvegarde;
     window.NV_ouvrirCompetencesClasses = NV_ouvrirCompetencesClasses;
