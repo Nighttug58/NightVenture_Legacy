@@ -406,7 +406,7 @@ Module joueur base uniquement sur classes_metin2.js.
                     <span>RES <strong>${preview.defenseMagique}</strong></span>
                     <span>Crit <strong>${preview.critique}%</strong></span>
                     <span>Esq <strong>${preview.esquive}%</strong></span>
-                    <span>Vit <strong>${preview.vitesse}</strong></span>
+                    <span>SPE <strong>${preview.vitesse}</strong></span>
                 </div>
                 <p><strong>Depart :</strong> ${NV_escape(competences)}</p>
                 <div class="nv-classe-card__actions">
