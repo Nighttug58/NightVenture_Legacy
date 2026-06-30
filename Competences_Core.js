@@ -4,6 +4,7 @@ NightVenture - Competences Core
 - Progression personnage par competence
 - Points de competence +1 par niveau
 - Cooldowns par tours joueur
+- Affichage natif du cap 21
 */
 
 (function () {
@@ -66,11 +67,11 @@ NightVenture - Competences Core
     function NV_niveauMaxBaseCompetence(idCompetence) {
         const schema = Game.data?.ameliorationsCompetences || {};
         const competence = NV_competenceDepuisCache(idCompetence);
-        return Number(schema.niveauMaxBase || competence?.maxNiveau || competence?.niveauMax || 5) || 5;
+        return Number(schema.niveauMaxBase || competence?.maxNiveau || competence?.niveauMax || 10) || 10;
     }
 
     function NV_niveauMaxAbsoluCompetences() {
-        return Number(Game.data?.ameliorationsCompetences?.niveauMaxAbsolu || 16) || 16;
+        return Number(Game.data?.ameliorationsCompetences?.niveauMaxAbsolu || 21) || 21;
     }
 
     function NV_creerEtatProgressionCompetence(idCompetence, ancienEtat, ancienNiveau) {
@@ -85,10 +86,10 @@ NightVenture - Competences Core
             id: idCompetence,
             niveau,
             niveauMax,
-            masterisee: Boolean(ancienEtat?.masterisee),
+            masterisee: Boolean(ancienEtat?.masterisee || niveauMax >= maxAbsolu),
             livresUtilises: NV_clampCompetence(ancienEtat?.livresUtilises ?? 0, 0, 5),
             pierresAmeUtilisees: NV_clampCompetence(ancienEtat?.pierresAmeUtilisees ?? 0, 0, 5),
-            noyauDemoniaqueUtilise: Boolean(ancienEtat?.noyauDemoniaqueUtilise),
+            noyauDemoniaqueUtilise: Boolean(ancienEtat?.noyauDemoniaqueUtilise || niveauMax >= maxAbsolu),
             niveauMaxBase: baseMax,
             niveauMaxAbsolu: maxAbsolu
         };
@@ -166,7 +167,7 @@ NightVenture - Competences Core
         competence.maxNiveau = etat?.niveauMax || NV_niveauMaxBaseCompetence(idCompetence);
         competence.niveauMaxBase = etat?.niveauMaxBase || NV_niveauMaxBaseCompetence(idCompetence);
         competence.niveauMaxAbsolu = etat?.niveauMaxAbsolu || NV_niveauMaxAbsoluCompetences();
-        competence.masterisee = Boolean(etat?.masterisee);
+        competence.masterisee = Boolean(etat?.masterisee || competence.maxNiveau >= competence.niveauMaxAbsolu);
 
         if (progression) {
             competence.puissance = Number(progression.puissance ?? competence.puissance ?? 0);
@@ -314,16 +315,19 @@ NightVenture - Competences Core
     }
 
     function NV_palierActuelCompetence(etat) {
-        const max = Number(etat?.niveauMax || 5);
-        if (etat?.masterisee || max >= 16) return "Masterisee";
-        if (max <= 5) return "Base";
-        if (max <= 10) return "Livres";
-        if (max <= 15) return "Pierre d'ame";
+        const max = Number(etat?.niveauMax || 10);
+        const maxAbsolu = Number(etat?.niveauMaxAbsolu || NV_niveauMaxAbsoluCompetences());
+        const baseMax = Number(etat?.niveauMaxBase || NV_niveauMaxBaseCompetence(etat?.id));
+
+        if (etat?.masterisee || max >= maxAbsolu) return "Masterisee";
+        if (max <= baseMax) return "Base";
+        if (max <= 15) return "Livres";
+        if (max <= 20) return "Pierre d'ame";
         return "Noyau demoniaque";
     }
 
     function NV_infoProchainPalierCompetence(idCompetence, etat) {
-        const max = Number(etat?.niveauMax || 5);
+        const max = Number(etat?.niveauMax || 10);
         const maxAbsolu = Number(etat?.niveauMaxAbsolu || NV_niveauMaxAbsoluCompetences());
 
         if (etat?.masterisee || max >= maxAbsolu) {
@@ -334,42 +338,41 @@ NightVenture - Competences Core
             };
         }
 
-        if (max < 10) {
+        if (max < 15) {
             const livreId = NV_idLivreCompetence(idCompetence);
             return {
                 titre: "Prochain palier : Livre de competence",
-                texte: `Objet requis pour augmenter le niveau max : ${NV_nomObjetAmelioration(livreId, "Livre de competence")}.`,
+                texte: `Objet requis pour augmenter le niveau max jusqu'a 15 : ${NV_nomObjetAmelioration(livreId, "Livre de competence")}.`,
                 itemId: livreId
             };
         }
 
-        if (max < 15) {
+        if (max < 20) {
             return {
                 titre: "Prochain palier : Pierre d'ame",
-                texte: `Objet requis pour augmenter le niveau max : ${NV_nomObjetAmelioration("pierre_ame", "Pierre d'ame")}.`,
+                texte: `Objet requis pour augmenter le niveau max jusqu'a 20 : ${NV_nomObjetAmelioration("pierre_ame", "Pierre d'ame")}.`,
                 itemId: "pierre_ame"
             };
         }
 
         return {
             titre: "Prochain palier : Noyau demoniaque",
-            texte: `Objet requis pour Masteriser la competence : ${NV_nomObjetAmelioration("noyau_demoniaque", "Noyau demoniaque")}.`,
+            texte: `Objet requis pour Masteriser la competence au niveau ${maxAbsolu} : ${NV_nomObjetAmelioration("noyau_demoniaque", "Noyau demoniaque")}.`,
             itemId: "noyau_demoniaque"
         };
     }
 
-    function NV_creerBlocProgressionCompetence(idCompetence, etat) {
+    function NV_creerResumePalierCompetence(idCompetence, etat) {
         const info = NV_infoProchainPalierCompetence(idCompetence, etat);
+        const max = Number(etat?.niveauMax || 10);
+        const maxAbsolu = Number(etat?.niveauMaxAbsolu || NV_niveauMaxAbsoluCompetences());
+        const prochainObjet = info.itemId ? NV_nomObjetAmelioration(info.itemId, info.itemId) : null;
+
         return `
-            <div class="competence-card__progression">
-                <span>Palier actuel : ${NV_escapeCompetence(NV_palierActuelCompetence(etat))}</span>
-                <span>Livres : ${Number(etat?.livresUtilises || 0)}/5</span>
-                <span>Pierres : ${Number(etat?.pierresAmeUtilisees || 0)}/5</span>
-                <span>Noyau : ${etat?.noyauDemoniaqueUtilise ? "oui" : "non"}</span>
-            </div>
-            <div class="competence-card__requirement">
-                <strong>${NV_escapeCompetence(info.titre)}</strong>
-                <small>${NV_escapeCompetence(info.texte)}</small>
+            <div class="competence-card__tier">
+                <span>Palier : ${NV_escapeCompetence(NV_palierActuelCompetence(etat))}</span>
+                <span>Limite debloquee : ${max}/${maxAbsolu}</span>
+                <span>${prochainObjet ? `Prochain objet : ${NV_escapeCompetence(prochainObjet)}` : NV_escapeCompetence(info.texte)}</span>
             </div>
         `;
     }
@@ -394,12 +397,18 @@ NightVenture - Competences Core
         const base = NV_competenceDepuisCache(idCompetence);
         const etat = NV_etatCompetencePersonnage(idCompetence);
         const max = NV_niveauMaxCompetencePersonnage(idCompetence);
+        const maxAbsolu = NV_niveauMaxAbsoluCompetences();
         const actuelle = NV_competenceScalee(idCompetence, Math.max(1, niveau));
         const suivante = niveau < max ? NV_competenceScalee(idCompetence, niveau + 1) : null;
         const personnage = Game.data.personnage;
         const peutAmeliorer = niveau < max && Number(personnage.pointsCompetence || 0) > 0;
         const cooldown = Number(base?.cooldownTours || 0);
-        const masterisee = Boolean(etat?.masterisee || max >= NV_niveauMaxAbsoluCompetences());
+        const masterisee = Boolean(etat?.masterisee || max >= maxAbsolu);
+        const messageProchain = suivante
+            ? `Prochain niveau : degats ${Math.round(suivante.puissance || 0)}, ratio x${Number(suivante.multiplicateur || 1).toFixed(2)}, cout ${NV_escapeCompetence(NV_coutsTexteCompetence(suivante))}`
+            : masterisee
+                ? `Competence Masterisee au niveau ${maxAbsolu}.`
+                : "Niveau maximum actuel atteint. Utilise l'objet requis pour debloquer le prochain palier.";
 
         return `
             <article class="competence-card ${niveau >= max ? "competence-card--max" : ""} ${masterisee ? "competence-card--mastered" : ""}">
@@ -410,17 +419,16 @@ NightVenture - Competences Core
                             <h3>${NV_escapeCompetence(base?.nom || idCompetence)} ${masterisee ? `<span class="competence-card__master-label">Masterisee</span>` : ""}</h3>
                             <p>${NV_escapeCompetence(base?.description || "Competence de classe.")}</p>
                         </div>
-                        <strong>Niv. ${niveau}/${max}</strong>
+                        <strong>Niv. ${niveau}</strong>
                     </div>
                     <div class="competence-card__stats">
                         <span>Degats : ${Math.round(actuelle?.puissance || 0)}</span>
                         <span>Ratio : x${Number(actuelle?.multiplicateur || 1).toFixed(2)}</span>
                         <span>Cout : ${NV_escapeCompetence(NV_coutsTexteCompetence(actuelle))}</span>
                         <span>Recharge : ${cooldown} tour(s)</span>
-                        <span>Max actuel : ${etat?.niveauMax || max}</span>
                     </div>
-                    ${NV_creerBlocProgressionCompetence(idCompetence, etat)}
-                    ${suivante ? `<div class="competence-card__next">Prochain niveau : degats ${Math.round(suivante.puissance || 0)}, ratio x${Number(suivante.multiplicateur || 1).toFixed(2)}, cout ${NV_escapeCompetence(NV_coutsTexteCompetence(suivante))}</div>` : `<div class="competence-card__next">Niveau maximum actuel atteint. Augmente le niveau max avec l'objet requis.</div>`}
+                    ${NV_creerResumePalierCompetence(idCompetence, etat)}
+                    <div class="competence-card__next">${messageProchain}</div>
                     <button ${peutAmeliorer ? "" : "disabled"} onclick="NV_ameliorerCompetence('${NV_escapeCompetence(idCompetence)}')">Ameliorer</button>
                 </div>
             </article>
@@ -439,7 +447,7 @@ NightVenture - Competences Core
             <section class="item-card competence-hero">
                 <div>
                     <h2>Competences de ${NV_escapeCompetence(classe?.nom || personnage.classe || "classe")}</h2>
-                    <p>Choisis une specialisation, puis ameliore ses competences. La page affiche maintenant le niveau max actuel, le palier, et l'objet requis pour le prochain palier.</p>
+                    <p>Choisis une specialisation, puis ameliore ses competences jusqu'au cap 21 via points, livres, pierres d'ame et noyau demoniaque.</p>
                 </div>
                 <button onclick="ouvrirExploration()">Retour</button>
             </section>
