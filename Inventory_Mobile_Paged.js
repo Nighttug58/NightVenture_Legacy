@@ -40,6 +40,16 @@
                 border-top: 1px solid rgba(255,255,255,0.08);
             }
 
+            .nvimp-popup-pager__label {
+                width: 100%;
+                color: var(--text-muted, #c7bdad);
+                font-size: 0.68rem;
+                font-weight: 900;
+                letter-spacing: 0.04em;
+                text-align: center;
+                text-transform: uppercase;
+            }
+
             .nvimp-page-btn {
                 width: 34px !important;
                 min-width: 34px !important;
@@ -101,17 +111,53 @@
                 position: absolute;
                 top: 8px;
                 right: 8px;
-                width: 30px !important;
-                min-width: 30px !important;
+                min-width: 64px !important;
                 min-height: 30px !important;
-                padding: 0 !important;
+                padding: 0 10px !important;
                 border-radius: 999px !important;
-                font-size: 0.82rem !important;
+                font-size: 0.72rem !important;
+                font-weight: 900 !important;
                 z-index: 2;
             }
 
             .nvi-details.nvimp-details-popup .nvi-details__header {
-                padding-right: 32px;
+                padding-right: 78px;
+                margin-bottom: 8px !important;
+            }
+
+            .nvi-details.nvimp-details-popup h3 {
+                margin: 0 0 3px !important;
+                font-size: 1rem !important;
+                line-height: 1.1 !important;
+            }
+
+            .nvi-details.nvimp-details-popup .nvi-details__description,
+            .nvi-details.nvimp-details-popup .nvi-details__stats {
+                margin: 8px 0 !important;
+                font-size: 0.82rem !important;
+                line-height: 1.35 !important;
+            }
+
+            .nvi-details.nvimp-details-popup .nvi-details__actions,
+            .nvi-details.nvimp-details-popup .nvi-delete-confirm,
+            .nvi-details.nvimp-details-popup .nvi-trade-box {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 6px !important;
+                margin-top: 8px !important;
+            }
+
+            .nvi-details.nvimp-details-popup .nvi-trade-box {
+                grid-template-columns: 1fr !important;
+                padding: 9px !important;
+            }
+
+            .nvi-details.nvimp-details-popup .nvi-lock-toggle {
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+                justify-items: center !important;
+                min-height: 32px !important;
+                margin-top: 8px !important;
             }
 
             .nvi-details.nvimp-details-popup .nvi-details__actions button,
@@ -119,10 +165,21 @@
             .nvi-details.nvimp-details-popup .nvi-danger,
             .nvi-details.nvimp-details-popup .nvi-trade-box button,
             .nvi-details.nvimp-details-popup .nvi-delete-confirm button {
-                min-height: 32px !important;
-                padding: 6px 9px !important;
+                width: 100% !important;
+                min-height: 34px !important;
+                padding: 7px 9px !important;
                 border-radius: 999px !important;
                 font-size: 0.74rem !important;
+                font-weight: 850 !important;
+                line-height: 1.05 !important;
+            }
+
+            .nvi-details.nvimp-details-popup .nvi-danger {
+                grid-column: 1 / -1;
+            }
+
+            .nvi-details.nvimp-details-popup .nvi-quantity {
+                justify-content: center;
             }
 
             .nvi-layout--inventory .nvi-details:not(.nvimp-details-popup) {
@@ -163,14 +220,56 @@
         return PAGE_LABELS[index] || String(index + 1);
     }
 
-    function buildPager(pageCount, activePage, extraClass) {
+    function renameButton(button) {
+        const text = String(button.textContent || "").trim().toLowerCase();
+        const replacements = {
+            "equiper": "Équiper",
+            "utiliser": "Utiliser",
+            "favori": "Ajouter favori",
+            "retirer favori": "Retirer favori",
+            "supprimer": "Jeter l'objet",
+            "bague 1": "Anneau I",
+            "bague 2": "Anneau II",
+            "vendre": "Vendre",
+            "acheter": "Acheter",
+            "oui": "Confirmer",
+            "non": "Annuler",
+            "max": "MAX"
+        };
+        if (replacements[text]) button.textContent = replacements[text];
+    }
+
+    function polishPopupButtons(details) {
+        details.querySelectorAll("button").forEach(renameButton);
+        const lockText = details.querySelector(".nvi-lock-toggle__text");
+        if (lockText) {
+            const normalized = String(lockText.textContent || "").trim().toLowerCase();
+            if (normalized === "bloque") lockText.textContent = "Verrouillé";
+            if (normalized === "debloque") lockText.textContent = "Libre";
+        }
+        const lockIcon = details.querySelector(".nvi-lock-toggle__icon");
+        if (lockIcon) {
+            const normalized = String(lockIcon.textContent || "").trim().toLowerCase();
+            if (normalized === "lock") lockIcon.textContent = "Case bloquée";
+            if (normalized === "libre") lockIcon.textContent = "Case libre";
+        }
+    }
+
+    function buildPager(pageCount, activePage, extraClass, withLabel = false) {
         const pager = document.createElement("div");
         pager.className = extraClass || "nvimp-pager";
+        if (withLabel) {
+            const label = document.createElement("span");
+            label.className = "nvimp-popup-pager__label";
+            label.textContent = "Pages inventaire";
+            pager.appendChild(label);
+        }
         for (let i = 0; i < pageCount; i++) {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "nvimp-page-btn" + (i === activePage ? " is-active" : "");
             button.textContent = pageLabel(i);
+            button.setAttribute("aria-label", "Page inventaire " + pageLabel(i));
             button.addEventListener("click", function (event) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -214,7 +313,7 @@
             const close = document.createElement("button");
             close.type = "button";
             close.className = "nvimp-popup-close";
-            close.textContent = "×";
+            close.textContent = "Fermer";
             close.addEventListener("click", function (event) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -223,9 +322,11 @@
             details.prepend(close);
         }
 
+        polishPopupButtons(details);
+
         const oldPager = details.querySelector(".nvimp-popup-pager");
         if (oldPager) oldPager.remove();
-        details.appendChild(buildPager(pageCount, activePage, "nvimp-popup-pager"));
+        details.appendChild(buildPager(pageCount, activePage, "nvimp-popup-pager", true));
     }
 
     function applyPagedInventory() {
