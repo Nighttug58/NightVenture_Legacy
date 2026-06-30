@@ -1,7 +1,7 @@
 /*
 NightVenture - Competences Core
 - 2 specialisations par classe
-- Competences niveau 1 a 5
+- Progression personnage par competence
 - Points de competence +1 par niveau
 - Cooldowns par tours joueur
 */
@@ -63,9 +63,35 @@ NightVenture - Competences Core
         return Array.isArray(active?.competences) ? active.competences.filter(Boolean) : [];
     }
 
-    function NV_maxNiveauCompetence(idCompetence) {
+    function NV_niveauMaxBaseCompetence(idCompetence) {
+        const schema = Game.data?.ameliorationsCompetences || {};
         const competence = NV_competenceDepuisCache(idCompetence);
-        return Number(competence?.maxNiveau || competence?.niveauMax || 5) || 5;
+        return Number(schema.niveauMaxBase || competence?.maxNiveau || competence?.niveauMax || 5) || 5;
+    }
+
+    function NV_niveauMaxAbsoluCompetences() {
+        return Number(Game.data?.ameliorationsCompetences?.niveauMaxAbsolu || 16) || 16;
+    }
+
+    function NV_creerEtatProgressionCompetence(idCompetence, ancienEtat, ancienNiveau) {
+        const baseMax = NV_niveauMaxBaseCompetence(idCompetence);
+        const maxAbsolu = NV_niveauMaxAbsoluCompetences();
+        const niveauMaxLu = ancienEtat && typeof ancienEtat === "object" ? ancienEtat.niveauMax : null;
+        const niveauLu = ancienEtat && typeof ancienEtat === "object" ? ancienEtat.niveau : ancienNiveau;
+        const niveauMax = NV_clampCompetence(niveauMaxLu ?? baseMax, baseMax, maxAbsolu);
+        const niveau = NV_clampCompetence(niveauLu ?? 1, 1, niveauMax);
+
+        return {
+            id: idCompetence,
+            niveau,
+            niveauMax,
+            masterisee: Boolean(ancienEtat?.masterisee),
+            livresUtilises: NV_clampCompetence(ancienEtat?.livresUtilises ?? 0, 0, 5),
+            pierresAmeUtilisees: NV_clampCompetence(ancienEtat?.pierresAmeUtilisees ?? 0, 0, 5),
+            noyauDemoniaqueUtilise: Boolean(ancienEtat?.noyauDemoniaqueUtilise),
+            niveauMaxBase: baseMax,
+            niveauMaxAbsolu: maxAbsolu
+        };
     }
 
     function NV_normaliserCompetencesPersonnage(personnage = Game.data?.personnage) {
@@ -79,24 +105,41 @@ NightVenture - Competences Core
         personnage.specialisationNom = active?.nom || null;
 
         const idsClasse = NV_idsCompetencesClasse(personnage);
+        const anciensProgression = personnage.competencesProgression && typeof personnage.competencesProgression === "object" && !Array.isArray(personnage.competencesProgression)
+            ? personnage.competencesProgression
+            : {};
         const anciensNiveaux = personnage.competencesNiveaux && typeof personnage.competencesNiveaux === "object" && !Array.isArray(personnage.competencesNiveaux)
             ? personnage.competencesNiveaux
             : {};
 
+        personnage.competencesProgression = {};
         personnage.competencesNiveaux = {};
+
         idsClasse.forEach(id => {
-            const max = NV_maxNiveauCompetence(id);
-            const valeur = anciensNiveaux[id];
-            personnage.competencesNiveaux[id] = valeur == null ? 1 : NV_clampCompetence(valeur, 1, max);
+            const etat = NV_creerEtatProgressionCompetence(id, anciensProgression[id], anciensNiveaux[id]);
+            personnage.competencesProgression[id] = etat;
+            personnage.competencesNiveaux[id] = etat.niveau;
         });
 
         personnage.competences = [...new Set([...NV_BASE_ACTIONS_COMPETENCES, ...idsClasse])];
         return personnage;
     }
 
-    function NV_niveauCompetence(idCompetence, personnage = Game.data?.personnage) {
+    function NV_etatCompetencePersonnage(idCompetence, personnage = Game.data?.personnage) {
         NV_normaliserCompetencesPersonnage(personnage);
-        return Number(personnage?.competencesNiveaux?.[idCompetence] || 0);
+        return personnage?.competencesProgression?.[idCompetence] || null;
+    }
+
+    function NV_niveauCompetence(idCompetence, personnage = Game.data?.personnage) {
+        return Number(NV_etatCompetencePersonnage(idCompetence, personnage)?.niveau || 0);
+    }
+
+    function NV_niveauMaxCompetencePersonnage(idCompetence, personnage = Game.data?.personnage) {
+        return Number(NV_etatCompetencePersonnage(idCompetence, personnage)?.niveauMax || NV_niveauMaxBaseCompetence(idCompetence));
+    }
+
+    function NV_maxNiveauCompetence(idCompetence, personnage = Game.data?.personnage) {
+        return NV_niveauMaxCompetencePersonnage(idCompetence, personnage);
     }
 
     function NV_progressionCompetence(competence, niveau) {
@@ -116,9 +159,14 @@ NightVenture - Competences Core
 
         const competence = NV_cloneCompetence(base);
         const progression = NV_progressionCompetence(base, niveauFinal);
+        const etat = NV_etatCompetencePersonnage(idCompetence);
+
         competence.niveauCompetence = niveauFinal;
         competence.niveau = niveauFinal;
-        competence.maxNiveau = NV_maxNiveauCompetence(idCompetence);
+        competence.maxNiveau = etat?.niveauMax || NV_niveauMaxBaseCompetence(idCompetence);
+        competence.niveauMaxBase = etat?.niveauMaxBase || NV_niveauMaxBaseCompetence(idCompetence);
+        competence.niveauMaxAbsolu = etat?.niveauMaxAbsolu || NV_niveauMaxAbsoluCompetences();
+        competence.masterisee = Boolean(etat?.masterisee);
 
         if (progression) {
             competence.puissance = Number(progression.puissance ?? competence.puissance ?? 0);
@@ -269,7 +317,8 @@ NightVenture - Competences Core
     function NV_creerCarteCompetence(idCompetence) {
         const niveau = NV_niveauCompetence(idCompetence);
         const base = NV_competenceDepuisCache(idCompetence);
-        const max = NV_maxNiveauCompetence(idCompetence);
+        const etat = NV_etatCompetencePersonnage(idCompetence);
+        const max = NV_niveauMaxCompetencePersonnage(idCompetence);
         const actuelle = NV_competenceScalee(idCompetence, Math.max(1, niveau));
         const suivante = niveau < max ? NV_competenceScalee(idCompetence, niveau + 1) : null;
         const personnage = Game.data.personnage;
@@ -292,6 +341,7 @@ NightVenture - Competences Core
                         <span>Ratio : x${Number(actuelle?.multiplicateur || 1).toFixed(2)}</span>
                         <span>Cout : ${NV_escapeCompetence(NV_coutsTexteCompetence(actuelle))}</span>
                         <span>Recharge : ${cooldown} tour(s)</span>
+                        <span>Max actuel : ${etat?.niveauMax || max}</span>
                     </div>
                     ${suivante ? `<div class="competence-card__next">Prochain niveau : degats ${Math.round(suivante.puissance || 0)}, ratio x${Number(suivante.multiplicateur || 1).toFixed(2)}, cout ${NV_escapeCompetence(NV_coutsTexteCompetence(suivante))}</div>` : `<div class="competence-card__next">Niveau maximum atteint.</div>`}
                     <button ${peutAmeliorer ? "" : "disabled"} onclick="NV_ameliorerCompetence('${NV_escapeCompetence(idCompetence)}')">Ameliorer</button>
@@ -312,7 +362,7 @@ NightVenture - Competences Core
             <section class="item-card competence-hero">
                 <div>
                     <h2>Competences de ${NV_escapeCompetence(classe?.nom || personnage.classe || "classe")}</h2>
-                    <p>Choisis une specialisation, puis ameliore ses competences. Chaque competence possede 5 niveaux et un temps de recharge en tours.</p>
+                    <p>Choisis une specialisation, puis ameliore ses competences. Les paliers max sont maintenant prepares pour les livres, pierres d'ame et noyaux demoniaques.</p>
                 </div>
                 <button onclick="ouvrirExploration()">Retour</button>
             </section>
@@ -343,6 +393,7 @@ NightVenture - Competences Core
 
         personnage.specialisationId = spec.id;
         personnage.specialisationNom = spec.nom;
+        personnage.competencesProgression = {};
         personnage.competencesNiveaux = {};
         personnage.competences = [];
         NV_normaliserCompetencesPersonnage(personnage);
@@ -361,11 +412,12 @@ NightVenture - Competences Core
             return;
         }
 
-        const niveau = NV_niveauCompetence(idCompetence, personnage);
-        const max = NV_maxNiveauCompetence(idCompetence);
+        const etat = NV_etatCompetencePersonnage(idCompetence, personnage);
+        const niveau = Number(etat?.niveau || 0);
+        const max = Number(etat?.niveauMax || NV_niveauMaxBaseCompetence(idCompetence));
 
         if (niveau >= max) {
-            ajouterJournal("Competence deja au niveau maximum.");
+            ajouterJournal("Competence deja au niveau maximum actuel.");
             ouvrirCompetencesJoueur();
             return;
         }
@@ -376,11 +428,13 @@ NightVenture - Competences Core
             return;
         }
 
-        personnage.competencesNiveaux[idCompetence] = niveau + 1;
+        etat.niveau = niveau + 1;
+        personnage.competencesProgression[idCompetence] = etat;
+        personnage.competencesNiveaux[idCompetence] = etat.niveau;
         personnage.pointsCompetence--;
 
         const competence = NV_competenceDepuisCache(idCompetence);
-        ajouterJournal(`${competence?.nom || idCompetence} niveau ${niveau + 1}`);
+        ajouterJournal(`${competence?.nom || idCompetence} niveau ${etat.niveau}`);
         if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("competence upgrade");
         ouvrirCompetencesJoueur();
     };
@@ -405,6 +459,7 @@ NightVenture - Competences Core
             const classe = NV_classePersonnage(personnage);
             personnage.specialisationId = classe?.specialisationDepart || classe?.specialisations?.[0]?.id || null;
             personnage.specialisationNom = classe?.specialisations?.find(s => s.id === personnage.specialisationId)?.nom || null;
+            personnage.competencesProgression = {};
             personnage.competencesNiveaux = {};
             NV_normaliserCompetencesPersonnage(personnage);
             if (typeof NV_sauvegarderLocalSilencieux === "function") NV_sauvegarderLocalSilencieux();
@@ -467,6 +522,9 @@ NightVenture - Competences Core
 
     window.NV_normaliserCompetencesPersonnage = NV_normaliserCompetencesPersonnage;
     window.NV_niveauCompetence = NV_niveauCompetence;
+    window.NV_niveauMaxCompetencePersonnage = NV_niveauMaxCompetencePersonnage;
+    window.NV_maxNiveauCompetence = NV_maxNiveauCompetence;
+    window.NV_etatCompetencePersonnage = NV_etatCompetencePersonnage;
     window.NV_competenceScalee = NV_competenceScalee;
     window.NV_specialisationsClasse = NV_specialisationsClasse;
     window.NV_specialisationActive = NV_specialisationActive;
