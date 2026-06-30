@@ -31,7 +31,7 @@ function accepterQuete(idQuete) {
         etat: "en_cours"
     });
 
-    ajouterJournal(`📜 Nouvelle quête : ${quete.nom}`);
+    ajouterJournal(`Nouvelle quête : ${quete.nom}`);
     verifierProgressionQuetes();
     rafraichirInterface();
 }
@@ -89,9 +89,9 @@ function remettreQuete(idQuete) {
 
     progression.etat = "terminee";
 
-    ajouterJournal(`✅ Quête terminée : ${quete.nom}`);
-    if (xp > 0) ajouterJournal(`⭐ +${xp} XP`);
-    if (or > 0) ajouterJournal(`🟡 +${or} or`);
+    ajouterJournal(`Quête terminée : ${quete.nom}`);
+    if (xp > 0) ajouterJournal(`XP +${xp}`);
+    if (or > 0) ajouterJournal(`Or +${or}`);
 
     verifierNiveau();
     rafraichirInterface();
@@ -107,8 +107,8 @@ function ouvrirQuetesPNJ(idPnj) {
     let html = `
         <div class="item-card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:15px;">
-                <h2 style="margin:0;">📜 Quêtes de ${pnj?.nom || "PNJ"}</h2>
-                <button onclick="ouvrirExploration()">⬅ Retour</button>
+                <h2 style="margin:0;">Quêtes de ${pnj?.nom || "PNJ"}</h2>
+                <button onclick="ouvrirExploration()">Retour</button>
             </div>
         </div>
     `;
@@ -123,7 +123,7 @@ function ouvrirQuetesPNJ(idPnj) {
 
         html += `
             <div class="item-card">
-                <h3>📜 ${quete.nom}</h3>
+                <h3>${quete.nom}</h3>
                 <p>${quete.description || ""}</p>
                 <p>${nomEtatQuete(etat)}</p>
                 ${!progression ? `<button onclick="accepterQuete('${quete.id}'); ouvrirQuetesPNJ('${idPnj}')">Accepter</button>` : ""}
@@ -137,11 +137,11 @@ function ouvrirQuetesPNJ(idPnj) {
 
 function nomEtatQuete(etat) {
     switch (etat) {
-        case "disponible": return `<span class="etat-disponible">📜 Disponible</span>`;
-        case "en_cours": return `<span class="etat-en-cours">🔄 En cours</span>`;
-        case "a_rendre": return `<span class="etat-a-rendre">✅ À rendre</span>`;
-        case "terminee": return `<span class="etat-terminee">🏆 Terminée</span>`;
-        case "bloquee": return `<span class="etat-bloquee">🔒 Bloquée</span>`;
+        case "disponible": return `<span class="etat-disponible">Disponible</span>`;
+        case "en_cours": return `<span class="etat-en-cours">En cours</span>`;
+        case "a_rendre": return `<span class="etat-a-rendre">À rendre</span>`;
+        case "terminee": return `<span class="etat-terminee">Terminée</span>`;
+        case "bloquee": return `<span class="etat-bloquee">Bloquée</span>`;
         default: return String(etat || "inconnu");
     }
 }
@@ -155,8 +155,8 @@ function ouvrirQuetes() {
     let html = `
         <div class="item-card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:15px;">
-                <h2 style="margin:0;">📜 Journal des quêtes</h2>
-                <button onclick="ouvrirExploration()">⬅ Retour</button>
+                <h2 style="margin:0;">Journal des quêtes</h2>
+                <button onclick="ouvrirExploration()">Retour</button>
             </div>
         </div>
     `;
@@ -171,7 +171,7 @@ function ouvrirQuetes() {
 
         html += `
             <div class="item-card">
-                <h3>📜 ${quete.nom}</h3>
+                <h3>${quete.nom}</h3>
                 <p>${quete.description || ""}</p>
                 <p>État : ${nomEtatQuete(progression.etat)}</p>
                 ${progression.etat !== "terminee" ? `<p>Progression : ${progression.progression || 0} / ${quete.objectif?.quantite ?? 1}</p>` : ""}
