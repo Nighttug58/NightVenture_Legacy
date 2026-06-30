@@ -26,7 +26,7 @@ const NV_CLASSES_METIN2 = [
         },
         statsDepart: { force: 9, dexterite: 4, intelligence: 2, vitalite: 8, chance: 3, vitesse: 4 },
         ressourcesDepart: { pv: 198, mana: 62, stamina: 130 },
-        competencesDepart: ["metin2_coup_puissant"]
+        competencesDepart: ["guerrier_aura_epee"]
     },
     {
         id: "ninja",
@@ -50,7 +50,7 @@ const NV_CLASSES_METIN2 = [
         },
         statsDepart: { force: 5, dexterite: 11, intelligence: 3, vitalite: 4, chance: 6, vitesse: 11 },
         ressourcesDepart: { pv: 136, mana: 76, stamina: 173 },
-        competencesDepart: ["metin2_lame_rapide"]
+        competencesDepart: ["ninja_embuscade"]
     },
     {
         id: "sura",
@@ -74,7 +74,7 @@ const NV_CLASSES_METIN2 = [
         },
         statsDepart: { force: 7, dexterite: 4, intelligence: 9, vitalite: 6, chance: 3, vitesse: 5 },
         ressourcesDepart: { pv: 170, mana: 164, stamina: 122 },
-        competencesDepart: ["metin2_lame_demoniaque"]
+        competencesDepart: ["sura_lame_enchantee"]
     },
     {
         id: "shaman",
@@ -98,13 +98,13 @@ const NV_CLASSES_METIN2 = [
         },
         statsDepart: { force: 3, dexterite: 5, intelligence: 11, vitalite: 6, chance: 6, vitesse: 5 },
         ressourcesDepart: { pv: 166, mana: 198, stamina: 123 },
-        competencesDepart: ["metin2_orbe_spirituel"]
+        competencesDepart: ["shaman_rugissement_dragon"]
     }
 ];
 
 const NV_COMPETENCES_METIN2 = [
     {
-        id: "metin2_coup_puissant",
+        id: "guerrier_aura_epee",
         nom: "Aura de l'Epee",
         typeAction: "attaque",
         nature: "physique",
@@ -130,7 +130,7 @@ const NV_COMPETENCES_METIN2 = [
         effets: []
     },
     {
-        id: "metin2_lame_rapide",
+        id: "ninja_embuscade",
         nom: "Embuscade",
         typeAction: "attaque",
         nature: "physique",
@@ -157,7 +157,7 @@ const NV_COMPETENCES_METIN2 = [
         effets: []
     },
     {
-        id: "metin2_lame_demoniaque",
+        id: "sura_lame_enchantee",
         nom: "Lame Enchantee",
         typeAction: "attaque",
         nature: "magique",
@@ -183,7 +183,7 @@ const NV_COMPETENCES_METIN2 = [
         effets: []
     },
     {
-        id: "metin2_orbe_spirituel",
+        id: "shaman_rugissement_dragon",
         nom: "Rugissement du Dragon",
         typeAction: "attaque",
         nature: "magique",
