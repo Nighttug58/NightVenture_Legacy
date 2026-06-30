@@ -1,173 +1,67 @@
 [
   {
-    "id": "peq_frappe_puissante",
-    "nom": "Frappe puissante",
+    "id": "metin2_coup_puissant",
+    "nom": "Coup puissant",
     "typeAction": "attaque",
     "nature": "physique",
     "cible": "ennemi",
-    "couts": {
-      "mana": 0,
-      "stamina": 8
-    },
-    "coutInitiative": 114,
-    "puissance": 6,
-    "multiplicateur": 0.98,
+    "couts": { "mana": 0, "stamina": 9 },
+    "coutInitiative": 112,
+    "puissance": 8,
+    "multiplicateur": 1.05,
     "bonusCritique": 1,
-    "description": "Attaque physique lourde et fiable.",
-    "classes": [
-      "guerrier",
-      "paladin"
-    ],
+    "description": "Frappe lourde de Guerrier.",
+    "classes": ["guerrier"],
     "classe": "guerrier",
     "effets": []
   },
   {
-    "id": "peq_coup_furieux",
-    "nom": "Coup furieux",
+    "id": "metin2_lame_rapide",
+    "nom": "Lame rapide",
     "typeAction": "attaque",
     "nature": "physique",
     "cible": "ennemi",
-    "couts": {
-      "mana": 0,
-      "stamina": 10
-    },
-    "coutInitiative": 118,
-    "puissance": 6,
-    "multiplicateur": 1,
-    "bonusCritique": 3,
-    "bonusEsquive": -1,
-    "description": "Gros coup brutal, plus risqué défensivement.",
-    "classes": [
-      "berserker"
-    ],
-    "classe": "berserker",
-    "effets": []
-  },
-  {
-    "id": "peq_projectile_arcanique",
-    "nom": "Projectile arcanique",
-    "typeAction": "attaque",
-    "nature": "magique",
-    "cible": "ennemi",
-    "couts": {
-      "mana": 8,
-      "stamina": 0
-    },
-    "coutInitiative": 96,
-    "puissance": 9,
-    "multiplicateur": 1.02,
-    "bonusCritique": 1,
-    "description": "Projectile magique rapide et stable.",
-    "classes": [
-      "mage"
-    ],
-    "classe": "mage",
-    "effets": []
-  },
-  {
-    "id": "peq_trait_ombre",
-    "nom": "Trait d’ombre",
-    "typeAction": "attaque",
-    "nature": "magique",
-    "cible": "ennemi",
-    "couts": {
-      "mana": 7,
-      "stamina": 0
-    },
-    "coutInitiative": 102,
-    "puissance": 9,
-    "multiplicateur": 1,
-    "bonusCritique": 2,
-    "description": "Attaque sombre orientée magie et critique.",
-    "classes": [
-      "necromancien"
-    ],
-    "classe": "necromancien",
-    "effets": []
-  },
-  {
-    "id": "peq_attaque_precise",
-    "nom": "Attaque précise",
-    "typeAction": "attaque",
-    "nature": "physique",
-    "cible": "ennemi",
-    "couts": {
-      "mana": 0,
-      "stamina": 6
-    },
-    "coutInitiative": 92,
+    "couts": { "mana": 0, "stamina": 6 },
+    "coutInitiative": 86,
     "puissance": 5,
     "multiplicateur": 0.98,
     "bonusCritique": 5,
-    "description": "Attaque rapide avec fort potentiel critique.",
-    "classes": [
-      "voleur",
-      "assassin"
-    ],
-    "classe": "voleur",
+    "bonusEsquive": 1,
+    "description": "Attaque rapide de Ninja.",
+    "classes": ["ninja"],
+    "classe": "ninja",
     "effets": []
   },
   {
-    "id": "peq_tir_rapide",
-    "nom": "Tir rapide",
-    "typeAction": "attaque",
-    "nature": "physique",
-    "cible": "ennemi",
-    "couts": {
-      "mana": 0,
-      "stamina": 5
-    },
-    "coutInitiative": 88,
-    "puissance": 4,
-    "multiplicateur": 0.95,
-    "bonusCritique": 2,
-    "description": "Action très rapide, idéale pour garder l’initiative.",
-    "classes": [
-      "rodeur"
-    ],
-    "classe": "rodeur",
-    "effets": []
-  },
-  {
-    "id": "peq_jugement_sacre",
-    "nom": "Jugement sacré",
+    "id": "metin2_lame_demoniaque",
+    "nom": "Lame demoniaque",
     "typeAction": "attaque",
     "nature": "magique",
     "cible": "ennemi",
-    "couts": {
-      "mana": 7,
-      "stamina": 3
-    },
-    "coutInitiative": 104,
-    "puissance": 8,
-    "multiplicateur": 1.02,
-    "bonusCritique": 0,
-    "description": "Frappe sacrée hybride pour Paladin.",
-    "classes": [
-      "paladin"
-    ],
-    "classe": "paladin",
+    "couts": { "mana": 8, "stamina": 4 },
+    "coutInitiative": 102,
+    "puissance": 9,
+    "multiplicateur": 1.04,
+    "bonusCritique": 2,
+    "description": "Attaque sombre hybride de Sura.",
+    "classes": ["sura"],
+    "classe": "sura",
     "effets": []
   },
   {
-    "id": "peq_frappe_bouclier",
-    "nom": "Frappe de bouclier",
+    "id": "metin2_orbe_spirituel",
+    "nom": "Orbe spirituel",
     "typeAction": "attaque",
-    "nature": "physique",
+    "nature": "magique",
     "cible": "ennemi",
-    "couts": {
-      "mana": 0,
-      "stamina": 7
-    },
-    "coutInitiative": 115,
-    "puissance": 6,
-    "multiplicateur": 0.92,
-    "bonusCritique": -1,
-    "description": "Attaque défensive et stable de Gardien.",
-    "classes": [
-      "gardien"
-    ],
-    "classe": "gardien",
+    "couts": { "mana": 9, "stamina": 0 },
+    "coutInitiative": 96,
+    "puissance": 10,
+    "multiplicateur": 1.02,
+    "bonusCritique": 1,
+    "description": "Projectile mystique de Shaman.",
+    "classes": ["shaman"],
+    "classe": "shaman",
     "effets": []
   }
 ]
