@@ -54,11 +54,9 @@
     function selectedItemId() {
         const selected = document.querySelector(".nvi-layout--inventory .nvi-item--selected[data-nvi-item-id]");
         if (selected?.dataset?.nviItemId) return selected.dataset.nviItemId;
-        const popup = document.querySelector(".nvi-details.nvimp-details-popup");
-        const icon = popup?.querySelector(".nvi-details__icon img");
-        if (!popup || !icon) return null;
-        const selectedByTitle = document.querySelector(".nvi-layout--inventory .nvi-item[data-nvi-item-id][title]");
-        return selectedByTitle?.dataset?.nviItemId || null;
+        const selectedDom = document.querySelector(".nvi-layout--inventory .nvi-item[data-nvi-item-id][aria-selected='true']");
+        if (selectedDom?.dataset?.nviItemId) return selectedDom.dataset.nviItemId;
+        return moveModeItemId;
     }
 
     function firstSlotOfPage(page) {
@@ -152,17 +150,36 @@
         requestAnimationFrame(applyPagedInventory);
     }
 
+    function filtersExpanded() {
+        return Boolean(Game?.ui?.nvInventaireFiltresOuverts);
+    }
+
+    function setFiltersExpanded(value) {
+        Game.ui.nvInventaireFiltresOuverts = Boolean(value);
+        applyPagedInventory();
+    }
+
     function injectStyle() {
         if (document.getElementById("nvInventoryMobilePagedStyle")) return;
         const style = document.createElement("style");
         style.id = "nvInventoryMobilePagedStyle";
         style.textContent = `
-            .nvimp-pager, .nvimp-popup-pager { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+            .nvimp-pager, .nvimp-popup-pager { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
             .nvimp-pager { justify-content:center; margin:8px 0 10px; }
-            .nvimp-popup-pager { justify-content:center; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,.08); }
-            .nvimp-popup-pager__label { width:100%; color:var(--text-muted,#c7bdad); font-size:.68rem; font-weight:900; letter-spacing:.04em; text-align:center; text-transform:uppercase; }
-            .nvimp-page-btn { width:34px!important; min-width:34px!important; max-width:34px!important; min-height:28px!important; padding:4px 0!important; border-radius:999px!important; font-size:.72rem!important; font-weight:900!important; line-height:1!important; }
+            .nvimp-popup-pager { justify-content:center; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,.10); }
+            .nvimp-popup-pager__label { width:100%; color:var(--text-muted,#c7bdad); font-size:.72rem; font-weight:900; letter-spacing:.04em; text-align:center; text-transform:uppercase; }
+            .nvimp-page-btn { width:36px!important; min-width:36px!important; max-width:36px!important; min-height:30px!important; padding:4px 0!important; border-radius:999px!important; font-size:.74rem!important; font-weight:900!important; line-height:1!important; }
             .nvimp-page-btn.is-active { border-color:rgba(245,211,122,.65)!important; color:#f5d37a!important; box-shadow:0 0 12px rgba(245,211,122,.18)!important; }
+
+            .nvi-toolbar.nvimp-toolbar-compact { padding:10px!important; }
+            .nvi-toolbar.nvimp-toolbar-compact .nvi-toolbar__top { margin-bottom:8px!important; }
+            .nvimp-toolbar-toggle { width:100%!important; min-height:34px!important; margin:2px 0 0!important; border-radius:999px!important; font-size:.78rem!important; font-weight:900!important; }
+            .nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-toolbar__search-row,
+            .nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-filters { display:none!important; }
+            .nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-toolbar__search-row { display:grid!important; margin-top:8px!important; }
+            .nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-filters { display:flex!important; max-height:31dvh; overflow:auto; padding-top:8px; }
+            .nvi-toolbar.nvimp-toolbar-compact .nvi-filter { flex:1 1 calc(50% - 6px); min-height:32px!important; }
+
             .nvi-layout--inventory .nvi-grid--inventory { grid-template-columns:repeat(4,minmax(0,1fr))!important; gap:8px!important; touch-action:manipulation; }
             .nvi-layout--inventory .nvi-slot { min-height:72px!important; border-radius:14px!important; }
             .nvi-layout--inventory .nvi-slot.nvimp-touch-target { border-color:rgba(245,211,122,.70)!important; box-shadow:0 0 14px rgba(245,211,122,.16)!important; }
@@ -170,21 +187,58 @@
             .nvi-layout--inventory .nvi-item.nvimp-moving { outline:2px solid #f5d37a!important; outline-offset:-2px; filter:brightness(1.2); }
             .nvi-layout--inventory .nvi-item__icon img { width:88%!important; height:88%!important; }
             .nvi-layout--inventory .nvi-item__text-icon { font-size:.78rem!important; }
-            .nvimp-touch-hint { margin:6px 0 0; color:#f5d37a; font-size:.72rem; font-weight:850; text-align:center; }
-            .nvi-details.nvimp-details-popup { position:fixed!important; left:max(10px,env(safe-area-inset-left))!important; right:max(10px,env(safe-area-inset-right))!important; bottom:calc(76px + env(safe-area-inset-bottom))!important; top:auto!important; z-index:980!important; max-height:min(68dvh,520px)!important; overflow:auto!important; border-radius:18px!important; background:rgba(12,10,9,.92)!important; backdrop-filter:blur(5px)!important; -webkit-backdrop-filter:blur(5px)!important; box-shadow:0 18px 38px rgba(0,0,0,.45)!important; }
-            .nvimp-popup-close { position:absolute; top:8px; right:8px; min-width:64px!important; min-height:30px!important; padding:0 10px!important; border-radius:999px!important; font-size:.72rem!important; font-weight:900!important; z-index:2; }
-            .nvi-details.nvimp-details-popup .nvi-details__header { padding-right:78px; margin-bottom:8px!important; }
-            .nvi-details.nvimp-details-popup h3 { margin:0 0 3px!important; font-size:1rem!important; line-height:1.1!important; }
-            .nvi-details.nvimp-details-popup .nvi-details__description, .nvi-details.nvimp-details-popup .nvi-details__stats { margin:8px 0!important; font-size:.82rem!important; line-height:1.35!important; }
-            .nvi-details.nvimp-details-popup .nvi-details__actions, .nvi-details.nvimp-details-popup .nvi-delete-confirm, .nvi-details.nvimp-details-popup .nvi-trade-box { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:6px!important; margin-top:8px!important; }
-            .nvi-details.nvimp-details-popup .nvi-trade-box { grid-template-columns:1fr!important; padding:9px!important; }
-            .nvi-details.nvimp-details-popup .nvi-lock-toggle { display:grid!important; grid-template-columns:1fr!important; justify-items:center!important; min-height:32px!important; margin-top:8px!important; }
-            .nvi-details.nvimp-details-popup .nvi-details__actions button, .nvi-details.nvimp-details-popup .nvi-lock-toggle, .nvi-details.nvimp-details-popup .nvi-danger, .nvi-details.nvimp-details-popup .nvi-trade-box button, .nvi-details.nvimp-details-popup .nvi-delete-confirm button { width:100%!important; min-height:34px!important; padding:7px 9px!important; border-radius:999px!important; font-size:.74rem!important; font-weight:850!important; line-height:1.05!important; }
+            .nvimp-touch-hint { width:100%; margin:6px 0 0; color:#f5d37a; font-size:.72rem; font-weight:850; text-align:center; }
+
+            .nvi-details.nvimp-details-popup {
+                position:fixed!important;
+                left:max(10px,env(safe-area-inset-left))!important;
+                right:max(10px,env(safe-area-inset-right))!important;
+                top:calc(58px + env(safe-area-inset-top))!important;
+                bottom:calc(72px + env(safe-area-inset-bottom))!important;
+                z-index:980!important;
+                height:auto!important;
+                max-height:none!important;
+                overflow:auto!important;
+                border-radius:20px!important;
+                padding:14px!important;
+                background:rgba(12,10,9,.94)!important;
+                backdrop-filter:blur(5px)!important;
+                -webkit-backdrop-filter:blur(5px)!important;
+                box-shadow:0 18px 38px rgba(0,0,0,.45)!important;
+            }
+            .nvimp-popup-close { position:absolute; top:10px; right:10px; min-width:68px!important; min-height:32px!important; padding:0 11px!important; border-radius:999px!important; font-size:.74rem!important; font-weight:900!important; z-index:2; }
+            .nvi-details.nvimp-details-popup .nvi-details__header { padding-right:84px; margin-bottom:12px!important; }
+            .nvi-details.nvimp-details-popup h3 { margin:0 0 5px!important; font-size:1.08rem!important; line-height:1.14!important; }
+            .nvi-details.nvimp-details-popup .nvi-details__description,
+            .nvi-details.nvimp-details-popup .nvi-details__stats { margin:12px 0!important; font-size:.86rem!important; line-height:1.45!important; }
+            .nvi-details.nvimp-details-popup .nvi-details__actions,
+            .nvi-details.nvimp-details-popup .nvi-delete-confirm,
+            .nvi-details.nvimp-details-popup .nvi-trade-box {
+                display:grid!important;
+                grid-template-columns:repeat(2,minmax(0,1fr))!important;
+                gap:10px!important;
+                margin-top:12px!important;
+            }
+            .nvi-details.nvimp-details-popup .nvi-trade-box { grid-template-columns:1fr!important; padding:12px!important; gap:10px!important; }
+            .nvi-details.nvimp-details-popup .nvi-lock-toggle { display:grid!important; grid-template-columns:1fr!important; justify-items:center!important; min-height:40px!important; margin-top:12px!important; }
+            .nvi-details.nvimp-details-popup .nvi-details__actions button,
+            .nvi-details.nvimp-details-popup .nvi-lock-toggle,
+            .nvi-details.nvimp-details-popup .nvi-danger,
+            .nvi-details.nvimp-details-popup .nvi-trade-box button,
+            .nvi-details.nvimp-details-popup .nvi-delete-confirm button {
+                width:100%!important;
+                min-height:42px!important;
+                padding:9px 11px!important;
+                border-radius:13px!important;
+                font-size:.78rem!important;
+                font-weight:850!important;
+                line-height:1.12!important;
+            }
             .nvi-details.nvimp-details-popup .nvi-danger { grid-column:1 / -1; }
-            .nvi-details.nvimp-details-popup .nvi-quantity { justify-content:center; }
+            .nvi-details.nvimp-details-popup .nvi-quantity { justify-content:center; gap:8px!important; }
             .nvi-layout--inventory .nvi-details:not(.nvimp-details-popup) { display:none!important; }
-            @media (min-width:901px) { .nvi-details.nvimp-details-popup { left:50%!important; right:auto!important; width:min(420px,calc(100vw - 24px))!important; transform:translateX(-50%); } }
-            @media (max-width:380px) { .nvi-layout--inventory .nvi-slot { min-height:64px!important; } .nvi-layout--inventory .nvi-grid--inventory { gap:6px!important; } .nvimp-page-btn { width:30px!important; min-width:30px!important; max-width:30px!important; min-height:26px!important; font-size:.68rem!important; } }
+            @media (min-width:901px) { .nvi-details.nvimp-details-popup { left:50%!important; right:auto!important; width:min(440px,calc(100vw - 24px))!important; transform:translateX(-50%); } }
+            @media (max-width:380px) { .nvi-layout--inventory .nvi-slot { min-height:64px!important; } .nvi-layout--inventory .nvi-grid--inventory { gap:6px!important; } .nvimp-page-btn { width:32px!important; min-width:32px!important; max-width:32px!important; min-height:28px!important; font-size:.68rem!important; } .nvi-details.nvimp-details-popup .nvi-details__actions, .nvi-details.nvimp-details-popup .nvi-delete-confirm { gap:8px!important; } }
         `;
         document.head.appendChild(style);
     }
@@ -209,6 +263,29 @@
             if (normalized === "lock") lockIcon.textContent = "Case bloquée";
             if (normalized === "libre") lockIcon.textContent = "Case libre";
         }
+    }
+
+    function enhanceToolbar() {
+        const toolbar = document.querySelector(".nvi-window .nvi-toolbar");
+        if (!toolbar) return;
+        toolbar.classList.add("nvimp-toolbar-compact");
+        toolbar.classList.toggle("is-expanded", filtersExpanded());
+
+        let toggle = toolbar.querySelector(":scope > .nvimp-toolbar-toggle");
+        if (!toggle) {
+            toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "nvimp-toolbar-toggle";
+            toggle.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                setFiltersExpanded(!filtersExpanded());
+            });
+            const top = toolbar.querySelector(".nvi-toolbar__top");
+            if (top?.nextSibling) toolbar.insertBefore(toggle, top.nextSibling);
+            else toolbar.appendChild(toggle);
+        }
+        toggle.textContent = filtersExpanded() ? "Masquer tri & filtres" : "Afficher tri & filtres";
     }
 
     function buildPager(pageCount, activePage, extraClass, mode = "navigate") {
@@ -324,6 +401,7 @@
     function applyPagedInventory() {
         injectStyle();
         if (Game?.ui?.vueActive !== "inventaire") return;
+        enhanceToolbar();
         const grid = document.querySelector(".nvi-layout--inventory .nvi-grid--inventory");
         if (!grid) return;
         const { pageCount, activePage } = applyPagerToGrid(grid);
