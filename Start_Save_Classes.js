@@ -384,6 +384,7 @@ Module joueur base uniquement sur classes_metin2.js.
                             ${NV_creerLigneStatClasse("INT", preview.intelligence)}
                             ${NV_creerLigneStatClasse("VIT", preview.vitalite)}
                             ${NV_creerLigneStatClasse("CHA", preview.chance)}
+                            ${NV_creerLigneStatClasse("SPE", preview.vitesse)}
                         </div>
                     </section>
                     <section class="fiche-personnage-section">
@@ -398,7 +399,6 @@ Module joueur base uniquement sur classes_metin2.js.
                             ${NV_creerLigneStatClasse("RES", preview.defenseMagique)}
                             ${NV_creerLigneStatClasse("CRITIQUE", `${preview.critique}%`)}
                             ${NV_creerLigneStatClasse("ESQUIVE", `${preview.esquive}%`)}
-                            ${NV_creerLigneStatClasse("SPE", preview.vitesse)}
                         </div>
                     </section>
                 </div>
