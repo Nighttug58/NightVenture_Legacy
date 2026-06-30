@@ -1,9 +1,9 @@
 /*
 NightVenture - Competences Core
+- 2 specialisations par classe
+- Competences niveau 1 a 5
 - Points de competence +1 par niveau
-- Competences de classe niveau 1 a 5
-- Scaling des couts et degats en combat
-- Vue d'amelioration des competences
+- Cooldowns par tours joueur
 */
 
 (function () {
@@ -38,9 +38,29 @@ NightVenture - Competences Core
         return Game.cache.classesParId?.[classeId] || Game.data.classes?.find(c => c.id === classeId) || null;
     }
 
-    function NV_idsCompetencesClasse(personnage = Game.data?.personnage) {
+    function NV_specialisationsClasse(personnage = Game.data?.personnage) {
         const classe = NV_classePersonnage(personnage);
-        return Array.isArray(classe?.competencesDepart) ? classe.competencesDepart.filter(Boolean) : [];
+        return Array.isArray(classe?.specialisations) ? classe.specialisations : [];
+    }
+
+    function NV_specialisationActive(personnage = Game.data?.personnage) {
+        if (!personnage) return null;
+        const classe = NV_classePersonnage(personnage);
+        const specialisations = NV_specialisationsClasse(personnage);
+        if (specialisations.length === 0) return null;
+
+        let active = specialisations.find(spec => spec.id === personnage.specialisationId);
+        if (!active) {
+            active = specialisations.find(spec => spec.id === classe?.specialisationDepart) || specialisations[0];
+            personnage.specialisationId = active.id;
+            personnage.specialisationNom = active.nom;
+        }
+        return active;
+    }
+
+    function NV_idsCompetencesClasse(personnage = Game.data?.personnage) {
+        const active = NV_specialisationActive(personnage);
+        return Array.isArray(active?.competences) ? active.competences.filter(Boolean) : [];
     }
 
     function NV_maxNiveauCompetence(idCompetence) {
@@ -54,21 +74,20 @@ NightVenture - Competences Core
         personnage.pointsCompetence = Number(personnage.pointsCompetence ?? 0);
         if (!Number.isFinite(personnage.pointsCompetence) || personnage.pointsCompetence < 0) personnage.pointsCompetence = 0;
 
-        personnage.competencesNiveaux ??= {};
-        if (typeof personnage.competencesNiveaux !== "object" || Array.isArray(personnage.competencesNiveaux)) {
-            personnage.competencesNiveaux = {};
-        }
+        const active = NV_specialisationActive(personnage);
+        personnage.specialisationId = active?.id || null;
+        personnage.specialisationNom = active?.nom || null;
 
         const idsClasse = NV_idsCompetencesClasse(personnage);
+        const anciensNiveaux = personnage.competencesNiveaux && typeof personnage.competencesNiveaux === "object" && !Array.isArray(personnage.competencesNiveaux)
+            ? personnage.competencesNiveaux
+            : {};
+
+        personnage.competencesNiveaux = {};
         idsClasse.forEach(id => {
             const max = NV_maxNiveauCompetence(id);
-            const valeur = personnage.competencesNiveaux[id];
-            personnage.competencesNiveaux[id] = valeur == null ? 1 : NV_clampCompetence(valeur, 0, max);
-        });
-
-        Object.keys(personnage.competencesNiveaux).forEach(id => {
-            const max = NV_maxNiveauCompetence(id);
-            personnage.competencesNiveaux[id] = NV_clampCompetence(personnage.competencesNiveaux[id], 0, max);
+            const valeur = anciensNiveaux[id];
+            personnage.competencesNiveaux[id] = valeur == null ? 1 : NV_clampCompetence(valeur, 1, max);
         });
 
         personnage.competences = [...new Set([...NV_BASE_ACTIONS_COMPETENCES, ...idsClasse])];
@@ -107,32 +126,49 @@ NightVenture - Competences Core
             competence.coutInitiative = Number(progression.coutInitiative ?? competence.coutInitiative ?? 100);
             competence.bonusCritique = Number(progression.bonusCritique ?? competence.bonusCritique ?? 0);
             competence.bonusEsquive = Number(progression.bonusEsquive ?? competence.bonusEsquive ?? 0);
-            competence.couts = {
-                ...(competence.couts || {}),
-                ...(progression.couts || {})
-            };
+            competence.couts = { ...(competence.couts || {}), ...(progression.couts || {}) };
         }
 
         return competence;
     }
 
-    const NV_trouverCompetenceCombatOriginal = typeof window.trouverCompetenceCombat === "function"
-        ? window.trouverCompetenceCombat
-        : null;
+    function NV_estCompetenceDeClasse(idCompetence, personnage = Game.data?.personnage) {
+        return NV_idsCompetencesClasse(personnage).includes(idCompetence);
+    }
 
-    window.trouverCompetenceCombat = function (idCompetence) {
-        const competenceBase = NV_trouverCompetenceCombatOriginal
-            ? NV_trouverCompetenceCombatOriginal(idCompetence)
-            : NV_competenceDepuisCache(idCompetence);
+    function NV_cooldownsCombat(combat = Game.combat?.actif) {
+        if (!combat?.joueur) return {};
+        combat.joueur.cooldowns ??= {};
+        return combat.joueur.cooldowns;
+    }
 
-        if (!competenceBase) return null;
-        const personnage = Game.data?.personnage;
-        const idsClasse = NV_idsCompetencesClasse(personnage);
+    function NV_cooldownRestant(idCompetence, combat = Game.combat?.actif) {
+        return Math.max(0, Number(NV_cooldownsCombat(combat)[idCompetence] || 0));
+    }
 
-        if (idsClasse.includes(idCompetence)) {
-            return NV_competenceScalee(idCompetence);
+    function NV_reduireCooldownsApresAction(idAction) {
+        const combat = Game.combat?.actif;
+        if (!combat?.joueur || combat.acteurCourant !== "joueur") return;
+
+        const cooldowns = NV_cooldownsCombat(combat);
+        Object.keys(cooldowns).forEach(id => {
+            if (id === idAction) return;
+            cooldowns[id] = Math.max(0, Number(cooldowns[id] || 0) - 1);
+            if (cooldowns[id] <= 0) delete cooldowns[id];
+        });
+
+        if (NV_estCompetenceDeClasse(idAction)) {
+            const competence = NV_competenceDepuisCache(idAction);
+            const cooldown = Math.max(0, Number(competence?.cooldownTours || 0));
+            if (cooldown > 0) cooldowns[idAction] = cooldown;
         }
+    }
 
+    const NV_trouverCompetenceCombatOriginal = typeof window.trouverCompetenceCombat === "function" ? window.trouverCompetenceCombat : null;
+    window.trouverCompetenceCombat = function (idCompetence) {
+        const competenceBase = NV_trouverCompetenceCombatOriginal ? NV_trouverCompetenceCombatOriginal(idCompetence) : NV_competenceDepuisCache(idCompetence);
+        if (!competenceBase) return null;
+        if (NV_estCompetenceDeClasse(idCompetence)) return NV_competenceScalee(idCompetence);
         return NV_cloneCompetence(competenceBase);
     };
 
@@ -141,6 +177,34 @@ NightVenture - Competences Core
         NV_normaliserCompetencesPersonnage(personnage);
         return [...new Set([...NV_BASE_ACTIONS_COMPETENCES, ...NV_idsCompetencesClasse(personnage)])];
     };
+
+    const NV_utiliserCompetenceCombatOriginal = typeof window.utiliserCompetenceCombat === "function" ? window.utiliserCompetenceCombat : null;
+    if (NV_utiliserCompetenceCombatOriginal) {
+        window.utiliserCompetenceCombat = function (idCompetence) {
+            if (NV_estCompetenceDeClasse(idCompetence)) {
+                const restant = NV_cooldownRestant(idCompetence);
+                if (restant > 0) {
+                    const competence = NV_competenceDepuisCache(idCompetence);
+                    if (typeof ajouterLigneCombat === "function") ajouterLigneCombat(`${competence?.nom || idCompetence} recharge encore ${restant} tour(s).`);
+                    if (typeof ouvrirCombat === "function") ouvrirCombat();
+                    return;
+                }
+            }
+            return NV_utiliserCompetenceCombatOriginal.apply(this, arguments);
+        };
+    }
+
+    const NV_resoudreActionCombatOriginal = typeof window.resoudreActionCombat === "function" ? window.resoudreActionCombat : null;
+    if (NV_resoudreActionCombatOriginal) {
+        window.resoudreActionCombat = function (action, options = {}) {
+            const combat = Game.combat?.actif;
+            const estActionJoueur = combat?.acteurCourant === "joueur";
+            const idAction = action?.id || null;
+            const resultat = NV_resoudreActionCombatOriginal.apply(this, arguments);
+            if (estActionJoueur && idAction) NV_reduireCooldownsApresAction(idAction);
+            return resultat;
+        };
+    }
 
     window.verifierMonteeNiveau = function () {
         let coutXp = xpNiveauSuivant();
@@ -187,6 +251,21 @@ NightVenture - Competences Core
         return competence?.icone || competence?.image || "assets/competences/competence_placeholder.png";
     }
 
+    function NV_creerCarteSpecialisation(spec) {
+        const personnage = Game.data.personnage;
+        const active = personnage.specialisationId === spec.id;
+        return `
+            <article class="competence-spec-card ${active ? "competence-spec-card--active" : ""}">
+                <div>
+                    <h3>${NV_escapeCompetence(spec.nom)}</h3>
+                    <p>${NV_escapeCompetence(spec.description || "Specialisation de classe.")}</p>
+                    <small>${(spec.competences || []).length} competence(s)</small>
+                </div>
+                <button ${active ? "disabled" : ""} onclick="NV_choisirSpecialisation('${NV_escapeCompetence(spec.id)}')">${active ? "Active" : "Choisir"}</button>
+            </article>
+        `;
+    }
+
     function NV_creerCarteCompetence(idCompetence) {
         const niveau = NV_niveauCompetence(idCompetence);
         const base = NV_competenceDepuisCache(idCompetence);
@@ -195,6 +274,7 @@ NightVenture - Competences Core
         const suivante = niveau < max ? NV_competenceScalee(idCompetence, niveau + 1) : null;
         const personnage = Game.data.personnage;
         const peutAmeliorer = niveau < max && Number(personnage.pointsCompetence || 0) > 0;
+        const cooldown = Number(base?.cooldownTours || 0);
 
         return `
             <article class="competence-card ${niveau >= max ? "competence-card--max" : ""}">
@@ -211,15 +291,10 @@ NightVenture - Competences Core
                         <span>Degats : ${Math.round(actuelle?.puissance || 0)}</span>
                         <span>Ratio : x${Number(actuelle?.multiplicateur || 1).toFixed(2)}</span>
                         <span>Cout : ${NV_escapeCompetence(NV_coutsTexteCompetence(actuelle))}</span>
+                        <span>Recharge : ${cooldown} tour(s)</span>
                     </div>
-                    ${suivante ? `
-                        <div class="competence-card__next">
-                            Prochain niveau : degats ${Math.round(suivante.puissance || 0)}, ratio x${Number(suivante.multiplicateur || 1).toFixed(2)}, cout ${NV_escapeCompetence(NV_coutsTexteCompetence(suivante))}
-                        </div>
-                    ` : `<div class="competence-card__next">Niveau maximum atteint.</div>`}
-                    <button ${peutAmeliorer ? "" : "disabled"} onclick="NV_ameliorerCompetence('${NV_escapeCompetence(idCompetence)}')">
-                        ${niveau <= 0 ? "Debloquer" : "Ameliorer"}
-                    </button>
+                    ${suivante ? `<div class="competence-card__next">Prochain niveau : degats ${Math.round(suivante.puissance || 0)}, ratio x${Number(suivante.multiplicateur || 1).toFixed(2)}, cout ${NV_escapeCompetence(NV_coutsTexteCompetence(suivante))}</div>` : `<div class="competence-card__next">Niveau maximum atteint.</div>`}
+                    <button ${peutAmeliorer ? "" : "disabled"} onclick="NV_ameliorerCompetence('${NV_escapeCompetence(idCompetence)}')">Ameliorer</button>
                 </div>
             </article>
         `;
@@ -230,15 +305,20 @@ NightVenture - Competences Core
         changerVue("competences_classes");
         const personnage = NV_normaliserCompetencesPersonnage(Game.data.personnage);
         const classe = NV_classePersonnage(personnage);
+        const specialisations = NV_specialisationsClasse(personnage);
         const ids = NV_idsCompetencesClasse(personnage);
 
         const html = `
             <section class="item-card competence-hero">
                 <div>
                     <h2>Competences de ${NV_escapeCompetence(classe?.nom || personnage.classe || "classe")}</h2>
-                    <p>Chaque competence possede 5 niveaux. Les degats augmentent avec le niveau, mais le cout d'utilisation augmente aussi.</p>
+                    <p>Choisis une specialisation, puis ameliore ses competences. Chaque competence possede 5 niveaux et un temps de recharge en tours.</p>
                 </div>
                 <button onclick="ouvrirExploration()">Retour</button>
+            </section>
+
+            <section class="competence-specialisations">
+                ${specialisations.map(NV_creerCarteSpecialisation).join("")}
             </section>
 
             <section class="item-card competence-points-panel">
@@ -255,13 +335,29 @@ NightVenture - Competences Core
         afficherVuePrincipale(html);
     }
 
+    window.NV_choisirSpecialisation = function (specialisationId) {
+        const personnage = Game.data?.personnage;
+        const specialisations = NV_specialisationsClasse(personnage);
+        const spec = specialisations.find(s => s.id === specialisationId);
+        if (!personnage || !spec) return;
+
+        personnage.specialisationId = spec.id;
+        personnage.specialisationNom = spec.nom;
+        personnage.competencesNiveaux = {};
+        personnage.competences = [];
+        NV_normaliserCompetencesPersonnage(personnage);
+        ajouterJournal(`Specialisation choisie : ${spec.nom}`);
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("specialisation change");
+        ouvrirCompetencesJoueur();
+    };
+
     window.NV_ameliorerCompetence = function (idCompetence) {
         const personnage = NV_normaliserCompetencesPersonnage(Game.data?.personnage);
         if (!personnage) return;
 
         const ids = NV_idsCompetencesClasse(personnage);
         if (!ids.includes(idCompetence)) {
-            ajouterJournal("Competence indisponible pour cette classe.");
+            ajouterJournal("Competence indisponible pour cette specialisation.");
             return;
         }
 
@@ -305,7 +401,12 @@ NightVenture - Competences Core
     if (NV_lancerNouvellePartieOriginal) {
         window.NV_lancerNouvellePartie = function (...args) {
             const resultat = NV_lancerNouvellePartieOriginal.apply(this, args);
-            NV_normaliserCompetencesPersonnage(Game.data?.personnage);
+            const personnage = Game.data?.personnage;
+            const classe = NV_classePersonnage(personnage);
+            personnage.specialisationId = classe?.specialisationDepart || classe?.specialisations?.[0]?.id || null;
+            personnage.specialisationNom = classe?.specialisations?.find(s => s.id === personnage.specialisationId)?.nom || null;
+            personnage.competencesNiveaux = {};
+            NV_normaliserCompetencesPersonnage(personnage);
             if (typeof NV_sauvegarderLocalSilencieux === "function") NV_sauvegarderLocalSilencieux();
             return resultat;
         };
@@ -327,15 +428,18 @@ NightVenture - Competences Core
         const max = Number(action.maxNiveau || 5);
         const mana = Number(action.couts?.mana || 0);
         const stamina = Number(action.couts?.stamina || 0);
-        const disponible = niveau > 0 && joueur.mana >= mana && joueur.stamina >= stamina;
+        const cooldown = NV_cooldownRestant(idCompetence);
+        const disponible = niveau > 0 && joueur.mana >= mana && joueur.stamina >= stamina && cooldown <= 0;
         const degats = Math.round(Number(action.puissance || 0));
+        const cooldownMax = Number(action.cooldownTours || 0);
 
         return `
-            <button class="combat-skill-card" ${disponible ? "" : "disabled"} onclick="utiliserCompetenceCombat('${NV_escapeCompetence(idCompetence)}')">
+            <button class="combat-skill-card ${cooldown > 0 ? "combat-skill-card--cooldown" : ""}" ${disponible ? "" : "disabled"} onclick="utiliserCompetenceCombat('${NV_escapeCompetence(idCompetence)}')">
                 <img class="combat-skill-card__icon" src="${NV_escapeCompetence(NV_iconeCompetence(action))}" alt="" onerror="this.classList.add('combat-skill-card__icon--missing'); this.removeAttribute('src');">
                 <span class="combat-skill-card__name">${NV_escapeCompetence(action.nom || idCompetence)}</span>
                 <span class="combat-skill-card__level">${niveau}/${max}</span>
-                <small>${degats} deg. · ${NV_escapeCompetence(NV_coutsTexteCompetence(action))}</small>
+                ${cooldown > 0 ? `<span class="combat-skill-card__cooldown">${cooldown}</span>` : ""}
+                <small>${degats} deg. · ${NV_escapeCompetence(NV_coutsTexteCompetence(action))} · CD ${cooldownMax}</small>
             </button>
         `;
     }
@@ -343,6 +447,7 @@ NightVenture - Competences Core
     window.creerBoutonsActionsCombat = function (combat) {
         const joueur = combat.joueur;
         NV_normaliserCompetencesPersonnage(Game.data?.personnage);
+        joueur.cooldowns ??= {};
         const idsCompetences = [...new Set(joueur.competences || [])].filter(id => !NV_BASE_ACTIONS_COMPETENCES.includes(id));
         const competencesHTML = idsCompetences.map(id => NV_creerBoutonSkillCombat(id, joueur)).join("");
 
@@ -351,7 +456,7 @@ NightVenture - Competences Core
                 ${competencesHTML || `<p class="combat-skill-empty">Aucune competence de classe.</p>`}
             </div>
             <div class="combat-base-actions">
-                <button onclick="attaquerMonstre()"><span>Attaque</span><small>Action simple</small></button>
+                <button onclick="attaquerMonstre()"><span>Attaque</span><small>Action simple / recharge les skills</small></button>
                 <button onclick="defendreCombat()"><span>Defendre</span><small>Reduit les prochains degats</small></button>
                 <button onclick="utiliserPotionCombat('potion_soin')"><span>Potion</span><small>Consomme votre tour</small></button>
                 <button class="combat-action--equipment" onclick="ouvrirObjetsCombat()"><span>Objets</span><small>Equipement gratuit</small></button>
@@ -363,6 +468,9 @@ NightVenture - Competences Core
     window.NV_normaliserCompetencesPersonnage = NV_normaliserCompetencesPersonnage;
     window.NV_niveauCompetence = NV_niveauCompetence;
     window.NV_competenceScalee = NV_competenceScalee;
+    window.NV_specialisationsClasse = NV_specialisationsClasse;
+    window.NV_specialisationActive = NV_specialisationActive;
+    window.NV_cooldownRestant = NV_cooldownRestant;
 
     setTimeout(() => {
         NV_normaliserCompetencesPersonnage(Game.data?.personnage);
