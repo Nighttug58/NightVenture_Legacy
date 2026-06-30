@@ -1,7 +1,8 @@
 /*
 NightVenture - Competences Ameliorations
 - Generation automatique des items d'amelioration de competences
-- Point 5 : fonction centrale d'utilisation des livres, pierres et noyaux
+- Fonction centrale d'utilisation des livres, pierres et noyaux
+- Les objets debloquent le niveau max ET montent immediatement la competence au niveau suivant.
 */
 
 (function () {
@@ -180,6 +181,11 @@ NightVenture - Competences Ameliorations
         return NV_resultatAmelioration(true, "Preconditions valides.");
     }
 
+    function NV_monterCompetenceAuNiveauMax(etat) {
+        etat.niveau = Math.max(Number(etat.niveau || 1), Number(etat.niveauMax || 1));
+        return etat.niveau;
+    }
+
     function NV_utiliserLivreCompetence(objet, competence, etat) {
         if (objet.competenceId !== competence.id) {
             return NV_resultatAmelioration(false, "Ce livre ne correspond pas a cette competence.");
@@ -194,9 +200,12 @@ NightVenture - Competences Ameliorations
         }
 
         etat.niveauMax = Math.min(niveauMaxActuel + 1, niveauMaxFinal);
+        etat.niveau = etat.niveauMax;
         etat.livresUtilises = Number(etat.livresUtilises || 0) + 1;
-        return NV_resultatAmelioration(true, `${competence.nom} peut maintenant monter jusqu'au niveau ${etat.niveauMax}.`, {
+
+        return NV_resultatAmelioration(true, `${competence.nom} passe au niveau ${etat.niveau}/${etat.niveauMax}.`, {
             palier: "livre_competence",
+            niveau: etat.niveau,
             niveauMax: etat.niveauMax
         });
     }
@@ -211,9 +220,12 @@ NightVenture - Competences Ameliorations
         }
 
         etat.niveauMax = Math.min(niveauMaxActuel + 1, niveauMaxFinal);
+        etat.niveau = etat.niveauMax;
         etat.pierresAmeUtilisees = Number(etat.pierresAmeUtilisees || 0) + 1;
-        return NV_resultatAmelioration(true, `${competence.nom} peut maintenant monter jusqu'au niveau ${etat.niveauMax}.`, {
+
+        return NV_resultatAmelioration(true, `${competence.nom} passe au niveau ${etat.niveau}/${etat.niveauMax}.`, {
             palier: "pierre_ame",
+            niveau: etat.niveau,
             niveauMax: etat.niveauMax
         });
     }
@@ -232,10 +244,13 @@ NightVenture - Competences Ameliorations
         }
 
         etat.niveauMax = niveauMaxFinal;
+        etat.niveau = niveauMaxFinal;
         etat.masterisee = true;
         etat.noyauDemoniaqueUtilise = true;
-        return NV_resultatAmelioration(true, `${competence.nom} est maintenant Masterisee et peut monter au niveau ${etat.niveauMax}.`, {
+
+        return NV_resultatAmelioration(true, `${competence.nom} est maintenant Masterisee au niveau ${etat.niveau}/${etat.niveauMax}.`, {
             palier: "noyau_demoniaque",
+            niveau: etat.niveau,
             niveauMax: etat.niveauMax,
             masterisee: true
         });
@@ -284,6 +299,8 @@ NightVenture - Competences Ameliorations
             return resultat;
         }
 
+        NV_monterCompetenceAuNiveauMax(etat);
+
         const consomme = NV_consommeObjetAmelioration(idObjet);
         if (!consomme) return NV_resultatAmelioration(false, "Impossible de consommer l'objet.");
 
@@ -296,7 +313,7 @@ NightVenture - Competences Ameliorations
             ajouterJournal(`${objet.nom} utilise.`);
             ajouterJournal(resultat.message);
         }
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("competence max upgrade");
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("competence item level up");
         if (typeof rafraichirInterface === "function") rafraichirInterface();
 
         return resultat;
