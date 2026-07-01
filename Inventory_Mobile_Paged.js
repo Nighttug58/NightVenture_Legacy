@@ -106,19 +106,6 @@
         if (popup) popup.dataset.nviprItemId = id;
     }
 
-    function injectStyle() {
-        if (document.getElementById("nvInventoryMobilePagedStyle")) return;
-        const style = document.createElement("style");
-        style.id = "nvInventoryMobilePagedStyle";
-        style.textContent = `
-            .nvimp-pager,.nvimp-popup-pager{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}.nvimp-pager{margin:8px 0 10px}.nvimp-popup-pager{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.10)}.nvimp-popup-pager__label{width:100%;color:var(--text-muted,#c7bdad);font-size:.68rem;font-weight:900;letter-spacing:.04em;text-align:center;text-transform:uppercase}.nvimp-page-btn{width:36px!important;min-width:36px!important;max-width:36px!important;min-height:30px!important;padding:4px 0!important;border-radius:999px!important;font-size:.74rem!important;font-weight:900!important;line-height:1!important}.nvimp-page-btn.is-active{border-color:rgba(245,211,122,.65)!important;color:#f5d37a!important;box-shadow:0 0 12px rgba(245,211,122,.18)!important}
-            .nvi-toolbar.nvimp-toolbar-compact{padding:10px!important}.nvi-toolbar.nvimp-toolbar-compact .nvi-toolbar__top{margin-bottom:8px!important}.nvimp-toolbar-toggle{width:100%!important;min-height:34px!important;margin:2px 0 0!important;border-radius:999px!important;font-size:.78rem!important;font-weight:900!important}.nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-toolbar__search-row,.nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-filters{display:none!important}.nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-toolbar__search-row{display:grid!important;margin-top:8px!important}.nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-filters{display:flex!important;max-height:31dvh;overflow:auto;padding-top:8px}.nvi-toolbar.nvimp-toolbar-compact .nvi-filter{flex:1 1 calc(50% - 6px);min-height:32px!important}
-            .nvi-layout--inventory.nvimp-no-details{grid-template-columns:minmax(0,1fr)!important}.nvi-layout--inventory .nvi-details:has(.nvi-details__empty){display:none!important}.nvi-layout--inventory .nvi-panel__title{display:none!important;margin:0!important}.nvi-layout--inventory .nvi-grid--inventory{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;touch-action:manipulation}.nvi-layout--inventory .nvi-slot{min-height:58px!important;border-radius:12px!important;pointer-events:auto!important}.nvi-layout--inventory .nvi-slot.nvimp-touch-target{border-color:rgba(245,211,122,.70)!important;box-shadow:0 0 14px rgba(245,211,122,.16)!important}.nvi-layout--inventory .nvi-item{border-radius:11px!important;touch-action:none;user-select:none;-webkit-user-select:none}.nvi-layout--inventory .nvi-item.nvimp-moving{outline:2px solid #f5d37a!important;outline-offset:-2px;filter:brightness(1.18);opacity:.86}.nvi-layout--inventory .nvi-item__icon img{width:86%!important;height:86%!important}.nvi-layout--inventory .nvi-item__text-icon{font-size:.72rem!important}.nvi-layout--inventory .nvi-item__favorite,.nvi-layout--inventory .nvi-item__lock,.nvi-layout--inventory .nvi-item__qty{font-size:.52rem!important;padding:1px 3px!important}
-            .nvimp-grid-footer{display:flex;justify-content:flex-start;align-items:center;margin-top:8px;min-height:24px}.nvimp-gold{display:inline-flex;align-items:center;justify-content:flex-start;min-height:24px;padding:4px 10px;border:1px solid rgba(245,211,122,.22);border-radius:999px;background:rgba(0,0,0,.18);color:#f5d37a;font-size:.78rem;font-weight:900;letter-spacing:.02em}@media(max-width:380px){.nvi-layout--inventory .nvi-slot{min-height:52px!important}.nvi-layout--inventory .nvi-grid--inventory{gap:5px!important}.nvimp-page-btn{width:32px!important;min-width:32px!important;max-width:32px!important;min-height:28px!important;font-size:.68rem!important}}
-        `;
-        document.head.appendChild(style);
-    }
-
     function enhanceToolbar() {
         const toolbar = document.querySelector(".nvi-window .nvi-toolbar");
         if (!toolbar) return;
@@ -321,7 +308,6 @@
     }
 
     function applyPagedInventory() {
-        injectStyle();
         if (Game?.ui?.vueActive !== "inventaire") return;
         suppressObserver = true;
         try {
@@ -353,7 +339,6 @@
     }
 
     function install() {
-        injectStyle();
         installDirectDrag();
         observe();
         scheduleApply();
