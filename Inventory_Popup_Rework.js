@@ -11,8 +11,8 @@
                 position: fixed !important;
                 left: max(10px, env(safe-area-inset-left)) !important;
                 right: max(10px, env(safe-area-inset-right)) !important;
-                bottom: calc(74px + env(safe-area-inset-bottom)) !important;
-                top: auto !important;
+                top: calc(12px + env(safe-area-inset-top)) !important;
+                bottom: auto !important;
                 z-index: 1200 !important;
                 width: auto !important;
                 height: auto !important;
@@ -26,6 +26,7 @@
                 box-shadow: 0 18px 44px rgba(0, 0, 0, 0.58) !important;
                 backdrop-filter: blur(5px) !important;
                 -webkit-backdrop-filter: blur(5px) !important;
+                transform-origin: top center !important;
             }
 
             .nvi-details.nvimp-details-popup.nvipr-popup .nvimp-popup-close {
@@ -271,12 +272,17 @@
         if (pager && danger) danger.after(pager);
     }
 
+    function findLiveDetails() {
+        const details = Array.from(document.querySelectorAll(".nvi-layout--inventory > .nvi-details"));
+        return details.find(panel => !panel.querySelector(".nvi-details__empty")) || null;
+    }
+
     function applyPopupRework() {
         injectStyle();
         if (Game?.ui?.vueActive !== "inventaire") return;
-        const details = document.querySelector(".nvi-layout--inventory > .nvi-details.nvimp-details-popup");
-        if (!details || details.querySelector(".nvi-details__empty")) return;
-        details.classList.add("nvipr-popup");
+        const details = findLiveDetails();
+        if (!details) return;
+        details.classList.add("nvimp-details-popup", "nvipr-popup");
 
         const close = details.querySelector(".nvimp-popup-close");
         if (close) close.textContent = "×";
@@ -293,8 +299,8 @@
             const original = window[name];
             window[name] = function () {
                 const result = original.apply(this, arguments);
+                applyPopupRework();
                 requestAnimationFrame(applyPopupRework);
-                setTimeout(applyPopupRework, 50);
                 return result;
             };
         };
@@ -306,9 +312,10 @@
     function install() {
         injectStyle();
         patch();
-        requestAnimationFrame(applyPopupRework);
-        setInterval(applyPopupRework, 500);
+        applyPopupRework();
     }
+
+    window.NVIPR_applyPopupRework = applyPopupRework;
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install);
     else install();
