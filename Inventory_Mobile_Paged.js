@@ -56,10 +56,15 @@
     }
 
     function selectedItemId() {
+        const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id]");
+        if (popup?.dataset?.nviprItemId) return popup.dataset.nviprItemId;
+
         const selected = document.querySelector(".nvi-layout--inventory .nvi-item--selected[data-nvi-item-id]");
         if (selected?.dataset?.nviItemId) return selected.dataset.nviItemId;
+
         const selectedDom = document.querySelector(".nvi-layout--inventory .nvi-item[data-nvi-item-id][aria-selected='true']");
         if (selectedDom?.dataset?.nviItemId) return selectedDom.dataset.nviItemId;
+
         return moveModeItemId;
     }
 
@@ -96,16 +101,41 @@
         return true;
     }
 
+    function moveItemDomToSlot(idObjet, targetSlot) {
+        const escapedId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(String(idObjet)) : String(idObjet).replace(/\\/g, "\\\\").replace(/\"/g, "\\\"");
+        const escapedSlot = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(String(targetSlot)) : String(targetSlot);
+        const item = document.querySelector(`.nvi-layout--inventory .nvi-item[data-nvi-item-id="${escapedId}"]`);
+        const target = document.querySelector(`.nvi-layout--inventory .nvi-grid--inventory .nvi-slot[data-slot="${escapedSlot}"]`);
+        if (!item || !target) return false;
+
+        const source = item.closest(".nvi-slot");
+        const occupant = target.querySelector(".nvi-item");
+        if (occupant && source && occupant !== item) source.appendChild(occupant);
+        target.appendChild(item);
+
+        [source, target].forEach(slot => {
+            if (!slot) return;
+            slot.classList.toggle("nvi-slot--occupied", Boolean(slot.querySelector(".nvi-item")));
+            slot.classList.toggle("nvi-slot--locked", Boolean(slot.querySelector(".nvi-item--locked")));
+        });
+
+        return true;
+    }
+
     function moveSelectedToPage(page) {
         const id = selectedItemId();
         if (!id) return;
+
         const target = firstFreeSlotInPage(page, id);
-        if (moveItemToSlot(id, target)) {
-            moveModeItemId = null;
-            Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
-            if (typeof NVI_redessinerVueActive === "function") NVI_redessinerVueActive();
-            scheduleApply();
-        }
+        if (!moveItemToSlot(id, target)) return;
+
+        moveModeItemId = null;
+        Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
+        moveItemDomToSlot(id, target);
+        applyPagedInventory();
+
+        const details = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
+        if (details) details.dataset.nviprItemId = id;
     }
 
     function compareForSort(a, b) {
@@ -191,6 +221,7 @@
 
             .nvi-layout--inventory.nvimp-no-details { grid-template-columns:minmax(0,1fr)!important; }
             .nvi-layout--inventory .nvi-details:has(.nvi-details__empty) { display:none!important; }
+            .nvi-layout--inventory .nvi-panel__title { display:none!important; margin:0!important; }
             .nvi-layout--inventory .nvi-grid--inventory { grid-template-columns:repeat(5,minmax(0,1fr))!important; gap:6px!important; touch-action:manipulation; }
             .nvi-layout--inventory .nvi-slot { min-height:58px!important; border-radius:12px!important; }
             .nvi-layout--inventory .nvi-slot.nvimp-touch-target { border-color:rgba(245,211,122,.70)!important; box-shadow:0 0 14px rgba(245,211,122,.16)!important; }
@@ -310,8 +341,8 @@
                 const targetSlot = Number(slot.dataset.slot);
                 if (moveItemToSlot(moveModeItemId, targetSlot)) {
                     moveModeItemId = null;
-                    if (typeof NVI_redessinerVueActive === "function") NVI_redessinerVueActive();
-                    scheduleApply();
+                    moveItemDomToSlot(moveModeItemId, targetSlot);
+                    applyPagedInventory();
                 }
             }, true);
         });
