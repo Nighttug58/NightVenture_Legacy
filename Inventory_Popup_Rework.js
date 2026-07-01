@@ -2,11 +2,32 @@
 (function () {
     "use strict";
 
+    let observer = null;
+    let applyPending = false;
+
     function injectStyle() {
         if (document.getElementById("nvInventoryPopupReworkStyle")) return;
         const style = document.createElement("style");
         style.id = "nvInventoryPopupReworkStyle";
         style.textContent = `
+            .nvi-layout--inventory > .nvi-details.nvimp-details-popup:not(:has(.nvi-details__empty)):not(.nvipr-popup) {
+                position: fixed !important;
+                left: max(10px, env(safe-area-inset-left)) !important;
+                right: max(10px, env(safe-area-inset-right)) !important;
+                top: calc(12px + env(safe-area-inset-top)) !important;
+                bottom: auto !important;
+                z-index: 1190 !important;
+                width: auto !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                margin: 0 !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                transform: none !important;
+                transform-origin: top center !important;
+            }
+
             .nvi-details.nvimp-details-popup.nvipr-popup {
                 position: fixed !important;
                 left: max(10px, env(safe-area-inset-left)) !important;
@@ -219,9 +240,13 @@
     }
 
     function selectedIdFromDetails(details) {
-        const lock = details.querySelector(".nvi-lock-toggle[onclick]");
-        const source = lock || details.querySelector("[onclick*='NVI_toggleFavori'], [onclick*='NVI_equiperObjetSelectionne'], [onclick*='NVI_utiliserObjetSelectionne']");
-        const match = String(source?.getAttribute("onclick") || "").match(/'([^']+)'/);
+        if (details?.dataset?.nviprItemId) return details.dataset.nviprItemId;
+
+        const selectedItem = document.querySelector(".nvi-layout--inventory .nvi-item--selected[data-nvi-item-id]");
+        if (selectedItem?.dataset?.nviItemId) return selectedItem.dataset.nviItemId;
+
+        const action = details?.querySelector("[onclick*='NVI_toggleFavori'], [onclick*='NVI_equiperObjetSelectionne'], [onclick*='NVI_utiliserObjetSelectionne'], [onclick*='NVI_toggleVerrouillage']");
+        const match = String(action?.getAttribute("onclick") || "").match(/'([^']+)'/);
         return match?.[1] || null;
     }
 
@@ -234,18 +259,36 @@
         return Boolean(item.verrouille || item.locked || item.bloque);
     }
 
-    function simplifyLock(details) {
+    function ensureCloseButton(details) {
+        let close = details.querySelector(".nvimp-popup-close");
+        if (!close) {
+            close = document.createElement("button");
+            close.type = "button";
+            close.className = "nvimp-popup-close";
+            close.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (typeof NVI_ouvrirInventaire === "function") NVI_ouvrirInventaire();
+            });
+            details.prepend(close);
+        }
+        close.textContent = "×";
+    }
+
+    function simplifyLock(details, idObjet) {
         const lock = details.querySelector(".nvi-lock-toggle");
         if (!lock) return null;
-        const idObjet = selectedIdFromDetails(details);
+
         const locked = idObjet ? readLockState(idObjet) : lock.classList.contains("nvi-lock-toggle--locked");
         const text = lock.querySelector(".nvi-lock-toggle__text");
         const icon = lock.querySelector(".nvi-lock-toggle__icon");
+
         if (icon) {
             icon.textContent = "";
             icon.style.display = "none";
         }
         if (text) text.textContent = locked ? "Bloqué" : "Libre";
+
         lock.classList.toggle("nvi-lock-toggle--locked", locked);
         lock.classList.toggle("nvi-lock-toggle--unlocked", !locked);
         return lock;
@@ -255,20 +298,22 @@
         const header = details.querySelector(".nvi-details__header");
         const p = header?.querySelector("p");
         if (!p || p.dataset.nviprMeta === "1") return;
+
         const parts = String(p.textContent || "").split("·").map(part => part.trim()).filter(Boolean);
         const quantity = parts.find(part => /^x\d+/i.test(part)) || "x1";
         const meta = parts.filter(part => !/^x\d+/i.test(part)).join(" · ") || "Objet · commun";
+
         p.innerHTML = `<span class="nvipr-meta-line">${meta}</span><span class="nvipr-meta-line">Quantité : ${quantity.replace(/^x/i, "")}</span>`;
         p.dataset.nviprMeta = "1";
     }
 
-    function reorderContent(details) {
+    function reorderContent(details, idObjet) {
         const desc = details.querySelector(".nvi-details__description");
         const stats = details.querySelector(".nvi-details__stats");
         if (stats && desc && stats.nextElementSibling !== desc) desc.before(stats);
 
         const actions = details.querySelector(".nvi-details__actions");
-        const lock = simplifyLock(details);
+        const lock = simplifyLock(details, idObjet);
         if (!actions) return;
 
         const buttons = Array.from(actions.querySelectorAll("button"));
@@ -280,6 +325,7 @@
             row = document.createElement("div");
             row.className = "nvipr-secondary-row";
         }
+
         if (favorite && favorite.parentElement !== row) row.appendChild(favorite);
         if (lock && lock.parentElement !== row) row.appendChild(lock);
         if (row.children.length && row.parentElement !== details) actions.after(row);
@@ -294,64 +340,48 @@
     function applyPopupRework() {
         injectStyle();
         if (Game?.ui?.vueActive !== "inventaire") return;
+
         const details = findLiveDetails();
         if (!details) return;
+
+        const idObjet = selectedIdFromDetails(details);
+        if (idObjet) details.dataset.nviprItemId = idObjet;
 
         details.classList.add("nvimp-details-popup", "nvipr-popup");
         details.style.display = "block";
         details.style.opacity = "1";
         details.style.pointerEvents = "auto";
 
-        const close = details.querySelector(".nvimp-popup-close");
-        if (close) close.textContent = "×";
-
+        ensureCloseButton(details);
         rewriteHeader(details);
-        reorderContent(details);
+        reorderContent(details, idObjet);
     }
 
-    function runSoon() {
-        applyPopupRework();
-        requestAnimationFrame(applyPopupRework);
-        setTimeout(applyPopupRework, 0);
+    function scheduleApply() {
+        if (applyPending) return;
+        applyPending = true;
+        requestAnimationFrame(function () {
+            applyPending = false;
+            applyPopupRework();
+        });
     }
 
-    function patchNamed(name) {
-        const fn = window[name];
-        if (typeof fn !== "function" || fn.__NVIPR_WRAPPED) return;
-        const wrapped = function () {
-            const result = fn.apply(this, arguments);
-            runSoon();
-            return result;
-        };
-        wrapped.__NVIPR_WRAPPED = true;
-        window[name] = wrapped;
-    }
+    function observeInventoryView() {
+        if (observer) return;
+        const root = document.getElementById("vuePrincipale");
+        if (!root) return;
 
-    function installClickFallback() {
-        if (window.__NVIPR_CLICK_FALLBACK) return;
-        window.__NVIPR_CLICK_FALLBACK = true;
-        document.addEventListener("click", function (event) {
-            const target = event.target?.closest?.(".nvi-layout--inventory .nvi-item[data-nvi-item-id], .nvimp-popup-pager .nvimp-page-btn");
-            if (!target) return;
-            runSoon();
-        }, true);
-    }
-
-    function patch() {
-        patchNamed("NVI_ouvrirInventaire");
-        patchNamed("NVI_redessinerVueActive");
-        patchNamed("NVI_selectionner");
-        patchNamed("ouvrirInventaire");
-        installClickFallback();
+        observer = new MutationObserver(scheduleApply);
+        observer.observe(root, { childList: true, subtree: true });
     }
 
     function install() {
         injectStyle();
-        patch();
-        runSoon();
+        observeInventoryView();
+        scheduleApply();
         setTimeout(function () {
-            patch();
-            runSoon();
+            observeInventoryView();
+            scheduleApply();
         }, 250);
     }
 
