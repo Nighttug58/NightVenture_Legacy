@@ -18,6 +18,14 @@
             .replace(/'/g, "&#039;");
     }
 
+    function inventorySelector(idObjet) {
+        const id = String(idObjet || "");
+        const escaped = typeof CSS !== "undefined" && CSS.escape
+            ? CSS.escape(id)
+            : id.replace(/\\/g, "\\\\").replace(/\"/g, "\\\"");
+        return `.nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id="${escaped}"]`;
+    }
+
     function inventoryItem(idObjet) {
         return (window.Game?.data?.personnage?.inventaire || []).find(entry => entry.id === idObjet) || null;
     }
@@ -157,7 +165,7 @@
         setTimeout(() => {
             if (window.Game?.ui?.vueActive !== "inventaire") return;
             if (popupIsOpen()) return;
-            const liveItem = document.querySelector(`.nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id="${CSS?.escape ? CSS.escape(candidate.id) : candidate.id.replace(/\"/g, '\\\"')}"]`);
+            const liveItem = document.querySelector(inventorySelector(candidate.id));
             renderFallbackPopup(candidate.id, liveItem || candidate.item);
         }, 90);
     }
