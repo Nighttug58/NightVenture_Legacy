@@ -27,6 +27,11 @@
     function currentPage() { Game.ui.nvInventairePage ??= 0; return Math.max(0, Number(Game.ui.nvInventairePage) || 0); }
     function label(i) { return PAGE_LABELS[i] || String(i + 1); }
 
+    function clearInventorySelectionClasses(root = document) {
+        root.querySelectorAll(".nvi-layout--inventory .nvi-item--selected, .nvi-layout--inventory .nvimp-item--popup-open")
+            .forEach(item => item.classList.remove("nvi-item--selected", "nvimp-item--popup-open"));
+    }
+
     function escapeHtml(value) {
         if (typeof echapperHTML === "function") return echapperHTML(value);
         return String(value ?? "")
@@ -145,12 +150,12 @@
     function selectedItemId() {
         const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id]");
         if (popup?.dataset?.nviprItemId) return popup.dataset.nviprItemId;
-        const selected = document.querySelector(".nvi-layout--inventory .nvi-item--selected[data-nvi-item-id]");
+        const selected = document.querySelector(".nvi-layout--inventory .nvimp-item--popup-open[data-nvi-item-id]");
         return selected?.dataset?.nviItemId || null;
     }
 
     function closeInventoryPopup() {
-        document.querySelectorAll(".nvi-layout--inventory .nvi-item--selected").forEach(item => item.classList.remove("nvi-item--selected"));
+        clearInventorySelectionClasses();
         const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
         if (popup) popup.remove();
         document.querySelector(".nvi-layout--inventory")?.classList.add("nvimp-no-details");
@@ -169,8 +174,8 @@
     function clearStaleLongPressSelection(item = null) {
         if (document.activeElement?.closest?.(".nvi-layout--inventory .nvi-item")) document.activeElement.blur();
         if (hasInventoryPopup()) return;
-        if (item?.classList) item.classList.remove("nvi-item--selected");
-        else document.querySelectorAll(".nvi-layout--inventory .nvi-item--selected").forEach(node => node.classList.remove("nvi-item--selected"));
+        if (item?.classList) item.classList.remove("nvi-item--selected", "nvimp-item--popup-open");
+        else clearInventorySelectionClasses();
     }
 
     function scheduleLongPressNeutralize(item, pointerId) {
@@ -293,7 +298,8 @@
         const favorite = isFavorite(id);
         const locked = isLocked(id);
         document.querySelectorAll(selectorForItem(id)).forEach(button => {
-            button.classList.toggle("nvi-item--selected", true);
+            button.classList.remove("nvi-item--selected");
+            button.classList.toggle("nvimp-item--popup-open", Boolean(document.querySelector(`.nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id=\"${id}\"]`)));
             button.classList.toggle("nvi-item--locked", locked);
             button.draggable = false;
             let fav = button.querySelector(".nvi-item__favorite");
@@ -429,8 +435,8 @@
         const obj = objectData(id);
         const layout = document.querySelector(".nvi-layout--inventory");
         if (!item || !obj || !layout) return;
-        document.querySelectorAll(".nvi-layout--inventory .nvi-item--selected").forEach(element => element.classList.remove("nvi-item--selected"));
-        if (clickedItem) clickedItem.classList.add("nvi-item--selected");
+        clearInventorySelectionClasses();
+        if (clickedItem) clickedItem.classList.add("nvimp-item--popup-open");
 
         let popup = findLiveDetails() || layout.querySelector(":scope > .nvi-details") || document.createElement("aside");
         if (!popup.parentElement) layout.appendChild(popup);
