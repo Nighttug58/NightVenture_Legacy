@@ -1,9 +1,10 @@
-/* NightVenture — Merchant UI */
+/* NightVenture — Merchant UI
+   Buy/Sell merchant flow using inventory-style paged grids and popup trade cards. */
 (function () {
     "use strict";
 
-    const NVM_VERSION = "v0.9.9.13-merchant-ui-stable";
-    const CONFIG = { inventorySlots: 72, merchantSlots: 48, columnsInventory: 9, columnsMerchant: 8 };
+    const NVM_VERSION = "v0.9.9.30-merchant-paged-popup";
+    const CONFIG = { slots: 120, slotsPerPage: 30, columns: 6 };
     const STATE = { selection: null, quantity: 1 };
 
     function hasGame() { return typeof Game !== "undefined" && Game?.data?.personnage; }
@@ -18,6 +19,7 @@
     function rarity(obj) { return typeof classeRarete === "function" ? classeRarete(obj) : obj?.rarete || "commun"; }
     function filterType(obj) { return typeof obtenirTypeFiltreObjet === "function" ? obtenirTypeFiltreObjet(obj) : obj?.type || "divers"; }
     function isFavorite(id) { return typeof estFavori === "function" ? estFavori(id) : (Game.data.personnage.favoris || []).includes(id); }
+    function autosave(reason) { if (typeof NV_demanderAutosave === "function") NV_demanderAutosave(reason); }
 
     function ensureUi() {
         Game.ui.etatFiltresInventaire ??= { favoris: false, types: { arme: "neutre", armure: "neutre", accessoire: "neutre", consommable: "neutre", materiau: "neutre", quete: "neutre", divers: "neutre" } };
@@ -25,6 +27,25 @@
         Game.ui.triInventaire ??= "nom";
         Game.ui.ordreTriInventaire ??= "asc";
         Game.ui.rechercheInventaire ??= "";
+        Game.ui.modeMarchand ??= "acheter";
+        if (!Game.ui.nvmPages) Game.ui.nvmPages = { acheter: 0, vendre: 0 };
+        Game.ui.nvmPages.acheter ??= 0;
+        Game.ui.nvmPages.vendre ??= 0;
+    }
+
+    function currentMode() {
+        ensureUi();
+        return Game.ui.modeMarchand === "vendre" ? "vendre" : "acheter";
+    }
+
+    function currentPage() {
+        ensureUi();
+        return Math.max(0, Number(Game.ui.nvmPages[currentMode()] || 0));
+    }
+
+    function setCurrentPage(page) {
+        ensureUi();
+        Game.ui.nvmPages[currentMode()] = Math.max(0, Number(page) || 0);
     }
 
     function itemPassesFilters(item) {
@@ -59,7 +80,7 @@
             const current = Number(item.slot);
             let slot = Number.isInteger(persisted) && persisted >= 0 ? persisted : Number.isInteger(current) && current >= 0 ? current : null;
             if (slot === null || used.has(slot)) {
-                for (let i = 0; i < Math.max(CONFIG.inventorySlots, p.inventaire.length + 12); i++) {
+                for (let i = 0; i < Math.max(CONFIG.slots, p.inventaire.length + 12); i++) {
                     if (!used.has(i)) { slot = i; break; }
                 }
             }
@@ -103,7 +124,6 @@
         if (type.includes("chaussure") || type.includes("botte")) return "BOT";
         if (type.includes("collier")) return "COL";
         if (type.includes("bague")) return "BAG";
-        if (type.includes("artefact")) return "ART";
         if (type.includes("consommable") || type.includes("potion")) return "CONS";
         if (type.includes("materiau") || type.includes("matériau") || type.includes("ressource")) return "MAT";
         if (type.includes("quete") || type.includes("quête")) return "QTE";
@@ -115,11 +135,44 @@
         return `<span class="nvi-item__text-icon">${esc(objectLabel(obj))}</span>`;
     }
 
+    function objectDetails(obj) {
+        if (!obj) return "";
+        if (typeof creerDetailsObjetInventaire === "function") return creerDetailsObjetInventaire(obj);
+        if (typeof creerDetailsObjet === "function") return creerDetailsObjet(obj);
+        const stats = [["ATK", "attaque"], ["DEF", "defense"], ["ATK MAGIC", "attaqueMagique"], ["DEF MAGIC", "defenseMagique"], ["PV", "pvMax"], ["MANA", "manaMax"], ["STAMINA", "staminaMax"], ["FOR", "force"], ["DEX", "dexterite"], ["INT", "intelligence"], ["VIT", "vitalite"], ["LUCK", "chance"]];
+        return stats.filter(([, key]) => obj[key]).map(([label, key]) => `${label} +${obj[key]}`).join(" ");
+    }
+
+    function rarityScore(obj) {
+        const order = { commun: 1, "peu-commun": 2, rare: 3, epique: 4, "épique": 4, legendaire: 5, "légendaire": 5, mythique: 6 };
+        return order[obj?.rarete] || 0;
+    }
+
+    function compareItems(a, b) {
+        const A = objectById(a.item.id), B = objectById(b.item.id);
+        if (!A || !B) return 0;
+        const mode = Game.ui.triInventaire || "nom";
+        let result = 0;
+        if (mode === "type") result = String(A.type || "").localeCompare(String(B.type || ""));
+        else if (mode === "rarete") result = rarityScore(B) - rarityScore(A);
+        else if (mode === "niveau") result = (B.niveauRequis || 1) - (A.niveauRequis || 1);
+        else if (mode === "prix") result = (B.prix || 0) - (A.prix || 0);
+        else if (mode === "atk") result = (B.attaque || 0) - (A.attaque || 0);
+        else if (mode === "atkMagique") result = (B.attaqueMagique || 0) - (A.attaqueMagique || 0);
+        else if (mode === "def") result = (B.defense || 0) - (A.defense || 0);
+        else if (mode === "defMagique") result = (B.defenseMagique || 0) - (A.defenseMagique || 0);
+        else result = String(A.nom || "").localeCompare(String(B.nom || ""));
+        return Game.ui.ordreTriInventaire === "desc" ? -result : result;
+    }
+
     function selectionKey(source, token) { return `merchant:${source}:${token}`; }
     function selected(source, token) { return STATE.selection === selectionKey(source, token); }
+
     function selectItem(source, token) {
-        const key = selectionKey(source, token);
-        STATE.selection = STATE.selection === key ? null : key;
+        const requiredSource = currentMode() === "acheter" ? "merchant" : "player";
+        if (source !== requiredSource) return;
+        STATE.selection = STATE.selection === selectionKey(source, token) ? null : selectionKey(source, token);
+        STATE.quantity = 1;
         redraw();
     }
 
@@ -132,12 +185,13 @@
         const locked = source === "player" && isLocked(item);
         return `
             <button type="button"
-                class="nvi-item nvi-item--${attr(rarity(obj))} ${selected(source, token) ? "nvi-item--selected" : ""} ${locked ? "nvi-item--locked" : ""}"
+                class="nvi-item nvi-item--${attr(rarity(obj))} ${selected(source, token) ? "nvimp-item--popup-open" : ""} ${locked ? "nvi-item--locked" : ""}"
                 draggable="false"
                 onclick="NVM_selectionner('${js(source)}', '${js(token)}')"
-                ondblclick="NVM_selectionner('${js(source)}', '${js(token)}')"
                 title="${attr(obj.nom || item.id)}${locked ? " - emplacement verrouille" : ""}"
                 data-nvi-item-id="${attr(item.id)}"
+                data-nvi-item-key="${attr(token)}"
+                data-nvm-source="${attr(source)}"
                 data-nvm-token="${attr(token)}">
                 ${isFavorite(item.id) ? `<span class="nvi-item__favorite">Favori</span>` : ""}
                 ${locked ? `<span class="nvi-item__lock">Lock</span>` : ""}
@@ -147,29 +201,54 @@
         `;
     }
 
-    function playerGrid() {
-        const slots = syncInventorySlots();
-        const maxSlot = Math.max(...Array.from(slots.keys()), 0);
-        const total = Math.max(CONFIG.inventorySlots, maxSlot + 9);
-        let html = "";
-        for (let i = 0; i < total; i++) {
-            const item = slots.get(i);
-            const visible = item ? itemPassesFilters(item) : false;
-            const hidden = item && !visible;
-            html += `<div class="nvi-slot ${item ? "nvi-slot--occupied" : ""} ${hidden ? "nvi-slot--filtered" : ""} ${item && isLocked(item) ? "nvi-slot--locked" : ""}" data-slot="${i}">${item && visible ? itemButton(item, "player", playerToken(item)) : hidden ? `<span class="nvi-slot__filtered-dot" title="Objet masque par les filtres"></span>` : ""}</div>`;
-        }
-        return `<div class="nvi-grid nvi-grid--inventory" style="--nvi-columns:${CONFIG.columnsInventory};">${html}</div>`;
+    function entriesForMerchant() {
+        return (Game.ui.marchandActuel?.inventaire || [])
+            .map((item, index) => ({ item, index, token: merchantToken(index), source: "merchant" }))
+            .filter(entry => entry.item && objectById(entry.item.id) && itemPassesFilters(entry.item))
+            .sort(compareItems);
     }
 
-    function merchantGrid() {
-        const items = Game.ui.marchandActuel?.inventaire || [];
-        const total = Math.max(CONFIG.merchantSlots, items.length);
+    function entriesForPlayer() {
+        const slots = syncInventorySlots();
+        return Array.from(slots.entries())
+            .map(([slot, item]) => ({ item, slot, token: playerToken(item), source: "player" }))
+            .filter(entry => entry.item && objectById(entry.item.id) && itemPassesFilters(entry.item))
+            .sort((a, b) => Number(a.slot) - Number(b.slot));
+    }
+
+    function pageCountFor(entries) {
+        return Math.max(1, Math.ceil(Math.max(CONFIG.slots, entries.length || 0) / CONFIG.slotsPerPage));
+    }
+
+    function pager(pageCount, page) {
+        let html = `<div class="nvimp-pager nvm-pager">`;
+        for (let i = 0; i < pageCount; i++) html += `<button type="button" class="nvimp-page-btn ${i === page ? "is-active" : ""}" onclick="NVM_changerPage(${i})">${i + 1}</button>`;
+        return html + `</div>`;
+    }
+
+    function activeEntries() {
+        return currentMode() === "acheter" ? entriesForMerchant() : entriesForPlayer();
+    }
+
+    function activeGrid() {
+        const mode = currentMode();
+        const entries = activeEntries();
+        const pages = pageCountFor(entries);
+        const page = Math.min(currentPage(), pages - 1);
+        Game.ui.nvmPages[mode] = page;
+        const start = page * CONFIG.slotsPerPage;
+        const pageEntries = entries.slice(start, start + CONFIG.slotsPerPage);
+        const byLocalSlot = new Map(pageEntries.map((entry, index) => [index, entry]));
         let html = "";
-        for (let i = 0; i < total; i++) {
-            const item = items[i] || null;
-            html += `<div class="nvi-slot ${item ? "nvi-slot--occupied" : ""}" data-slot="${i}">${item ? itemButton(item, "merchant", merchantToken(i)) : ""}</div>`;
+        for (let i = 0; i < CONFIG.slotsPerPage; i++) {
+            const entry = byLocalSlot.get(i);
+            const item = entry?.item || null;
+            const locked = entry?.source === "player" && isLocked(item);
+            html += `<div class="nvi-slot ${item ? "nvi-slot--occupied" : ""} ${locked ? "nvi-slot--locked" : ""}" data-slot="${start + i}">${item ? itemButton(item, entry.source, entry.token) : ""}</div>`;
         }
-        return `<div class="nvi-grid nvi-grid--merchant" style="--nvi-columns:${CONFIG.columnsMerchant};">${html}</div>`;
+        const title = mode === "acheter" ? "Inventaire marchand" : "Ton inventaire";
+        const count = mode === "acheter" ? (Game.ui.marchandActuel?.inventaire || []).length : (Game.data.personnage.inventaire || []).length;
+        return `<div class="nvi-panel nvm-panel-active"><div class="nvi-panel__title"><strong>${title}</strong><span>${count} pile(s)</span></div>${pager(pages, page)}<div class="nvi-grid nvi-grid--inventory nvi-grid--merchant" style="--nvi-columns:${CONFIG.columns};">${html}</div><div class="nvimp-grid-footer"><span class="nvimp-gold">Or : ${Number(Game.data.personnage.or || 0)}</span></div></div>`;
     }
 
     function selectedData() {
@@ -182,17 +261,9 @@
         if (source === "merchant") {
             const index = Number(token);
             const item = Number.isInteger(index) ? (Game.ui.marchandActuel?.inventaire || [])[index] : null;
-            return item ? { source, token, id: item.id, item, obj: objectById(item.id) } : null;
+            return item ? { source, token, id: item.id, item, obj: objectById(item.id), merchantIndex: index } : null;
         }
         return null;
-    }
-
-    function objectDetails(obj) {
-        if (!obj) return "";
-        if (typeof creerDetailsObjetInventaire === "function") return creerDetailsObjetInventaire(obj);
-        if (typeof creerDetailsObjet === "function") return creerDetailsObjet(obj);
-        const stats = [["ATK", "attaque"], ["DEF", "defense"], ["ATK MAGIC", "attaqueMagique"], ["DEF MAGIC", "defenseMagique"], ["PV", "pvMax"], ["MANA", "manaMax"], ["STAMINA", "staminaMax"], ["FOR", "force"], ["DEX", "dexterite"], ["INT", "intelligence"], ["VIT", "vitalite"], ["LUCK", "chance"]];
-        return stats.filter(([, key]) => obj[key]).map(([label, key]) => `${label} +${obj[key]}`).join(" ");
     }
 
     function quantityInput(max, prefix) {
@@ -206,24 +277,20 @@
         return price * Math.max(1, Number(quantity || 1));
     }
 
-    function detailsPanel() {
+    function popupPanel() {
         const selection = selectedData();
-        if (!selection || !selection.obj) return `<aside class="nvi-details"><div class="nvi-details__empty"><strong>Aucun objet selectionne</strong><span>Clique sur une case du marchand ou du sac.</span></div></aside>`;
-
+        if (!selection || !selection.obj) return "";
         const { source, id, item, obj } = selection;
         const qty = Number(item.quantite || 1);
         const details = objectDetails(obj);
-        let actions = "";
-        if (source === "player") {
-            const locked = isLocked(item);
-            const sellPrice = actionPrice("vente", obj, STATE.quantity);
-            actions = `<button class="nvi-lock-toggle ${locked ? "nvi-lock-toggle--locked" : "nvi-lock-toggle--unlocked"}" onclick="event.stopPropagation(); NVM_toggleVerrouillage('${js(selection.token)}')"><span class="nvi-lock-toggle__text">${locked ? "Bloque" : "Debloque"}</span></button><div class="nvi-trade-box"><strong>Vente</strong>${quantityInput(qty, "nvmSellQty")}<p>Gain : <strong>${sellPrice} or</strong></p><button onclick="NVM_vendreSelection('${js(selection.token)}')">Vendre</button></div>`;
-        } else if (source === "merchant") {
-            const buyPrice = actionPrice("achat", obj, STATE.quantity);
-            actions = `<div class="nvi-trade-box"><strong>Achat</strong>${quantityInput(qty, "nvmBuyQty")}<p>Cout : <strong>${buyPrice} or</strong></p><button onclick="NVM_acheterSelection('${js(selection.token)}')">Acheter</button></div>`;
-        }
-
-        return `<aside class="nvi-details"><div class="nvi-details__header"><div class="nvi-details__icon nvi-item--${attr(rarity(obj))}">${icon(obj)}</div><div><h3 class="${attr(rarity(obj))}">${esc(obj.nom || id)}</h3><p>${esc(obj.type || "divers")} · ${esc(obj.rarete || "commun")}${qty > 1 ? ` · x${qty}` : ""}</p></div></div><p class="nvi-details__description">${esc(obj.description || "Aucune description.")}</p>${details ? `<p class="nvi-details__stats">${details}</p>` : ""}${actions}</aside>`;
+        const mode = source === "merchant" ? "achat" : "vente";
+        const total = actionPrice(mode, obj, STATE.quantity);
+        const locked = source === "player" && isLocked(item);
+        const actionButton = source === "merchant"
+            ? `<button type="button" onclick="NVM_acheterSelection('${js(selection.token)}')">Acheter</button>`
+            : `<button type="button" ${locked ? "disabled" : ""} onclick="NVM_vendreSelection('${js(selection.token)}')">Vendre</button>`;
+        const lockButton = source === "player" ? `<button type="button" class="nvi-lock-toggle ${locked ? "nvi-lock-toggle--locked" : "nvi-lock-toggle--unlocked"}" onclick="NVM_toggleVerrouillage('${js(selection.token)}')"><span class="nvi-lock-toggle__text">${locked ? "Bloque" : "Libre"}</span></button>` : "";
+        return `<aside class="nvi-details nvimp-details-popup nvipr-popup nvm-trade-popup" data-nvm-source="${attr(source)}" data-nvm-token="${attr(selection.token)}"><button type="button" class="nvimp-popup-close" onclick="NVM_fermerPopup()">×</button><div class="nvi-details__header"><div class="nvi-details__icon nvi-item--${attr(rarity(obj))}">${icon(obj)}</div><div><h3 class="${attr(rarity(obj))}">${esc(obj.nom || id)}</h3><p><span class="nvipr-meta-line">${esc(obj.type || "divers")} · ${esc(obj.rarete || "commun")}</span><span class="nvipr-meta-line">Quantité : ${qty}</span></p></div></div><p class="nvi-details__description">${esc(obj.description || "Aucune description.")}</p>${details ? `<p class="nvi-details__stats">${details}</p>` : ""}<div class="nvi-trade-box"><strong>${source === "merchant" ? "Acheter" : "Vendre"}</strong>${quantityInput(qty, source === "merchant" ? "nvmBuyQty" : "nvmSellQty")}<p>${source === "merchant" ? "Cout" : "Gain"} : <strong>${total} or</strong></p>${lockButton}${actionButton}</div></aside>`;
     }
 
     function filterState(id) {
@@ -240,11 +307,12 @@
     function toolbar() {
         const filters = Game.constants?.filtresInventaire || [{ id: "tous", nom: "Tous" }, { id: "favoris", nom: "Favoris" }, { id: "arme", nom: "Armes" }, { id: "armure", nom: "Armures" }, { id: "accessoire", nom: "Accessoires" }, { id: "consommable", nom: "Consommables" }, { id: "materiau", nom: "Materiaux" }, { id: "quete", nom: "Quetes" }, { id: "divers", nom: "Divers" }];
         const sorts = Game.constants?.trisInventaire || [{ id: "nom", nom: "Nom" }, { id: "type", nom: "Type" }, { id: "rarete", nom: "Rarete" }, { id: "niveau", nom: "Niveau requis" }, { id: "prix", nom: "Prix" }, { id: "atk", nom: "ATK" }, { id: "atkMagique", nom: "ATK magique" }, { id: "def", nom: "DEF" }, { id: "defMagique", nom: "DEF magique" }];
-        return `<div class="nvi-toolbar"><div class="nvi-toolbar__top"><div><h2>Marchand</h2><p>${esc(Game.ui.marchandActuel?.nom || "Marchand")}</p></div><button onclick="NVM_triAutomatiqueInventaire()">Tri auto</button><button onclick="ouvrirExploration()">Retour</button></div><div class="nvi-toolbar__search-row"><input id="nvmSearch" type="text" placeholder="Rechercher..." value="${attr(Game.ui.rechercheInventaire || "")}" oninput="NVM_changerRecherche(this.value)"><select onchange="NVM_changerTri(this.value)">${sorts.map(sort => `<option value="${attr(sort.id)}" ${Game.ui.triInventaire === sort.id ? "selected" : ""}>${esc(sort.nom)}</option>`).join("")}</select><button onclick="NVM_inverserOrdreTri()">${Game.ui.ordreTriInventaire === "asc" ? "ASC" : "DESC"}</button></div><div class="nvi-filters">${filters.map(filter => `<button class="nvi-filter" data-etat="${filterState(filter.id)}" onclick="NVM_changerFiltre('${js(filter.id)}')">${esc(filter.nom)}</button>`).join("")}</div></div>`;
+        return `<div class="nvi-toolbar nvm-toolbar"><div class="nvi-toolbar__top"><div><h2>Marchand</h2><p>${esc(Game.ui.marchandActuel?.nom || "Marchand")}</p></div><button onclick="NVM_triAutomatiqueInventaire()">Tri auto sac</button><button onclick="ouvrirExploration()">Retour</button></div><div class="nvm-tabs"><button class="nvm-tab ${currentMode() === "acheter" ? "is-active" : ""}" onclick="NVM_changerMode('acheter')">Acheter</button><button class="nvm-tab ${currentMode() === "vendre" ? "is-active" : ""}" onclick="NVM_changerMode('vendre')">Vendre</button></div><div class="nvi-toolbar__search-row"><input id="nvmSearch" type="text" placeholder="Rechercher..." value="${attr(Game.ui.rechercheInventaire || "")}" oninput="NVM_changerRecherche(this.value)"><select onchange="NVM_changerTri(this.value)">${sorts.map(sort => `<option value="${attr(sort.id)}" ${Game.ui.triInventaire === sort.id ? "selected" : ""}>${esc(sort.nom)}</option>`).join("")}</select><button onclick="NVM_inverserOrdreTri()">${Game.ui.ordreTriInventaire === "asc" ? "ASC" : "DESC"}</button></div><div class="nvi-filters">${filters.map(filter => `<button class="nvi-filter" data-etat="${filterState(filter.id)}" onclick="NVM_changerFiltre('${js(filter.id)}')">${esc(filter.nom)}</button>`).join("")}</div></div>`;
     }
 
     function view() {
-        return `<section class="nvi-window nvm-window">${toolbar()}<div class="nvi-layout nvi-layout--merchant"><div class="nvi-panel"><div class="nvi-panel__title"><strong>Marchand</strong><span>${(Game.ui.marchandActuel?.inventaire || []).length} objet(s)</span></div>${merchantGrid()}</div><div class="nvi-panel"><div class="nvi-panel__title"><strong>Ton sac</strong><span>${(Game.data.personnage.inventaire || []).length} pile(s)</span></div>${playerGrid()}</div>${detailsPanel()}</div></section>`;
+        const modeLabel = currentMode() === "acheter" ? "Achat : stock du marchand" : "Vente : ton sac";
+        return `<section class="nvi-window nvm-window">${toolbar()}<div class="nvm-mode-hint">${modeLabel}</div><div class="nvi-layout nvi-layout--merchant nvi-layout--inventory nvimp-no-details">${activeGrid()}${popupPanel()}</div></section>`;
     }
 
     function openMerchant(idPnj) {
@@ -265,11 +333,14 @@
         if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(view());
     }
 
+    function closePopup() { STATE.selection = null; STATE.quantity = 1; redraw(); }
+    function changerMode(mode) { Game.ui.modeMarchand = mode === "vendre" ? "vendre" : "acheter"; STATE.selection = null; STATE.quantity = 1; redraw(); }
+    function changerPage(page) { setCurrentPage(page); STATE.selection = null; redraw(); }
     function modifierQuantite(delta, max) { setQuantite(Number(STATE.quantity || 1) + Number(delta || 0), max); }
     function setQuantite(value, max) { STATE.quantity = Math.max(1, Math.min(Number(max || 1), Number(value || 1))); redraw(); }
-    function changerRecherche(value) { Game.ui.rechercheInventaire = norm(value); STATE.selection = null; redraw(); setTimeout(() => { const input = document.getElementById("nvmSearch"); if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); } }, 0); }
-    function changerTri(value) { Game.ui.triInventaire = value; Game.ui.ordreTriInventaire = Game.constants?.ordreTriParCritere?.[value] || Game.ui.ordreTriInventaire || "asc"; redraw(); }
-    function inverserOrdreTri() { Game.ui.ordreTriInventaire = Game.ui.ordreTriInventaire === "asc" ? "desc" : "asc"; if (Game.constants?.ordreTriParCritere) Game.constants.ordreTriParCritere[Game.ui.triInventaire] = Game.ui.ordreTriInventaire; redraw(); }
+    function changerRecherche(value) { Game.ui.rechercheInventaire = norm(value); STATE.selection = null; setCurrentPage(0); redraw(); setTimeout(() => { const input = document.getElementById("nvmSearch"); if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); } }, 0); }
+    function changerTri(value) { Game.ui.triInventaire = value; Game.ui.ordreTriInventaire = Game.constants?.ordreTriParCritere?.[value] || Game.ui.ordreTriInventaire || "asc"; STATE.selection = null; redraw(); }
+    function inverserOrdreTri() { Game.ui.ordreTriInventaire = Game.ui.ordreTriInventaire === "asc" ? "desc" : "asc"; if (Game.constants?.ordreTriParCritere) Game.constants.ordreTriParCritere[Game.ui.triInventaire] = Game.ui.ordreTriInventaire; STATE.selection = null; redraw(); }
 
     function changerFiltre(id) {
         ensureUi();
@@ -283,29 +354,8 @@
         }
         if (typeof synchroniserFiltreInventaireLegacy === "function") synchroniserFiltreInventaireLegacy();
         STATE.selection = null;
+        setCurrentPage(0);
         redraw();
-    }
-
-    function rarityScore(obj) {
-        const order = { commun: 1, "peu-commun": 2, rare: 3, epique: 4, "épique": 4, legendaire: 5, "légendaire": 5, mythique: 6 };
-        return order[obj?.rarete] || 0;
-    }
-
-    function compareItems(a, b) {
-        const A = objectById(a.id), B = objectById(b.id);
-        if (!A || !B) return 0;
-        const mode = Game.ui.triInventaire || "nom";
-        let result = 0;
-        if (mode === "type") result = String(A.type || "").localeCompare(String(B.type || ""));
-        else if (mode === "rarete") result = rarityScore(B) - rarityScore(A);
-        else if (mode === "niveau") result = (B.niveauRequis || 1) - (A.niveauRequis || 1);
-        else if (mode === "prix") result = (B.prix || 0) - (A.prix || 0);
-        else if (mode === "atk") result = (B.attaque || 0) - (A.attaque || 0);
-        else if (mode === "atkMagique") result = (B.attaqueMagique || 0) - (A.attaqueMagique || 0);
-        else if (mode === "def") result = (B.defense || 0) - (A.defense || 0);
-        else if (mode === "defMagique") result = (B.defenseMagique || 0) - (A.defenseMagique || 0);
-        else result = String(A.nom || "").localeCompare(String(B.nom || ""));
-        return Game.ui.ordreTriInventaire === "desc" ? -result : result;
     }
 
     function triAutomatiqueInventaire() {
@@ -317,17 +367,17 @@
         items.forEach(item => {
             const slot = Number(item.slot);
             if (isLocked(item) && Number.isInteger(slot) && slot >= 0 && !lockedSlots.has(slot)) lockedSlots.set(slot, item);
-            else movable.push(item);
+            else movable.push({ item });
         });
         const freeSlots = [];
-        for (let slot = 0; slot < Math.max(CONFIG.inventorySlots, items.length + lockedSlots.size + 12); slot++) if (!lockedSlots.has(slot)) freeSlots.push(slot);
-        movable.sort(compareItems).forEach((item, index) => {
+        for (let slot = 0; slot < Math.max(CONFIG.slots, items.length + lockedSlots.size + 12); slot++) if (!lockedSlots.has(slot)) freeSlots.push(slot);
+        movable.sort(compareItems).forEach((entry, index) => {
             const slot = freeSlots[index] ?? index;
-            item.slot = slot;
-            Game.data.personnage.inventaireSlots[itemKey(item)] = slot;
+            entry.item.slot = slot;
+            Game.data.personnage.inventaireSlots[itemKey(entry.item)] = slot;
         });
         journal(lockedSlots.size > 0 ? `Inventaire trie. ${lockedSlots.size} item(s) bloque(s) conserve(s).` : "Inventaire trie automatiquement.");
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("merchant inventory auto sort");
+        autosave("merchant inventory auto sort");
         redraw();
     }
 
@@ -338,7 +388,7 @@
         if (playerItem) return { source: "player", token, id: playerItem.id, item: playerItem, obj: objectById(playerItem.id) };
         const merchantIndex = Number(token);
         const merchantItem = Number.isInteger(merchantIndex) ? (Game.ui.marchandActuel?.inventaire || [])[merchantIndex] : null;
-        if (merchantItem) return { source: "merchant", token, id: merchantItem.id, item: merchantItem, obj: objectById(merchantItem.id) };
+        if (merchantItem) return { source: "merchant", token, id: merchantItem.id, item: merchantItem, obj: objectById(merchantItem.id), merchantIndex };
         return null;
     }
 
@@ -348,25 +398,60 @@
         const next = !isLocked(selection.item);
         setLocked(selection.item, next);
         journal(next ? `${objectName(selection.id)} est bloque sur sa case.` : `${objectName(selection.id)} est debloque.`);
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("merchant inventory lock toggle");
+        autosave("merchant inventory lock toggle");
         redraw();
+    }
+
+    function addMerchantItem(id, quantity) {
+        const stock = Game.ui.marchandActuel.inventaire || [];
+        const found = stock.find(item => item.id === id);
+        if (found) found.quantite = Number(found.quantite || 1) + quantity;
+        else stock.push({ id, quantite: quantity });
+        Game.ui.marchandActuel.inventaire = stock;
     }
 
     function buySelection(token) {
         const selection = selectedOrToken(token);
-        if (!selection || selection.source !== "merchant") return;
-        if (typeof acheterObjet === "function") acheterObjet(selection.id, STATE.quantity || 1);
+        if (!selection || selection.source !== "merchant" || !selection.obj) return;
+        const qty = Math.max(1, Math.min(Number(STATE.quantity || 1), Number(selection.item.quantite || 1)));
+        const cost = actionPrice("achat", selection.obj, qty);
+        if (Game.data.personnage.or < cost) { journal("Pas assez d'or."); redraw(); return; }
+        Game.data.personnage.or -= cost;
+        if (typeof ajouterObjetInventaire === "function") ajouterObjetInventaire(selection.id, qty);
+        else Game.data.personnage.inventaire.push({ id: selection.id, quantite: qty });
+        selection.item.quantite = Number(selection.item.quantite || 1) - qty;
+        if (selection.item.quantite <= 0) Game.ui.marchandActuel.inventaire.splice(selection.merchantIndex, 1);
+        journal(`Achat : ${selection.obj.nom || selection.id} x${qty}`);
+        STATE.selection = null;
         STATE.quantity = 1;
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("merchant buy");
+        autosave("merchant buy exact stock");
         redraw();
+    }
+
+    function removePlayerStackQuantity(item, qty) {
+        item.quantite = Number(item.quantite || 1) - qty;
+        if (item.quantite > 0) return;
+        const key = itemKey(item);
+        Game.data.personnage.inventaire = (Game.data.personnage.inventaire || []).filter(entry => entry !== item);
+        if (key && Game.data.personnage.inventaireSlots) delete Game.data.personnage.inventaireSlots[key];
+        if (key && Game.data.personnage.inventaireVerrous) delete Game.data.personnage.inventaireVerrous[key];
+        const hasSameId = (Game.data.personnage.inventaire || []).some(entry => entry.id === item.id);
+        if (!hasSameId) Game.data.personnage.favoris = (Game.data.personnage.favoris || []).filter(id => id !== item.id);
     }
 
     function sellSelection(token) {
         const selection = selectedOrToken(token);
-        if (!selection || selection.source !== "player") return;
-        if (typeof vendreObjet === "function") vendreObjet(selection.id, STATE.quantity || 1);
+        if (!selection || selection.source !== "player" || !selection.obj) return;
+        if (isLocked(selection.item)) { journal(`${selection.obj.nom || selection.id} est bloque.`); redraw(); return; }
+        const qty = Math.max(1, Math.min(Number(STATE.quantity || 1), Number(selection.item.quantite || 1)));
+        const gain = actionPrice("vente", selection.obj, qty);
+        Game.data.personnage.or += gain;
+        removePlayerStackQuantity(selection.item, qty);
+        addMerchantItem(selection.id, qty);
+        journal(`Vente : ${selection.obj.nom || selection.id} x${qty}`);
+        STATE.selection = null;
         STATE.quantity = 1;
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("merchant sell");
+        autosave("merchant sell exact stack");
         redraw();
     }
 
@@ -384,6 +469,9 @@
     }
 
     window.NVM_selectionner = selectItem;
+    window.NVM_fermerPopup = closePopup;
+    window.NVM_changerMode = changerMode;
+    window.NVM_changerPage = changerPage;
     window.NVM_modifierQuantite = modifierQuantite;
     window.NVM_setQuantite = setQuantite;
     window.NVM_changerRecherche = changerRecherche;
@@ -394,7 +482,6 @@
     window.NVM_toggleVerrouillage = toggleLock;
     window.NVM_acheterSelection = buySelection;
     window.NVM_vendreSelection = sellSelection;
-    window.NVM_redessinerVueActive = redraw;
     window.NVM_VERSION = NVM_VERSION;
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install);
