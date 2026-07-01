@@ -39,7 +39,12 @@
 .nvi-layout--inventory .nvi-item.nvi-item--selected:focus,
 .nvi-layout--inventory .nvi-item.nvi-item--selected:focus-visible,
 .nvi-layout--inventory .nvi-item.nvi-item--selected:active,
-.nvi-layout--inventory .nvi-item.nvi-item--selected:not(.nvimp-moving) {
+.nvi-layout--inventory .nvi-item.nvi-item--selected:not(.nvimp-moving),
+.nvi-layout--inventory .nvi-item.nvimp-item--popup-open,
+.nvi-layout--inventory .nvi-item.nvimp-item--popup-open:focus,
+.nvi-layout--inventory .nvi-item.nvimp-item--popup-open:focus-visible,
+.nvi-layout--inventory .nvi-item.nvimp-item--popup-open:active,
+.nvi-layout--inventory .nvi-item.nvimp-item--popup-open:not(.nvimp-moving) {
     outline: 0 !important;
     outline-offset: 0 !important;
     box-shadow: none !important;
@@ -51,7 +56,9 @@
 }
 
 .nvi-layout--inventory .nvi-item.nvi-item--selected::before,
-.nvi-layout--inventory .nvi-item.nvi-item--selected::after {
+.nvi-layout--inventory .nvi-item.nvi-item--selected::after,
+.nvi-layout--inventory .nvi-item.nvimp-item--popup-open::before,
+.nvi-layout--inventory .nvi-item.nvimp-item--popup-open::after {
     display: none !important;
     content: none !important;
 }
