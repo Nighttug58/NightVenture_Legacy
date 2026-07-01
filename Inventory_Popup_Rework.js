@@ -214,19 +214,40 @@
             .find(panel => !panel.querySelector(".nvi-details__empty")) || null;
     }
 
+    function itemKey(item) {
+        return String(item?.uid || item?.instanceId || item?.id || "");
+    }
+
+    function selectedIdFromDetails(details) {
+        const lock = details.querySelector(".nvi-lock-toggle[onclick]");
+        const source = lock || details.querySelector("[onclick*='NVI_toggleFavori'], [onclick*='NVI_equiperObjetSelectionne'], [onclick*='NVI_utiliserObjetSelectionne']");
+        const match = String(source?.getAttribute("onclick") || "").match(/'([^']+)'/);
+        return match?.[1] || null;
+    }
+
+    function readLockState(idObjet) {
+        const item = (Game?.data?.personnage?.inventaire || []).find(entry => entry.id === idObjet);
+        if (!item) return false;
+        const key = itemKey(item);
+        const map = Game.data.personnage.inventaireVerrous || {};
+        if (Object.prototype.hasOwnProperty.call(map, key)) return Boolean(map[key]);
+        return Boolean(item.verrouille || item.locked || item.bloque);
+    }
+
     function simplifyLock(details) {
         const lock = details.querySelector(".nvi-lock-toggle");
         if (!lock) return null;
+        const idObjet = selectedIdFromDetails(details);
+        const locked = idObjet ? readLockState(idObjet) : lock.classList.contains("nvi-lock-toggle--locked");
         const text = lock.querySelector(".nvi-lock-toggle__text");
         const icon = lock.querySelector(".nvi-lock-toggle__icon");
         if (icon) {
             icon.textContent = "";
             icon.style.display = "none";
         }
-        if (text) {
-            const raw = String(text.textContent || "").toLowerCase();
-            text.textContent = raw.includes("blo") || raw.includes("verrou") ? "Bloqué" : "Libre";
-        }
+        if (text) text.textContent = locked ? "Bloqué" : "Libre";
+        lock.classList.toggle("nvi-lock-toggle--locked", locked);
+        lock.classList.toggle("nvi-lock-toggle--unlocked", !locked);
         return lock;
     }
 
