@@ -1,7 +1,10 @@
-/* NightVenture — inventaire refonte paginé + popup */
+/* NightVenture — Inventory paged drag backend
+   Compact backend for inventory pagination, direct drag/drop, toolbar mobile state, gold footer and outside popup close.
+   Popup rendering/actions are handled by Inventory_Interaction_UI.js. */
 (function () {
     "use strict";
 
+    const VERSION = "v0.9.9.27-paged-drag-backend";
     const SLOTS_PER_PAGE = 30;
     const MIN_SLOTS = 120;
     const DRAG_THRESHOLD = 8;
@@ -15,128 +18,105 @@
     let dragGhost = null;
     let suppressClickUntil = 0;
 
-    function inv() { return Game?.data?.personnage?.inventaire || []; }
-    function key(item) { return String(item?.uid || item?.instanceId || item?.id || ""); }
-    function itemData(id) { return inv().find(item => item.id === id) || null; }
-    function slotNo(slot, fallback = -1) { const n = Number(slot?.dataset?.slot); return Number.isInteger(n) && n >= 0 ? n : fallback; }
-    function pageStart(page) { return Math.max(0, Number(page) || 0) * SLOTS_PER_PAGE; }
-    function currentPage() { Game.ui.nvInventairePage ??= 0; return Math.max(0, Number(Game.ui.nvInventairePage) || 0); }
-    function label(i) { return PAGE_LABELS[i] || String(i + 1); }
-
-    function clearInventorySelectionClasses(root = document) {
-        root.querySelectorAll(".nvi-layout--inventory .nvi-item--selected, .nvi-layout--inventory .nvimp-item--popup-open")
-            .forEach(item => item.classList.remove("nvi-item--selected", "nvimp-item--popup-open"));
+    function hasGame() {
+        return typeof window.Game !== "undefined" && window.Game?.data?.personnage && window.Game?.ui;
     }
 
-    function escapeHtml(value) {
-        if (typeof echapperHTML === "function") return echapperHTML(value);
-        return String(value ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+    function inv() {
+        return Array.isArray(window.Game?.data?.personnage?.inventaire) ? window.Game.data.personnage.inventaire : [];
     }
 
-    function selectorForItem(id) {
-        const raw = String(id || "");
-        const escaped = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(raw) : raw.replace(/\\/g, "\\\\").replace(/\"/g, "\\\"");
-        return `.nvi-layout--inventory .nvi-item[data-nvi-item-id="${escaped}"]`;
+    function key(item) {
+        return String(item?.uid || item?.instanceId || item?.id || "");
     }
 
-    function objectData(id) {
-        if (typeof trouverObjet === "function") return trouverObjet(id);
-        return Game?.cache?.objetsParId?.[id] || null;
+    function slotOf(item) {
+        const slot = Number(item?.slot);
+        return Number.isInteger(slot) && slot >= 0 ? slot : -1;
     }
 
-    function objectName(id) { return objectData(id)?.nom || id; }
-    function isFavorite(id) { return (Game?.data?.personnage?.favoris || []).includes(id); }
-
-    function isLocked(id) {
-        const item = itemData(id);
-        if (!item) return false;
-        const map = Game?.data?.personnage?.inventaireVerrous || {};
-        const itemKey = key(item);
-        if (Object.prototype.hasOwnProperty.call(map, itemKey)) return Boolean(map[itemKey]);
-        return Boolean(item.verrouille || item.locked || item.bloque);
+    function slotNo(slot, fallback = -1) {
+        const n = Number(slot?.dataset?.slot);
+        return Number.isInteger(n) && n >= 0 ? n : fallback;
     }
 
-    function objectIcon(objet) {
-        if (objet?.image) return `<img src="${escapeHtml(objet.image)}" alt="${escapeHtml(objet.nom || "Objet")}">`;
-        return `<span class="nvi-item__text-icon">OBJ</span>`;
+    function pageStart(page) {
+        return Math.max(0, Number(page) || 0) * SLOTS_PER_PAGE;
     }
 
-    function objectDetails(objet) {
-        if (!objet) return "";
-        if (typeof creerDetailsObjetInventaire === "function") return creerDetailsObjetInventaire(objet);
-        if (typeof creerDetailsObjet === "function") return creerDetailsObjet(objet);
-        const stats = [
-            ["ATK", "attaque"], ["DEF", "defense"], ["ATK MAGIC", "attaqueMagique"], ["DEF MAGIC", "defenseMagique"],
-            ["PV", "pvMax"], ["MANA", "manaMax"], ["FOR", "force"], ["DEX", "dexterite"], ["INT", "intelligence"], ["VIT", "vitalite"]
-        ];
-        return stats.filter(([, stat]) => objet[stat]).map(([label, stat]) => `${label} +${objet[stat]}`).join(" ");
+    function currentPage() {
+        if (!hasGame()) return 0;
+        window.Game.ui.nvInventairePage ??= 0;
+        return Math.max(0, Number(window.Game.ui.nvInventairePage) || 0);
     }
 
-    function findLivePopup() {
-        return document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
+    function label(page) {
+        return PAGE_LABELS[page] || String(page + 1);
     }
 
-    function setPage(page) {
-        Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
-        applyPagedInventory();
-    }
-
-    function saveSlot(item, slot) {
-        const n = Number(slot);
-        if (!item || !Number.isInteger(n) || n < 0) return;
-        item.slot = n;
-        Game.data.personnage.inventaireSlots ??= {};
-        Game.data.personnage.inventaireSlots[key(item)] = n;
-    }
-
-    function firstFreeSlotInPage(page, ignoredId = null) {
-        const start = pageStart(page);
-        for (let slot = start; slot < start + SLOTS_PER_PAGE; slot++) {
-            const used = inv().some(item => item.id !== ignoredId && Number(item.slot) === slot);
-            if (!used) return slot;
+    function itemByKeyAndSlot(itemKey, sourceSlot = null) {
+        const slot = Number(sourceSlot);
+        if (itemKey && Number.isInteger(slot) && slot >= 0) {
+            const exact = inv().find(item => key(item) === itemKey && slotOf(item) === slot);
+            if (exact) return exact;
         }
-        return start;
-    }
-
-    function moveData(id, targetSlot, swap = true) {
-        const item = itemData(id);
-        const target = Number(targetSlot);
-        if (!item || !Number.isInteger(target) || target < 0) return false;
-        const source = Number(item.slot);
-        if (source === target) return true;
-
-        const other = inv().find(entry => entry !== item && Number(entry.slot) === target);
-        if (other) {
-            if (!swap) return false;
-            if (Number.isInteger(source) && source >= 0) saveSlot(other, source);
+        if (itemKey) {
+            const byKey = inv().find(item => key(item) === itemKey);
+            if (byKey) return byKey;
         }
-
-        saveSlot(item, target);
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory move");
-        return true;
+        if (Number.isInteger(slot) && slot >= 0) return inv().find(item => slotOf(item) === slot) || null;
+        return null;
     }
 
-    function findItemNode(id) {
-        return Array.from(document.querySelectorAll(".nvi-layout--inventory .nvi-item[data-nvi-item-id]"))
-            .find(node => node.dataset.nviItemId === id) || null;
+    function itemNodeByKeyAndSlot(itemKey, sourceSlot = null) {
+        const nodes = Array.from(document.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-key]"));
+        const slot = Number(sourceSlot);
+        if (itemKey && Number.isInteger(slot) && slot >= 0) {
+            const exact = nodes.find(node => node.dataset.nviItemKey === itemKey && slotNo(node.closest(".nvi-slot")) === slot);
+            if (exact) return exact;
+        }
+        if (itemKey) return nodes.find(node => node.dataset.nviItemKey === itemKey) || null;
+        if (Number.isInteger(slot) && slot >= 0) return nodes.find(node => slotNo(node.closest(".nvi-slot")) === slot) || null;
+        return null;
     }
 
-    function findSlotNode(slot) {
+    function slotNode(slot) {
         return Array.from(document.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-slot"))
             .find(node => slotNo(node) === Number(slot)) || null;
     }
 
-    function moveDom(id, targetSlot) {
-        const item = findItemNode(id);
-        const target = findSlotNode(targetSlot);
+    function saveSlot(item, slot) {
+        const target = Number(slot);
+        if (!item || !Number.isInteger(target) || target < 0) return false;
+        item.slot = target;
+        window.Game.data.personnage.inventaireSlots ??= {};
+        window.Game.data.personnage.inventaireSlots[key(item)] = target;
+        return true;
+    }
+
+    function moveData(itemKey, sourceSlot, targetSlot, swap = true) {
+        const item = itemByKeyAndSlot(itemKey, sourceSlot);
+        const target = Number(targetSlot);
+        if (!item || !Number.isInteger(target) || target < 0) return false;
+        const source = slotOf(item);
+        if (source === target) return true;
+
+        const other = inv().find(entry => entry !== item && slotOf(entry) === target);
+        if (other) {
+            if (!swap) return false;
+            if (source >= 0) saveSlot(other, source);
+        }
+        saveSlot(item, target);
+        if (typeof window.NV_demanderAutosave === "function") window.NV_demanderAutosave("inventory drag move");
+        return true;
+    }
+
+    function moveDom(itemKey, sourceSlot, targetSlot) {
+        const item = itemNodeByKeyAndSlot(itemKey, sourceSlot);
+        const target = slotNode(targetSlot);
         if (!item || !target) return false;
         const source = item.closest(".nvi-slot");
-        const other = target.querySelector(".nvi-item[data-nvi-item-id]");
+        const other = target.querySelector(".nvi-item[data-nvi-item-key]");
         if (other && source && other !== item) source.appendChild(other);
         target.appendChild(item);
         [source, target].forEach(slot => {
@@ -144,400 +124,44 @@
             slot.classList.toggle("nvi-slot--occupied", Boolean(slot.querySelector(".nvi-item")));
             slot.classList.toggle("nvi-slot--locked", Boolean(slot.querySelector(".nvi-item--locked")));
         });
+        item.dataset.nviItemSlot = String(targetSlot);
         return true;
     }
 
-    function selectedItemId() {
-        const popup = findLivePopup();
-        if (popup?.dataset?.nviprItemId) return popup.dataset.nviprItemId;
-        const selected = document.querySelector(".nvi-layout--inventory .nvimp-item--popup-open[data-nvi-item-id]");
-        return selected?.dataset?.nviItemId || null;
-    }
-
     function closeInventoryPopup() {
-        clearInventorySelectionClasses();
-        const popup = findLivePopup();
-        if (popup) popup.remove();
+        document.querySelectorAll(".nvi-layout--inventory .nvi-item--selected, .nvi-layout--inventory .nvimp-item--popup-open")
+            .forEach(item => item.classList.remove("nvi-item--selected", "nvimp-item--popup-open"));
+        document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup")?.remove();
         document.querySelector(".nvi-layout--inventory")?.classList.add("nvimp-no-details");
     }
 
-    function moveSelectedToPage(page) {
-        const id = selectedItemId();
-        if (!id) return;
-        const target = firstFreeSlotInPage(page, id);
-        if (!moveData(id, target, true)) return;
-        Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
-        moveDom(id, target);
+    function setPage(page) {
+        if (!hasGame()) return;
+        window.Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
         applyPagedInventory();
-        closeInventoryPopup();
     }
 
-    function injectStyle() {
-        // Styles moved to Inventory_Header_Cleanup.css.
-    }
-
-    function enhanceToolbar() {
-        const toolbar = document.querySelector(".nvi-window .nvi-toolbar");
-        if (!toolbar) return;
-        toolbar.classList.add("nvimp-toolbar-compact");
-        toolbar.classList.toggle("is-expanded", Boolean(Game?.ui?.nvInventaireFiltresOuverts));
-
-        let toggle = toolbar.querySelector(":scope > .nvimp-toolbar-toggle");
-        if (!toggle) {
-            toggle = document.createElement("button");
-            toggle.type = "button";
-            toggle.className = "nvimp-toolbar-toggle";
-            toggle.addEventListener("click", event => {
-                event.preventDefault();
-                Game.ui.nvInventaireFiltresOuverts = !Game.ui.nvInventaireFiltresOuverts;
-                applyPagedInventory();
-            });
-            const top = toolbar.querySelector(".nvi-toolbar__top");
-            if (top?.nextSibling) toolbar.insertBefore(toggle, top.nextSibling);
-            else toolbar.appendChild(toggle);
-        }
-        toggle.textContent = Game.ui.nvInventaireFiltresOuverts ? "Masquer tri & filtres" : "Afficher tri & filtres";
-    }
-
-    function handlePageButtonEvent(event, page, mode) {
+    function handlePageButton(event, page) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        if (mode === "move") moveSelectedToPage(page);
-        else setPage(page);
+        setPage(page);
     }
 
-    function buildPager(pageCount, activePage, mode) {
+    function buildPager(pageCount, activePage) {
         const pager = document.createElement("div");
-        pager.className = mode === "move" ? "nvimp-popup-pager" : "nvimp-pager";
-        if (mode === "move") {
-            const title = document.createElement("span");
-            title.className = "nvimp-popup-pager__label";
-            title.textContent = "Déplacer l'objet vers page";
-            pager.appendChild(title);
-        }
-        for (let i = 0; i < pageCount; i++) {
+        pager.className = "nvimp-pager";
+        for (let page = 0; page < pageCount; page++) {
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "nvimp-page-btn" + (i === activePage ? " is-active" : "");
-            button.dataset.nvimpPage = String(i);
-            button.dataset.nvimpMode = mode;
-            button.textContent = label(i);
-            if (mode === "move") button.addEventListener("pointerdown", event => handlePageButtonEvent(event, i, mode), true);
-            button.addEventListener("click", event => handlePageButtonEvent(event, i, mode), true);
+            button.className = "nvimp-page-btn" + (page === activePage ? " is-active" : "");
+            button.dataset.nvimpPage = String(page);
+            button.dataset.nvimpMode = "navigate";
+            button.textContent = label(page);
+            button.addEventListener("click", event => handlePageButton(event, page), true);
             pager.appendChild(button);
         }
         return pager;
-    }
-
-    function refreshItemQuantity(id) {
-        const item = itemData(id);
-        document.querySelectorAll(selectorForItem(id)).forEach(button => {
-            const quantity = Number(item?.quantite || 0);
-            let badge = button.querySelector(".nvi-item__qty");
-            if (quantity > 1) {
-                if (!badge) {
-                    badge = document.createElement("span");
-                    badge.className = "nvi-item__qty";
-                    button.appendChild(badge);
-                }
-                badge.textContent = String(quantity);
-            } else if (badge) badge.remove();
-        });
-    }
-
-    function removeGridItem(id) {
-        document.querySelectorAll(selectorForItem(id)).forEach(button => {
-            const slot = button.closest(".nvi-slot");
-            button.remove();
-            if (slot) {
-                slot.classList.remove("nvi-slot--occupied", "nvi-slot--locked");
-                if (!slot.children.length) slot.textContent = "";
-            }
-        });
-    }
-
-    function refreshGridItemState(id) {
-        const item = itemData(id);
-        if (!item) {
-            removeGridItem(id);
-            return;
-        }
-        const favorite = isFavorite(id);
-        const locked = isLocked(id);
-        const popupOpen = Boolean(findLivePopup()?.dataset?.nviprItemId === id);
-        document.querySelectorAll(selectorForItem(id)).forEach(button => {
-            button.classList.remove("nvi-item--selected");
-            button.classList.toggle("nvimp-item--popup-open", popupOpen);
-            button.classList.toggle("nvi-item--locked", locked);
-            button.draggable = false;
-            let fav = button.querySelector(".nvi-item__favorite");
-            if (favorite && !fav) {
-                fav = document.createElement("span");
-                fav.className = "nvi-item__favorite";
-                fav.textContent = "Favori";
-                button.prepend(fav);
-            }
-            if (!favorite && fav) fav.remove();
-            let lock = button.querySelector(".nvi-item__lock");
-            if (locked && !lock) {
-                lock = document.createElement("span");
-                lock.className = "nvi-item__lock";
-                lock.textContent = "Lock";
-                button.prepend(lock);
-            }
-            if (!locked && lock) lock.remove();
-            button.closest(".nvi-slot")?.classList.toggle("nvi-slot--locked", locked);
-        });
-        refreshItemQuantity(id);
-    }
-
-    function refreshPopupState(id) {
-        const popup = findLivePopup();
-        if (!popup || popup.dataset.nviprItemId !== id) return;
-        const favoriteButton = popup.querySelector("[data-nvipr-action='favorite']");
-        if (favoriteButton) favoriteButton.textContent = isFavorite(id) ? "Retirer favori" : "Ajouter favori";
-        const lock = popup.querySelector("[data-nvipr-action='lock']");
-        if (lock) {
-            const locked = isLocked(id);
-            lock.classList.toggle("nvi-lock-toggle--locked", locked);
-            lock.classList.toggle("nvi-lock-toggle--unlocked", !locked);
-            lock.querySelector(".nvi-lock-toggle__text")?.replaceChildren(document.createTextNode(locked ? "Bloqué" : "Libre"));
-        }
-    }
-
-    function updateAfterStackMutation(id) {
-        if (itemData(id)) refreshGridItemState(id);
-        else removeGridItem(id);
-    }
-
-    function toggleFavoriteNoRedraw(id) {
-        Game.data.personnage.favoris ??= [];
-        if (isFavorite(id)) Game.data.personnage.favoris = Game.data.personnage.favoris.filter(entry => entry !== id);
-        else Game.data.personnage.favoris.push(id);
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup favorite");
-        refreshGridItemState(id);
-        refreshPopupState(id);
-    }
-
-    function toggleLockNoRedraw(id) {
-        const item = itemData(id);
-        if (!item) return;
-        const locked = !isLocked(id);
-        Game.data.personnage.inventaireVerrous ??= {};
-        Game.data.personnage.inventaireVerrous[key(item)] = locked;
-        item.verrouille = locked;
-        delete item.locked;
-        delete item.bloque;
-        if (typeof ajouterJournal === "function") ajouterJournal(locked ? `${objectName(id)} est bloqué sur sa case.` : `${objectName(id)} est libre.`);
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup lock");
-        refreshGridItemState(id);
-        refreshPopupState(id);
-    }
-
-    function equipNoRedraw(id, slot = null) {
-        if (typeof equiperObjet === "function") equiperObjet(id, slot);
-        else if (typeof equiperObjetInterface === "function") equiperObjetInterface(id, slot);
-        updateAfterStackMutation(id);
-        closeInventoryPopup();
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup equip");
-        if (typeof afficherPersonnage === "function") afficherPersonnage();
-        if (typeof afficherJournal === "function") afficherJournal();
-    }
-
-    function useNoRedraw(id) {
-        const obj = objectData(id);
-        if (!obj || obj.type !== "consommable" || typeof appliquerEffetObjet !== "function") return;
-        const applied = appliquerEffetObjet(obj);
-        if (!applied) {
-            if (typeof afficherJournal === "function") afficherJournal();
-            return;
-        }
-        if (typeof retirerObjetInventaire === "function") retirerObjetInventaire(id, 1);
-        if (typeof corrigerRessources === "function") corrigerRessources();
-        updateAfterStackMutation(id);
-        closeInventoryPopup();
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup use");
-        if (typeof afficherPersonnage === "function") afficherPersonnage();
-        if (typeof afficherJournal === "function") afficherJournal();
-    }
-
-    function renderDeleteConfirm(popup, id) {
-        const existing = popup.querySelector(".nvi-danger, .nvi-delete-confirm");
-        if (!existing) return;
-        const box = document.createElement("div");
-        box.className = "nvi-delete-confirm";
-        box.innerHTML = `<span>Supprimer toute la pile ?</span><button type="button" data-nvipr-action="delete-confirm" data-nvipr-id="${escapeHtml(id)}">Confirmer</button><button type="button" data-nvipr-action="delete-cancel" data-nvipr-id="${escapeHtml(id)}">Annuler</button>`;
-        existing.replaceWith(box);
-    }
-
-    function renderDeleteButton(popup, id) {
-        const existing = popup.querySelector(".nvi-delete-confirm");
-        if (!existing) return;
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "nvi-danger";
-        button.dataset.nviprAction = "delete-open";
-        button.dataset.nviprId = id;
-        button.textContent = "Jeter l'objet";
-        existing.replaceWith(button);
-    }
-
-    function deleteStackNoRedraw(id) {
-        const item = itemData(id);
-        if (!item) return;
-        const qty = Number(item.quantite || 1);
-        const itemKey = key(item);
-        Game.data.personnage.inventaire = inv().filter(entry => entry !== item);
-        const hasSameItemRemaining = inv().some(entry => entry.id === id);
-        if (!hasSameItemRemaining) Game.data.personnage.favoris = (Game.data.personnage.favoris || []).filter(entry => entry !== id);
-        if (Game.data.personnage.inventaireSlots) delete Game.data.personnage.inventaireSlots[itemKey];
-        if (Game.data.personnage.inventaireVerrous) delete Game.data.personnage.inventaireVerrous[itemKey];
-        if (typeof ajouterJournal === "function") ajouterJournal(`${objectName(id)} x${qty} supprimé de l'inventaire.`);
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup delete");
-        closeInventoryPopup();
-        if (typeof NVI_redessinerVueActive === "function") NVI_redessinerVueActive();
-        else {
-            if (!hasSameItemRemaining) removeGridItem(id);
-            applyPagedInventory();
-        }
-        if (typeof afficherJournal === "function") afficherJournal();
-    }
-
-    function renderInventoryPopup(id, clickedItem = null) {
-        const item = itemData(id);
-        const obj = objectData(id);
-        const layout = document.querySelector(".nvi-layout--inventory");
-        if (!item || !obj || !layout) return;
-        clearInventorySelectionClasses();
-        if (clickedItem) clickedItem.classList.add("nvimp-item--popup-open");
-
-        let popup = findLivePopup() || document.createElement("aside");
-        if (!popup.parentElement) layout.appendChild(popup);
-
-        const rarete = obj.rarete || "commun";
-        const qty = Number(item.quantite || 1);
-        const stats = objectDetails(obj);
-        const favorite = isFavorite(id);
-        const locked = isLocked(id);
-
-        popup.className = "nvi-details nvimp-details-popup nvipr-popup";
-        popup.dataset.nviprItemId = id;
-        popup.innerHTML = `
-            <button type="button" class="nvimp-popup-close">×</button>
-            <div class="nvi-details__header">
-                <div class="nvi-details__icon nvi-item--${escapeHtml(rarete)}">${objectIcon(obj)}</div>
-                <div>
-                    <h3 class="${escapeHtml(rarete)}">${escapeHtml(obj.nom || id)}</h3>
-                    <p data-nvipr-meta="1"><span class="nvipr-meta-line">${escapeHtml(obj.type || "divers")} · ${escapeHtml(obj.rarete || "commun")}</span><span class="nvipr-meta-line">Quantité : ${qty}</span></p>
-                </div>
-            </div>
-            ${stats ? `<p class="nvi-details__stats">${stats}</p>` : ""}
-            <p class="nvi-details__description">${escapeHtml(obj.description || "Aucune description.")}</p>
-            <div class="nvi-details__actions">
-                ${obj.type === "consommable" ? `<button type="button" data-nvipr-action="use" data-nvipr-id="${escapeHtml(id)}">Utiliser</button>` : obj.type === "bague" ? `<button type="button" data-nvipr-action="equip-ring1" data-nvipr-id="${escapeHtml(id)}">Anneau I</button><button type="button" data-nvipr-action="equip-ring2" data-nvipr-id="${escapeHtml(id)}">Anneau II</button>` : `<button type="button" data-nvipr-action="equip" data-nvipr-id="${escapeHtml(id)}">Équiper</button>`}
-            </div>
-            <div class="nvipr-secondary-row">
-                <button type="button" class="nvipr-secondary-action" data-nvipr-action="favorite" data-nvipr-id="${escapeHtml(id)}">${favorite ? "Retirer favori" : "Ajouter favori"}</button>
-                <button type="button" class="nvi-lock-toggle ${locked ? "nvi-lock-toggle--locked" : "nvi-lock-toggle--unlocked"}" data-nvipr-action="lock" data-nvipr-id="${escapeHtml(id)}"><span class="nvi-lock-toggle__text">${locked ? "Bloqué" : "Libre"}</span></button>
-            </div>
-            <button type="button" class="nvi-danger" data-nvipr-action="delete-open" data-nvipr-id="${escapeHtml(id)}">Jeter l'objet</button>
-        `;
-        layout.classList.remove("nvimp-no-details");
-        enhancePopupPager(Math.max(1, Math.ceil((Math.max(...Array.from(document.querySelectorAll('.nvi-layout--inventory .nvi-slot')).map(slot => slotNo(slot, 0))) + 1) / SLOTS_PER_PAGE)), currentPage());
-    }
-
-    function handlePopupAction(event) {
-        if (Game?.ui?.vueActive !== "inventaire") return;
-        const close = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-close");
-        if (close) {
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-            closeInventoryPopup();
-            return;
-        }
-        const button = event.target?.closest?.(".nvi-details.nvipr-popup [data-nvipr-action]");
-        if (!button) return;
-        const popup = button.closest(".nvi-details.nvipr-popup");
-        const id = button.dataset.nviprId || popup?.dataset?.nviprItemId;
-        if (!id) return;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        const action = button.dataset.nviprAction;
-        if (action === "favorite") toggleFavoriteNoRedraw(id);
-        else if (action === "lock") toggleLockNoRedraw(id);
-        else if (action === "delete-open") renderDeleteConfirm(popup, id);
-        else if (action === "delete-cancel") renderDeleteButton(popup, id);
-        else if (action === "delete-confirm") deleteStackNoRedraw(id);
-        else if (action === "equip") equipNoRedraw(id, null);
-        else if (action === "equip-ring1") equipNoRedraw(id, "bague1");
-        else if (action === "equip-ring2") equipNoRedraw(id, "bague2");
-        else if (action === "use") useNoRedraw(id);
-    }
-
-    function handleItemSelection(event) {
-        if (Game?.ui?.vueActive !== "inventaire") return;
-        const button = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]");
-        if (!button) return;
-        if (Date.now() < suppressClickUntil) {
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-            return;
-        }
-        if (document.querySelector(".nvi-slot.nvimp-touch-target")) return;
-        const id = button.dataset.nviItemId;
-        if (!id) return;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        renderInventoryPopup(id, button);
-    }
-
-    function installPopupActions() {
-        if (window.__NVIMP_POPUP_ACTIONS) return;
-        window.__NVIMP_POPUP_ACTIONS = true;
-        document.addEventListener("click", handlePopupAction, true);
-        document.addEventListener("click", handleItemSelection, true);
-    }
-
-    function installPopupPagerActions() {
-        if (window.__NVIMP_POPUP_PAGER_ACTIONS) return;
-        window.__NVIMP_POPUP_PAGER_ACTIONS = true;
-        const handle = event => {
-            if (Game?.ui?.vueActive !== "inventaire") return;
-            const button = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-pager .nvimp-page-btn[data-nvimp-mode='move']");
-            if (!button) return;
-            const page = Number(button.dataset.nvimpPage);
-            if (!Number.isInteger(page) || page < 0) return;
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-            if (event.type === "pointerdown") {
-                suppressClickUntil = Date.now() + SYNTHETIC_CLICK_SUPPRESS_MS;
-                moveSelectedToPage(page);
-                return;
-            }
-            if (Date.now() < suppressClickUntil) return;
-            moveSelectedToPage(page);
-        };
-        document.addEventListener("pointerdown", handle, true);
-        document.addEventListener("click", handle, true);
-    }
-
-    function installOutsidePopupClose() {
-        if (window.__NVIMP_OUTSIDE_POPUP_CLOSE) return;
-        window.__NVIMP_OUTSIDE_POPUP_CLOSE = true;
-        document.addEventListener("click", event => {
-            if (Game?.ui?.vueActive !== "inventaire") return;
-            const popup = findLivePopup();
-            if (!popup) return;
-            if (event.target?.closest?.(".nvi-details.nvipr-popup")) return;
-            if (Date.now() < suppressClickUntil) return;
-            closeInventoryPopup();
-        }, false);
     }
 
     function ensureSlotRange(grid, first, count) {
@@ -552,19 +176,22 @@
     }
 
     function ensureSlots(grid) {
-        Array.from(grid.querySelectorAll(":scope > .nvi-slot")).forEach((slot, i) => { if (!slot.dataset.slot) slot.dataset.slot = String(i); });
-        const domMax = Array.from(grid.querySelectorAll(":scope > .nvi-slot")).reduce((m, slot) => Math.max(m, slotNo(slot)), -1);
-        const dataMax = inv().reduce((m, item) => Math.max(m, Number(item.slot) || 0), -1);
+        Array.from(grid.querySelectorAll(":scope > .nvi-slot")).forEach((slot, index) => {
+            if (!slot.dataset.slot) slot.dataset.slot = String(index);
+        });
+        const domMax = Array.from(grid.querySelectorAll(":scope > .nvi-slot")).reduce((max, slot) => Math.max(max, slotNo(slot)), -1);
+        const dataMax = inv().reduce((max, item) => Math.max(max, slotOf(item)), -1);
         ensureSlotRange(grid, 0, Math.max(MIN_SLOTS - 1, domMax, dataMax) + 1);
     }
 
     function applyPager(grid) {
         ensureSlots(grid);
         let slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
-        const maxSlot = slots.reduce((m, slot) => Math.max(m, slotNo(slot)), 0);
+        const maxSlot = slots.reduce((max, slot) => Math.max(max, slotNo(slot)), 0);
         const pageCount = Math.max(1, Math.ceil((maxSlot + 1) / SLOTS_PER_PAGE));
         const page = Math.min(currentPage(), pageCount - 1);
-        Game.ui.nvInventairePage = page;
+        window.Game.ui.nvInventairePage = page;
+
         ensureSlotRange(grid, pageStart(page), SLOTS_PER_PAGE);
         slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
         const start = pageStart(page);
@@ -574,14 +201,49 @@
             slot.style.display = visible ? "" : "none";
             slot.classList.toggle("nvimp-visible-slot", visible);
         });
+
         grid.parentElement?.querySelector(":scope > .nvimp-pager")?.remove();
-        grid.parentElement?.insertBefore(buildPager(pageCount, page, "navigate"), grid);
+        grid.parentElement?.insertBefore(buildPager(pageCount, page), grid);
         return { pageCount, page };
     }
 
-    function clearDragVisuals() {
-        document.querySelectorAll(".nvi-slot.nvimp-touch-target").forEach(node => node.classList.remove("nvimp-touch-target"));
-        document.querySelectorAll(".nvi-item.nvimp-moving").forEach(node => node.classList.remove("nvimp-moving"));
+    function enhanceToolbar() {
+        const toolbar = document.querySelector(".nvi-window .nvi-toolbar");
+        if (!toolbar || !hasGame()) return;
+        toolbar.classList.add("nvimp-toolbar-compact");
+        toolbar.classList.toggle("is-expanded", Boolean(window.Game.ui.nvInventaireFiltresOuverts));
+
+        let toggle = toolbar.querySelector(":scope > .nvimp-toolbar-toggle");
+        if (!toggle) {
+            toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "nvimp-toolbar-toggle";
+            toggle.addEventListener("click", event => {
+                event.preventDefault();
+                window.Game.ui.nvInventaireFiltresOuverts = !window.Game.ui.nvInventaireFiltresOuverts;
+                applyPagedInventory();
+            });
+            const top = toolbar.querySelector(".nvi-toolbar__top");
+            if (top?.nextSibling) toolbar.insertBefore(toggle, top.nextSibling);
+            else toolbar.appendChild(toggle);
+        }
+        toggle.textContent = window.Game.ui.nvInventaireFiltresOuverts ? "Masquer tri & filtres" : "Afficher tri & filtres";
+    }
+
+    function ensureGoldFooter() {
+        document.querySelectorAll(".nvi-window .nvi-panel").forEach(panel => {
+            const grid = panel.querySelector(":scope > .nvi-grid");
+            if (!grid) return;
+            let footer = panel.querySelector(":scope > .nvimp-grid-footer");
+            if (!footer) {
+                footer = document.createElement("div");
+                footer.className = "nvimp-grid-footer";
+                footer.innerHTML = `<span class="nvimp-gold"></span>`;
+                grid.after(footer);
+            }
+            const gold = Number(window.Game?.data?.personnage?.or || 0);
+            footer.querySelector(".nvimp-gold").textContent = `Or : ${gold}`;
+        });
     }
 
     function neutralizeNativeDragTargets(root = document) {
@@ -593,6 +255,11 @@
             node.style.webkitUserSelect = "none";
             try { node.draggable = false; } catch (_) {}
         });
+    }
+
+    function clearDragVisuals() {
+        document.querySelectorAll(".nvi-slot.nvimp-touch-target").forEach(node => node.classList.remove("nvimp-touch-target"));
+        document.querySelectorAll(".nvi-item.nvimp-moving").forEach(node => node.classList.remove("nvimp-moving"));
     }
 
     function removeDragGhost() {
@@ -610,8 +277,8 @@
         removeDragGhost();
         if (!source) return;
         const rect = source.getBoundingClientRect();
-        const ghost = document.createElement("div");
         const icon = source.querySelector(".nvi-item__icon") || source.querySelector(".nvi-item__text-icon");
+        const ghost = document.createElement("div");
         ghost.className = "nvi-item nvimp-drag-ghost";
         ghost.setAttribute("draggable", "false");
         ghost.style.width = `${Math.max(42, rect.width)}px`;
@@ -649,9 +316,9 @@
 
         const target = document.elementFromPoint(event.clientX, event.clientY)?.closest?.(".nvi-slot");
         if (target && state.grid.contains(target)) {
-            const slot = slotNo(target);
-            if (moveData(state.id, slot, true)) {
-                moveDom(state.id, slot);
+            const targetSlot = slotNo(target);
+            if (moveData(state.key, state.sourceSlot, targetSlot, true)) {
+                moveDom(state.key, state.sourceSlot, targetSlot);
                 applyPagedInventory();
             }
         }
@@ -660,19 +327,19 @@
     }
 
     function installDirectDrag() {
-        if (window.__NVIMP_DIRECT_DRAG) return;
-        window.__NVIMP_DIRECT_DRAG = true;
+        if (window.__NVIPD_DIRECT_DRAG) return;
+        window.__NVIPD_DIRECT_DRAG = true;
 
         document.addEventListener("contextmenu", event => {
-            if (Game?.ui?.vueActive !== "inventaire") return;
-            if (!event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]")) return;
+            if (window.Game?.ui?.vueActive !== "inventaire") return;
+            if (!event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-key]")) return;
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
         }, true);
 
         document.addEventListener("dragstart", event => {
-            if (Game?.ui?.vueActive !== "inventaire") return;
+            if (window.Game?.ui?.vueActive !== "inventaire") return;
             if (!event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item")) return;
             event.preventDefault();
             event.stopPropagation();
@@ -680,15 +347,26 @@
         }, true);
 
         document.addEventListener("pointerdown", event => {
-            if (Game?.ui?.vueActive !== "inventaire") return;
+            if (window.Game?.ui?.vueActive !== "inventaire") return;
             if (event.button !== undefined && event.button !== 0) return;
-            const item = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]");
+            const item = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-key]");
             if (!item) return;
             const grid = item.closest(".nvi-grid--inventory");
-            if (!grid) return;
+            const sourceSlot = slotNo(item.closest(".nvi-slot"));
+            if (!grid || sourceSlot < 0) return;
             suppressClickUntil = 0;
             neutralizeNativeDragTargets(grid);
-            dragState = { id: item.dataset.nviItemId, item, grid, pointerId: event.pointerId, x: event.clientX, y: event.clientY, dragging: false };
+            dragState = {
+                key: item.dataset.nviItemKey || "",
+                id: item.dataset.nviItemId || "",
+                sourceSlot,
+                item,
+                grid,
+                pointerId: event.pointerId,
+                x: event.clientX,
+                y: event.clientY,
+                dragging: false
+            };
             createDragGhost(item, event, false);
             try { item.setPointerCapture(event.pointerId); } catch (_) {}
         }, true);
@@ -702,7 +380,9 @@
                 suppressClickUntil = Date.now() + SYNTHETIC_CLICK_SUPPRESS_MS;
                 clearDragVisuals();
                 dragState.item.classList.add("nvimp-moving");
-                dragState.grid.querySelectorAll(".nvi-slot").forEach(slot => { if (slot.style.display !== "none") slot.classList.add("nvimp-touch-target"); });
+                dragState.grid.querySelectorAll(".nvi-slot").forEach(slot => {
+                    if (slot.style.display !== "none") slot.classList.add("nvimp-touch-target");
+                });
             }
             if (dragState.dragging) {
                 event.preventDefault();
@@ -735,44 +415,31 @@
         }, true);
     }
 
-    function ensureGoldFooter() {
-        document.querySelectorAll(".nvi-window .nvi-panel").forEach(panel => {
-            const grid = panel.querySelector(":scope > .nvi-grid");
-            if (!grid) return;
-            let footer = panel.querySelector(":scope > .nvimp-grid-footer");
-            if (!footer) {
-                footer = document.createElement("div");
-                footer.className = "nvimp-grid-footer";
-                footer.innerHTML = `<span class="nvimp-gold"></span>`;
-                grid.after(footer);
-            }
-            const gold = Number(Game?.data?.personnage?.or || 0);
-            footer.querySelector(".nvimp-gold").textContent = `Or : ${gold}`;
-        });
-    }
-
-    function enhancePopupPager(pageCount, page) {
-        const details = findLivePopup();
-        if (!details) return;
-        details.querySelector(".nvimp-popup-pager")?.remove();
-        details.appendChild(buildPager(pageCount, page, "move"));
+    function installOutsidePopupClose() {
+        if (window.__NVIPD_OUTSIDE_POPUP_CLOSE) return;
+        window.__NVIPD_OUTSIDE_POPUP_CLOSE = true;
+        document.addEventListener("click", event => {
+            if (window.Game?.ui?.vueActive !== "inventaire") return;
+            const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
+            if (!popup) return;
+            if (event.target?.closest?.(".nvi-details.nvipr-popup")) return;
+            if (event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item")) return;
+            if (Date.now() < suppressClickUntil) return;
+            closeInventoryPopup();
+        }, false);
     }
 
     function applyPagedInventory() {
-        injectStyle();
-        if (Game?.ui?.vueActive !== "inventaire") return;
+        if (!hasGame() || window.Game.ui.vueActive !== "inventaire") return;
         suppressObserver = true;
         try {
             enhanceToolbar();
             const grid = document.querySelector(".nvi-layout--inventory .nvi-grid--inventory");
             if (!grid) return;
-            const { pageCount, page } = applyPager(grid);
+            applyPager(grid);
             neutralizeNativeDragTargets(grid);
             ensureGoldFooter();
-            enhancePopupPager(pageCount, page);
-            installPopupActions();
             installDirectDrag();
-            installPopupPagerActions();
             installOutsidePopupClose();
         } finally {
             requestAnimationFrame(() => { suppressObserver = false; });
@@ -782,7 +449,10 @@
     function scheduleApply() {
         if (suppressObserver || applyPending) return;
         applyPending = true;
-        requestAnimationFrame(() => { applyPending = false; applyPagedInventory(); });
+        requestAnimationFrame(() => {
+            applyPending = false;
+            applyPagedInventory();
+        });
     }
 
     function observe() {
@@ -794,21 +464,23 @@
     }
 
     function install() {
-        injectStyle();
-        installPopupActions();
-        installPopupPagerActions();
-        installOutsidePopupClose();
+        window.NVIMP_VERSION = VERSION;
+        window.NVIPD_VERSION = VERSION;
+        window.NVIMP_setPage = setPage;
+        window.NVIMP_applyPagedInventory = applyPagedInventory;
+        window.NVIMP_closeInventoryPopup = closeInventoryPopup;
+        window.NVIPR_applyPopupRework = applyPagedInventory;
+        window.NVIMP_moveSelectedToPage = function () {
+            console.warn("[NightVenture] NVIMP_moveSelectedToPage est legacy; utiliser le popup intégré.");
+        };
+
         installDirectDrag();
+        installOutsidePopupClose();
         observe();
         scheduleApply();
         setTimeout(() => { observe(); scheduleApply(); }, 250);
+        console.log("Inventory_Mobile_Paged.js charge — " + VERSION);
     }
-
-    window.NVIMP_setPage = setPage;
-    window.NVIMP_applyPagedInventory = applyPagedInventory;
-    window.NVIMP_moveSelectedToPage = moveSelectedToPage;
-    window.NVIMP_closeInventoryPopup = closeInventoryPopup;
-    window.NVIPR_applyPopupRework = applyPagedInventory;
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install);
     else install();
