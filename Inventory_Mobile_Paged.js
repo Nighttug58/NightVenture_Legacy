@@ -1,4 +1,4 @@
-/* NightVenture — inventaire mobile paginé + déplacement direct */
+/* NightVenture — inventaire mobile paginé + popup intégré */
 (function () {
     "use strict";
 
@@ -22,6 +22,55 @@
     function pageStart(page) { return Math.max(0, Number(page) || 0) * SLOTS_PER_PAGE; }
     function currentPage() { Game.ui.nvInventairePage ??= 0; return Math.max(0, Number(Game.ui.nvInventairePage) || 0); }
     function label(i) { return PAGE_LABELS[i] || String(i + 1); }
+
+    function escapeHtml(value) {
+        if (typeof echapperHTML === "function") return echapperHTML(value);
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function selectorForItem(id) {
+        const raw = String(id || "");
+        const escaped = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(raw) : raw.replace(/\\/g, "\\\\").replace(/\"/g, "\\\"");
+        return `.nvi-layout--inventory .nvi-item[data-nvi-item-id="${escaped}"]`;
+    }
+
+    function objectData(id) {
+        if (typeof trouverObjet === "function") return trouverObjet(id);
+        return Game?.cache?.objetsParId?.[id] || null;
+    }
+
+    function objectName(id) { return objectData(id)?.nom || id; }
+    function isFavorite(id) { return (Game?.data?.personnage?.favoris || []).includes(id); }
+
+    function isLocked(id) {
+        const item = itemData(id);
+        if (!item) return false;
+        const map = Game?.data?.personnage?.inventaireVerrous || {};
+        const itemKey = key(item);
+        if (Object.prototype.hasOwnProperty.call(map, itemKey)) return Boolean(map[itemKey]);
+        return Boolean(item.verrouille || item.locked || item.bloque);
+    }
+
+    function objectIcon(objet) {
+        if (objet?.image) return `<img src="${escapeHtml(objet.image)}" alt="${escapeHtml(objet.nom || "Objet")}">`;
+        return `<span class="nvi-item__text-icon">OBJ</span>`;
+    }
+
+    function objectDetails(objet) {
+        if (!objet) return "";
+        if (typeof creerDetailsObjetInventaire === "function") return creerDetailsObjetInventaire(objet);
+        if (typeof creerDetailsObjet === "function") return creerDetailsObjet(objet);
+        const stats = [
+            ["ATK", "attaque"], ["DEF", "defense"], ["ATK MAGIC", "attaqueMagique"], ["DEF MAGIC", "defenseMagique"],
+            ["PV", "pvMax"], ["MANA", "manaMax"], ["FOR", "force"], ["DEX", "dexterite"], ["INT", "intelligence"], ["VIT", "vitalite"]
+        ];
+        return stats.filter(([, stat]) => objet[stat]).map(([label, stat]) => `${label} +${objet[stat]}`).join(" ");
+    }
 
     function setPage(page) {
         Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
@@ -126,7 +175,8 @@
             .nvimp-pager,.nvimp-popup-pager{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}.nvimp-pager{margin:8px 0 10px}.nvimp-popup-pager{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.10)}.nvimp-popup-pager__label{width:100%;color:var(--text-muted,#c7bdad);font-size:.68rem;font-weight:900;letter-spacing:.04em;text-align:center;text-transform:uppercase}.nvimp-page-btn{width:36px!important;min-width:36px!important;max-width:36px!important;min-height:30px!important;padding:4px 0!important;border-radius:999px!important;font-size:.74rem!important;font-weight:900!important;line-height:1!important}.nvimp-page-btn.is-active{border-color:rgba(245,211,122,.65)!important;color:#f5d37a!important;box-shadow:0 0 12px rgba(245,211,122,.18)!important}
             .nvi-toolbar.nvimp-toolbar-compact{padding:10px!important}.nvi-toolbar.nvimp-toolbar-compact .nvi-toolbar__top{margin-bottom:8px!important}.nvimp-toolbar-toggle{width:100%!important;min-height:34px!important;margin:2px 0 0!important;border-radius:999px!important;font-size:.78rem!important;font-weight:900!important}.nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-toolbar__search-row,.nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-filters{display:none!important}.nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-toolbar__search-row{display:grid!important;margin-top:8px!important}.nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-filters{display:flex!important;max-height:31dvh;overflow:auto;padding-top:8px}.nvi-toolbar.nvimp-toolbar-compact .nvi-filter{flex:1 1 calc(50% - 6px);min-height:32px!important}
             .nvi-layout--inventory.nvimp-no-details{grid-template-columns:minmax(0,1fr)!important}.nvi-layout--inventory .nvi-details:has(.nvi-details__empty){display:none!important}.nvi-layout--inventory .nvi-panel__title{display:none!important;margin:0!important}.nvi-layout--inventory .nvi-grid--inventory{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;touch-action:manipulation}.nvi-layout--inventory .nvi-slot{min-height:58px!important;border-radius:12px!important;pointer-events:auto!important}.nvi-layout--inventory .nvi-slot.nvimp-touch-target{border-color:rgba(245,211,122,.70)!important;box-shadow:0 0 14px rgba(245,211,122,.16)!important}.nvi-layout--inventory .nvi-item{border-radius:11px!important;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.nvi-layout--inventory .nvi-item *,.nvi-layout--inventory .nvi-item img{pointer-events:none;-webkit-user-drag:none;user-drag:none}.nvi-layout--inventory .nvi-item.nvimp-moving{outline:2px solid #f5d37a!important;outline-offset:-2px;filter:brightness(1.08);opacity:.34}.nvi-layout--inventory .nvi-item__icon img{width:86%!important;height:86%!important}.nvi-layout--inventory .nvi-item__text-icon{font-size:.72rem!important}.nvi-layout--inventory .nvi-item__favorite,.nvi-layout--inventory .nvi-item__lock,.nvi-layout--inventory .nvi-item__qty{font-size:.52rem!important;padding:1px 3px!important}
-            .nvimp-drag-ghost{position:fixed!important;left:0!important;top:0!important;z-index:999999!important;pointer-events:none!important;opacity:0;border-radius:12px!important;transform-origin:center center!important;will-change:transform!important;filter:none!important;box-shadow:none!important;background:rgba(28,24,20,.96)!important;border:1px solid rgba(245,211,122,.45)!important;contain:layout style paint!important;display:flex!important;align-items:center!important;justify-content:center!important}.nvimp-drag-ghost.is-visible{opacity:.98!important}.nvimp-drag-ghost *{pointer-events:none!important;transition:none!important;animation:none!important}.nvimp-grid-footer{display:flex;justify-content:flex-start;align-items:center;margin-top:8px;min-height:24px}.nvimp-gold{display:inline-flex;align-items:center;justify-content:flex-start;min-height:24px;padding:4px 10px;border:1px solid rgba(245,211,122,.22);border-radius:999px;background:rgba(0,0,0,.18);color:#f5d37a;font-size:.78rem;font-weight:900;letter-spacing:.02em}@media(max-width:380px){.nvi-layout--inventory .nvi-slot{min-height:52px!important}.nvi-layout--inventory .nvi-grid--inventory{gap:5px!important}.nvimp-page-btn{width:32px!important;min-width:32px!important;max-width:32px!important;min-height:28px!important;font-size:.68rem!important}}
+            .nvimp-drag-ghost{position:fixed!important;left:0!important;top:0!important;z-index:999999!important;pointer-events:none!important;opacity:0;border-radius:12px!important;transform-origin:center center!important;will-change:transform!important;filter:none!important;box-shadow:none!important;background:rgba(28,24,20,.96)!important;border:1px solid rgba(245,211,122,.45)!important;contain:layout style paint!important;display:flex!important;align-items:center!important;justify-content:center!important}.nvimp-drag-ghost.is-visible{opacity:.98!important}.nvimp-drag-ghost *{pointer-events:none!important;transition:none!important;animation:none!important}
+            .nvi-details.nvimp-details-popup.nvipr-popup{position:fixed!important;left:max(10px,env(safe-area-inset-left))!important;right:max(10px,env(safe-area-inset-right))!important;top:calc(12px + env(safe-area-inset-top))!important;bottom:auto!important;z-index:1200!important;width:auto!important;height:auto!important;max-height:none!important;overflow:visible!important;margin:0!important;padding:12px!important;border-radius:18px!important;background:rgba(12,10,9,.96)!important;border:1px solid rgba(245,211,122,.16)!important;box-shadow:0 18px 44px rgba(0,0,0,.58)!important;backdrop-filter:blur(5px)!important;-webkit-backdrop-filter:blur(5px)!important;opacity:1!important;pointer-events:auto!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvimp-popup-close{position:absolute!important;top:8px!important;right:8px!important;width:28px!important;min-width:28px!important;max-width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;border-radius:8px!important;font-size:1rem!important;font-weight:900!important;line-height:1!important;z-index:3!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__header{display:grid!important;grid-template-columns:54px minmax(0,1fr)!important;gap:10px!important;align-items:center!important;min-height:56px!important;margin:0 36px 10px 0!important;padding:0!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__icon{width:54px!important;height:54px!important;border-radius:13px!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__header h3{margin:0!important;font-size:.94rem!important;line-height:1.1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__header p{margin:0!important;color:#c7bdad!important;font-size:.72rem!important;font-weight:850!important;line-height:1.18!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvipr-meta-line{display:block!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__stats{display:block!important;margin:8px 0!important;padding:8px 9px!important;border-radius:12px!important;background:rgba(245,211,122,.08)!important;border:1px solid rgba(245,211,122,.12)!important;color:#f5d37a!important;font-size:.78rem!important;font-weight:850!important;line-height:1.32!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__description{margin:8px 0 10px!important;color:#d3cabd!important;font-size:.78rem!important;line-height:1.34!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__actions{display:grid!important;grid-template-columns:1fr!important;gap:0!important;margin:0!important;padding:0!important;border:0!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__actions button:not(.nvipr-secondary-action){width:100%!important;min-height:34px!important;padding:7px 10px!important;border-radius:11px!important;font-size:.76rem!important;font-weight:900!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvipr-secondary-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-top:8px!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvipr-secondary-row button,.nvi-details.nvimp-details-popup.nvipr-popup .nvipr-secondary-row .nvi-lock-toggle{width:100%!important;min-height:31px!important;padding:6px 8px!important;border-radius:10px!important;font-size:.72rem!important;font-weight:850!important;line-height:1.05!important;margin:0!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-lock-toggle__icon{display:none!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-danger{display:block!important;width:100%!important;min-height:32px!important;margin:8px 0 0!important;padding:6px 10px!important;border-radius:10px!important;border-color:rgba(255,90,90,.52)!important;background:rgba(145,28,28,.58)!important;color:#ffd6d6!important;font-size:.74rem!important;font-weight:900!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-delete-confirm{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin-top:8px!important}.nvi-details.nvimp-details-popup.nvipr-popup .nvi-delete-confirm span{grid-column:1/-1!important;font-size:.76rem!important;color:#ffd6d6!important;text-align:center!important}@media(min-width:720px){.nvi-details.nvimp-details-popup.nvipr-popup{left:50%!important;right:auto!important;width:min(430px,calc(100vw - 24px))!important;transform:translateX(-50%)!important}}.nvimp-grid-footer{display:flex;justify-content:flex-start;align-items:center;margin-top:8px;min-height:24px}.nvimp-gold{display:inline-flex;align-items:center;justify-content:flex-start;min-height:24px;padding:4px 10px;border:1px solid rgba(245,211,122,.22);border-radius:999px;background:rgba(0,0,0,.18);color:#f5d37a;font-size:.78rem;font-weight:900;letter-spacing:.02em}@media(max-width:380px){.nvi-layout--inventory .nvi-slot{min-height:52px!important}.nvi-layout--inventory .nvi-grid--inventory{gap:5px!important}.nvimp-page-btn{width:32px!important;min-width:32px!important;max-width:32px!important;min-height:28px!important;font-size:.68rem!important}}
         `;
         document.head.appendChild(style);
     }
@@ -183,6 +233,272 @@
             pager.appendChild(button);
         }
         return pager;
+    }
+
+    function findLiveDetails() {
+        return Array.from(document.querySelectorAll(".nvi-layout--inventory > .nvi-details"))
+            .find(panel => !panel.querySelector(".nvi-details__empty")) || null;
+    }
+
+    function refreshItemQuantity(id) {
+        const item = itemData(id);
+        document.querySelectorAll(selectorForItem(id)).forEach(button => {
+            const quantity = Number(item?.quantite || 0);
+            let badge = button.querySelector(".nvi-item__qty");
+            if (quantity > 1) {
+                if (!badge) {
+                    badge = document.createElement("span");
+                    badge.className = "nvi-item__qty";
+                    button.appendChild(badge);
+                }
+                badge.textContent = String(quantity);
+            } else if (badge) badge.remove();
+        });
+    }
+
+    function removeGridItem(id) {
+        document.querySelectorAll(selectorForItem(id)).forEach(button => {
+            const slot = button.closest(".nvi-slot");
+            button.remove();
+            if (slot) {
+                slot.classList.remove("nvi-slot--occupied", "nvi-slot--locked");
+                if (!slot.children.length) slot.textContent = "";
+            }
+        });
+    }
+
+    function refreshGridItemState(id) {
+        const item = itemData(id);
+        if (!item) {
+            removeGridItem(id);
+            return;
+        }
+        const favorite = isFavorite(id);
+        const locked = isLocked(id);
+        document.querySelectorAll(selectorForItem(id)).forEach(button => {
+            button.classList.toggle("nvi-item--selected", true);
+            button.classList.toggle("nvi-item--locked", locked);
+            button.draggable = false;
+            let fav = button.querySelector(".nvi-item__favorite");
+            if (favorite && !fav) {
+                fav = document.createElement("span");
+                fav.className = "nvi-item__favorite";
+                fav.textContent = "Favori";
+                button.prepend(fav);
+            }
+            if (!favorite && fav) fav.remove();
+            let lock = button.querySelector(".nvi-item__lock");
+            if (locked && !lock) {
+                lock = document.createElement("span");
+                lock.className = "nvi-item__lock";
+                lock.textContent = "Lock";
+                button.prepend(lock);
+            }
+            if (!locked && lock) lock.remove();
+            button.closest(".nvi-slot")?.classList.toggle("nvi-slot--locked", locked);
+        });
+        refreshItemQuantity(id);
+    }
+
+    function refreshPopupState(id) {
+        const popup = findLiveDetails();
+        if (!popup || popup.dataset.nviprItemId !== id) return;
+        const favoriteButton = popup.querySelector("[data-nvipr-action='favorite']");
+        if (favoriteButton) favoriteButton.textContent = isFavorite(id) ? "Retirer favori" : "Ajouter favori";
+        const lock = popup.querySelector("[data-nvipr-action='lock']");
+        if (lock) {
+            const locked = isLocked(id);
+            lock.classList.toggle("nvi-lock-toggle--locked", locked);
+            lock.classList.toggle("nvi-lock-toggle--unlocked", !locked);
+            lock.querySelector(".nvi-lock-toggle__text")?.replaceChildren(document.createTextNode(locked ? "Bloqué" : "Libre"));
+        }
+    }
+
+    function updateAfterStackMutation(id) {
+        if (itemData(id)) refreshGridItemState(id);
+        else removeGridItem(id);
+    }
+
+    function toggleFavoriteNoRedraw(id) {
+        Game.data.personnage.favoris ??= [];
+        if (isFavorite(id)) Game.data.personnage.favoris = Game.data.personnage.favoris.filter(entry => entry !== id);
+        else Game.data.personnage.favoris.push(id);
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup favorite");
+        refreshGridItemState(id);
+        refreshPopupState(id);
+    }
+
+    function toggleLockNoRedraw(id) {
+        const item = itemData(id);
+        if (!item) return;
+        const locked = !isLocked(id);
+        Game.data.personnage.inventaireVerrous ??= {};
+        Game.data.personnage.inventaireVerrous[key(item)] = locked;
+        item.verrouille = locked;
+        delete item.locked;
+        delete item.bloque;
+        if (typeof ajouterJournal === "function") ajouterJournal(locked ? `${objectName(id)} est bloqué sur sa case.` : `${objectName(id)} est libre.`);
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup lock");
+        refreshGridItemState(id);
+        refreshPopupState(id);
+    }
+
+    function equipNoRedraw(id, slot = null) {
+        if (typeof equiperObjet === "function") equiperObjet(id, slot);
+        else if (typeof equiperObjetInterface === "function") equiperObjetInterface(id, slot);
+        updateAfterStackMutation(id);
+        closeInventoryPopup();
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup equip");
+        if (typeof afficherPersonnage === "function") afficherPersonnage();
+        if (typeof afficherJournal === "function") afficherJournal();
+    }
+
+    function useNoRedraw(id) {
+        const obj = objectData(id);
+        if (!obj || obj.type !== "consommable" || typeof appliquerEffetObjet !== "function") return;
+        const applied = appliquerEffetObjet(obj);
+        if (!applied) {
+            if (typeof afficherJournal === "function") afficherJournal();
+            return;
+        }
+        if (typeof retirerObjetInventaire === "function") retirerObjetInventaire(id, 1);
+        if (typeof corrigerRessources === "function") corrigerRessources();
+        updateAfterStackMutation(id);
+        closeInventoryPopup();
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup use");
+        if (typeof afficherPersonnage === "function") afficherPersonnage();
+        if (typeof afficherJournal === "function") afficherJournal();
+    }
+
+    function renderDeleteConfirm(popup, id) {
+        const existing = popup.querySelector(".nvi-danger, .nvi-delete-confirm");
+        if (!existing) return;
+        const box = document.createElement("div");
+        box.className = "nvi-delete-confirm";
+        box.innerHTML = `<span>Supprimer toute la pile ?</span><button type="button" data-nvipr-action="delete-confirm" data-nvipr-id="${escapeHtml(id)}">Confirmer</button><button type="button" data-nvipr-action="delete-cancel" data-nvipr-id="${escapeHtml(id)}">Annuler</button>`;
+        existing.replaceWith(box);
+    }
+
+    function renderDeleteButton(popup, id) {
+        const existing = popup.querySelector(".nvi-delete-confirm");
+        if (!existing) return;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "nvi-danger";
+        button.dataset.nviprAction = "delete-open";
+        button.dataset.nviprId = id;
+        button.textContent = "Jeter l'objet";
+        existing.replaceWith(button);
+    }
+
+    function deleteStackNoRedraw(id) {
+        const item = itemData(id);
+        if (!item) return;
+        const qty = Number(item.quantite || 1);
+        const itemKey = key(item);
+        Game.data.personnage.inventaire = inv().filter(entry => entry !== item && entry.id !== id);
+        Game.data.personnage.favoris = (Game.data.personnage.favoris || []).filter(entry => entry !== id);
+        if (Game.data.personnage.inventaireSlots) delete Game.data.personnage.inventaireSlots[itemKey];
+        if (Game.data.personnage.inventaireVerrous) delete Game.data.personnage.inventaireVerrous[itemKey];
+        removeGridItem(id);
+        if (typeof ajouterJournal === "function") ajouterJournal(`${objectName(id)} x${qty} supprimé de l'inventaire.`);
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup delete");
+        closeInventoryPopup();
+        if (typeof afficherJournal === "function") afficherJournal();
+    }
+
+    function renderInventoryPopup(id, clickedItem = null) {
+        const item = itemData(id);
+        const obj = objectData(id);
+        const layout = document.querySelector(".nvi-layout--inventory");
+        if (!item || !obj || !layout) return;
+        document.querySelectorAll(".nvi-layout--inventory .nvi-item--selected").forEach(element => element.classList.remove("nvi-item--selected"));
+        if (clickedItem) clickedItem.classList.add("nvi-item--selected");
+
+        let popup = findLiveDetails() || layout.querySelector(":scope > .nvi-details") || document.createElement("aside");
+        if (!popup.parentElement) layout.appendChild(popup);
+
+        const rarete = obj.rarete || "commun";
+        const qty = Number(item.quantite || 1);
+        const stats = objectDetails(obj);
+        const favorite = isFavorite(id);
+        const locked = isLocked(id);
+
+        popup.className = "nvi-details nvimp-details-popup nvipr-popup";
+        popup.dataset.nviprItemId = id;
+        popup.innerHTML = `
+            <button type="button" class="nvimp-popup-close">×</button>
+            <div class="nvi-details__header">
+                <div class="nvi-details__icon nvi-item--${escapeHtml(rarete)}">${objectIcon(obj)}</div>
+                <div>
+                    <h3 class="${escapeHtml(rarete)}">${escapeHtml(obj.nom || id)}</h3>
+                    <p data-nvipr-meta="1"><span class="nvipr-meta-line">${escapeHtml(obj.type || "divers")} · ${escapeHtml(obj.rarete || "commun")}</span><span class="nvipr-meta-line">Quantité : ${qty}</span></p>
+                </div>
+            </div>
+            ${stats ? `<p class="nvi-details__stats">${stats}</p>` : ""}
+            <p class="nvi-details__description">${escapeHtml(obj.description || "Aucune description.")}</p>
+            <div class="nvi-details__actions">
+                ${obj.type === "consommable" ? `<button type="button" data-nvipr-action="use" data-nvipr-id="${escapeHtml(id)}">Utiliser</button>` : obj.type === "bague" ? `<button type="button" data-nvipr-action="equip-ring1" data-nvipr-id="${escapeHtml(id)}">Anneau I</button><button type="button" data-nvipr-action="equip-ring2" data-nvipr-id="${escapeHtml(id)}">Anneau II</button>` : `<button type="button" data-nvipr-action="equip" data-nvipr-id="${escapeHtml(id)}">Équiper</button>`}
+            </div>
+            <div class="nvipr-secondary-row">
+                <button type="button" class="nvipr-secondary-action" data-nvipr-action="favorite" data-nvipr-id="${escapeHtml(id)}">${favorite ? "Retirer favori" : "Ajouter favori"}</button>
+                <button type="button" class="nvi-lock-toggle ${locked ? "nvi-lock-toggle--locked" : "nvi-lock-toggle--unlocked"}" data-nvipr-action="lock" data-nvipr-id="${escapeHtml(id)}"><span class="nvi-lock-toggle__text">${locked ? "Bloqué" : "Libre"}</span></button>
+            </div>
+            <button type="button" class="nvi-danger" data-nvipr-action="delete-open" data-nvipr-id="${escapeHtml(id)}">Jeter l'objet</button>
+        `;
+        layout.classList.remove("nvimp-no-details");
+        enhancePopupPager(Math.max(1, Math.ceil((Math.max(...Array.from(document.querySelectorAll('.nvi-layout--inventory .nvi-slot')).map(slot => slotNo(slot, 0))) + 1) / SLOTS_PER_PAGE)), currentPage());
+    }
+
+    function handlePopupAction(event) {
+        if (Game?.ui?.vueActive !== "inventaire") return;
+        const close = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-close");
+        if (close) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            closeInventoryPopup();
+            return;
+        }
+        const button = event.target?.closest?.(".nvi-details.nvipr-popup [data-nvipr-action]");
+        if (!button) return;
+        const popup = button.closest(".nvi-details.nvipr-popup");
+        const id = button.dataset.nviprId || popup?.dataset?.nviprItemId;
+        if (!id) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        const action = button.dataset.nviprAction;
+        if (action === "favorite") toggleFavoriteNoRedraw(id);
+        else if (action === "lock") toggleLockNoRedraw(id);
+        else if (action === "delete-open") renderDeleteConfirm(popup, id);
+        else if (action === "delete-cancel") renderDeleteButton(popup, id);
+        else if (action === "delete-confirm") deleteStackNoRedraw(id);
+        else if (action === "equip") equipNoRedraw(id, null);
+        else if (action === "equip-ring1") equipNoRedraw(id, "bague1");
+        else if (action === "equip-ring2") equipNoRedraw(id, "bague2");
+        else if (action === "use") useNoRedraw(id);
+    }
+
+    function handleItemSelection(event) {
+        if (Game?.ui?.vueActive !== "inventaire") return;
+        if (Date.now() < suppressClickUntil) return;
+        if (document.querySelector(".nvi-slot.nvimp-touch-target")) return;
+        const button = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]");
+        if (!button) return;
+        const id = button.dataset.nviItemId;
+        if (!id) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        renderInventoryPopup(id, button);
+    }
+
+    function installPopupActions() {
+        if (window.__NVIMP_POPUP_ACTIONS) return;
+        window.__NVIMP_POPUP_ACTIONS = true;
+        document.addEventListener("click", handlePopupAction, true);
+        document.addEventListener("click", handleItemSelection, true);
     }
 
     function installPopupPagerActions() {
@@ -482,6 +798,7 @@
             neutralizeNativeDragTargets(grid);
             ensureGoldFooter();
             enhancePopupPager(pageCount, page);
+            installPopupActions();
             installDirectDrag();
             installPopupPagerActions();
             installOutsidePopupClose();
@@ -507,6 +824,7 @@
     function install() {
         injectStyle();
         installLegacyInventoryGuards();
+        installPopupActions();
         installPopupPagerActions();
         installOutsidePopupClose();
         installDirectDrag();
@@ -519,6 +837,7 @@
     window.NVIMP_applyPagedInventory = applyPagedInventory;
     window.NVIMP_moveSelectedToPage = moveSelectedToPage;
     window.NVIMP_closeInventoryPopup = closeInventoryPopup;
+    window.NVIPR_applyPopupRework = applyPagedInventory;
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install);
     else install();
