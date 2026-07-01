@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.22-inventory-interaction-health";
+    const VERSION = "v0.9.9.25-inventory-interaction-health-popup";
     let lastStatus = null;
 
     function inventoryViewActive() {
@@ -14,13 +14,21 @@
             entrypoint: Boolean(window.NVI_INTERACTION_VERSION),
             backend: Boolean(window.NVIMP_applyPagedInventory || window.NVIPR_applyPopupRework),
             bridge: Boolean(window.NVI_INSTANCE_METADATA_BRIDGE_VERSION),
+            popup: Boolean(window.NVI_INTERACTION_POPUP_VERSION || window.NVI_INTERACTION_POPUP_SRC === "integrated"),
             actions: Boolean(window.NVI_INSTANCE_ACTIONS_VERSION),
             diagnostics: VERSION
         };
     }
 
     function sameStatus(a, b) {
-        return Boolean(a && b && a.entrypoint === b.entrypoint && a.backend === b.backend && a.bridge === b.bridge && a.actions === b.actions);
+        return Boolean(
+            a && b &&
+            a.entrypoint === b.entrypoint &&
+            a.backend === b.backend &&
+            a.bridge === b.bridge &&
+            a.popup === b.popup &&
+            a.actions === b.actions
+        );
     }
 
     function checkHealth(context = "manual") {
