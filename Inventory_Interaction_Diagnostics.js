@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.25-inventory-interaction-health-popup";
+    const VERSION = "v0.9.9.28-inventory-interaction-health-paged-drag";
     let lastStatus = null;
 
     function inventoryViewActive() {
@@ -13,6 +13,7 @@
         return {
             entrypoint: Boolean(window.NVI_INTERACTION_VERSION),
             backend: Boolean(window.NVIMP_applyPagedInventory || window.NVIPR_applyPopupRework),
+            pagedDrag: Boolean(window.NVIPD_VERSION),
             bridge: Boolean(window.NVI_INSTANCE_METADATA_BRIDGE_VERSION),
             popup: Boolean(window.NVI_INTERACTION_POPUP_VERSION || window.NVI_INTERACTION_POPUP_SRC === "integrated"),
             actions: Boolean(window.NVI_INSTANCE_ACTIONS_VERSION),
@@ -25,6 +26,7 @@
             a && b &&
             a.entrypoint === b.entrypoint &&
             a.backend === b.backend &&
+            a.pagedDrag === b.pagedDrag &&
             a.bridge === b.bridge &&
             a.popup === b.popup &&
             a.actions === b.actions
