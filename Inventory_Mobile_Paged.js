@@ -94,6 +94,13 @@
         return selected?.dataset?.nviItemId || null;
     }
 
+    function closeInventoryPopup() {
+        document.querySelectorAll(".nvi-layout--inventory .nvi-item--selected").forEach(item => item.classList.remove("nvi-item--selected"));
+        const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
+        if (popup) popup.remove();
+        document.querySelector(".nvi-layout--inventory")?.classList.add("nvimp-no-details");
+    }
+
     function moveSelectedToPage(page) {
         const id = selectedItemId();
         if (!id) return;
@@ -197,6 +204,19 @@
         };
         document.addEventListener("pointerdown", handle, true);
         document.addEventListener("click", handle, true);
+    }
+
+    function installOutsidePopupClose() {
+        if (window.__NVIMP_OUTSIDE_POPUP_CLOSE) return;
+        window.__NVIMP_OUTSIDE_POPUP_CLOSE = true;
+        document.addEventListener("click", event => {
+            if (Game?.ui?.vueActive !== "inventaire") return;
+            const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
+            if (!popup) return;
+            if (event.target?.closest?.(".nvi-details.nvipr-popup")) return;
+            if (Date.now() < suppressClickUntil) return;
+            closeInventoryPopup();
+        }, false);
     }
 
     function ensureSlotRange(grid, first, count) {
@@ -382,6 +402,7 @@
             enhancePopupPager(pageCount, page);
             installDirectDrag();
             installPopupPagerActions();
+            installOutsidePopupClose();
         } finally {
             requestAnimationFrame(() => { suppressObserver = false; });
         }
@@ -404,6 +425,7 @@
     function install() {
         injectStyle();
         installPopupPagerActions();
+        installOutsidePopupClose();
         installDirectDrag();
         observe();
         scheduleApply();
