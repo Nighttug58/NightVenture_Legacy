@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const NV_INVENTORY_GRID_VERSION = "v0.9.9.11-no-player-legacy-ui";
+    const NV_INVENTORY_GRID_VERSION = "v0.9.9.12-no-dead-player-actions";
 
     const NVI_CONFIG = {
         inventorySlots: 72,
@@ -13,7 +13,6 @@
     const NVI_STATE = {
         selection: null,
         drag: null,
-        deleteConfirmId: null,
         quantity: 1
     };
 
@@ -167,12 +166,6 @@
         delete item.bloque;
     }
 
-    function NVI_supprimerVerrouPersiste(itemOuCle) {
-        const carte = NVI_assurerCarteVerrous();
-        const cle = typeof itemOuCle === "string" ? itemOuCle : NVI_cleItemInventaire(itemOuCle);
-        if (cle) delete carte[cle];
-    }
-
     function NVI_lireSlotPersiste(item) {
         const carte = NVI_assurerCarteSlots();
         const cle = NVI_cleItemInventaire(item);
@@ -188,12 +181,6 @@
         if (!cle || !Number.isInteger(slotCorrige) || slotCorrige < 0) return;
         item.slot = slotCorrige;
         carte[cle] = slotCorrige;
-    }
-
-    function NVI_supprimerSlotPersiste(itemOuCle) {
-        const carte = NVI_assurerCarteSlots();
-        const cle = typeof itemOuCle === "string" ? itemOuCle : NVI_cleItemInventaire(itemOuCle);
-        if (cle) delete carte[cle];
     }
 
     function NVI_synchroniserVerrousInventaire() {
@@ -299,7 +286,6 @@
         if (contexte === "inventaire" && source === "player") return;
         const cle = NVI_selectionKey(contexte, source, idObjet);
         NVI_STATE.selection = NVI_STATE.selection === cle ? null : cle;
-        NVI_STATE.deleteConfirmId = null;
         NVI_redessinerVueActive();
     }
 
@@ -564,7 +550,6 @@
         NVI_assurerEtatFiltres();
         NVI_normaliserSlotsInventaire();
         NVI_STATE.selection = null;
-        NVI_STATE.deleteConfirmId = null;
         NVI_STATE.quantity = 1;
         if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(NVI_vueInventaireHTML());
     }
@@ -580,7 +565,6 @@
         NVI_assurerEtatFiltres();
         NVI_normaliserSlotsInventaire();
         NVI_STATE.selection = null;
-        NVI_STATE.deleteConfirmId = null;
         NVI_STATE.quantity = 1;
         if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(NVI_vueMarchandHTML());
     }
@@ -740,28 +724,6 @@
         NVI_redessinerVueActive();
     }
 
-    function NVI_toggleFavori(idObjet) {
-        Game.data.personnage.favoris ??= [];
-        if (NVI_estFavori(idObjet)) Game.data.personnage.favoris = Game.data.personnage.favoris.filter(id => id !== idObjet);
-        else Game.data.personnage.favoris.push(idObjet);
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_equiperObjetSelectionne(idObjet, emplacement = null) {
-        if (typeof equiperObjetInterface === "function") equiperObjetInterface(idObjet, emplacement);
-        else if (typeof equiperObjet === "function") equiperObjet(idObjet, emplacement);
-        NVI_STATE.selection = null;
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory grid equip");
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_utiliserObjetSelectionne(idObjet) {
-        if (typeof utiliserObjet === "function") utiliserObjet(idObjet);
-        NVI_STATE.selection = null;
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory grid use");
-        NVI_redessinerVueActive();
-    }
-
     function NVI_acheterSelection(idObjet) {
         if (typeof acheterObjet === "function") acheterObjet(idObjet, NVI_STATE.quantity || 1);
         NVI_STATE.quantity = 1;
@@ -776,46 +738,9 @@
         NVI_redessinerVueActive();
     }
 
-    function NVI_demanderSuppression(idObjet) {
-        NVI_STATE.deleteConfirmId = idObjet;
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_annulerSuppression() {
-        NVI_STATE.deleteConfirmId = null;
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_supprimerStack(idObjet) {
-        const item = (Game.data.personnage.inventaire || []).find(entree => entree.id === idObjet);
-        if (!item) return;
-        const quantite = Number(item.quantite || 1);
-        const itemKey = NVI_cleItemInventaire(item);
-        Game.data.personnage.inventaire = (Game.data.personnage.inventaire || []).filter(entree => entree !== item);
-        const sameRemaining = (Game.data.personnage.inventaire || []).some(entree => entree.id === idObjet);
-        if (!sameRemaining) Game.data.personnage.favoris = (Game.data.personnage.favoris || []).filter(id => id !== idObjet);
-        NVI_supprimerSlotPersiste(itemKey);
-        NVI_supprimerVerrouPersiste(itemKey);
-        NVI_journal(`${NVI_objetNom(idObjet)} x${quantite} supprime de l'inventaire.`);
-        NVI_STATE.selection = null;
-        NVI_STATE.deleteConfirmId = null;
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory grid delete one stack");
-        NVI_redessinerVueActive();
-    }
-
     function NVI_doubleClickItem(contexte, source, idObjet) {
         if (contexte === "inventaire" && source === "player") return false;
-        const objet = NVI_objet(idObjet);
-        if (!objet) return;
-        if (source === "merchant" || contexte === "marchand") {
-            NVI_selectionner(contexte, source, idObjet);
-            return;
-        }
-        if (objet.type === "consommable") {
-            NVI_utiliserObjetSelectionne(idObjet);
-            return;
-        }
-        NVI_equiperObjetSelectionne(idObjet);
+        NVI_selectionner(contexte, source, idObjet);
     }
 
     function NVI_dragStart(event, idObjet, slot) {
@@ -948,14 +873,8 @@
     window.NVI_triAutomatiqueInventaire = NVI_triAutomatiqueInventaire;
     window.NVI_modifierQuantite = NVI_modifierQuantite;
     window.NVI_setQuantite = NVI_setQuantite;
-    window.NVI_toggleFavori = NVI_toggleFavori;
-    window.NVI_equiperObjetSelectionne = NVI_equiperObjetSelectionne;
-    window.NVI_utiliserObjetSelectionne = NVI_utiliserObjetSelectionne;
     window.NVI_acheterSelection = NVI_acheterSelection;
     window.NVI_vendreSelection = NVI_vendreSelection;
-    window.NVI_demanderSuppression = NVI_demanderSuppression;
-    window.NVI_annulerSuppression = NVI_annulerSuppression;
-    window.NVI_supprimerStack = NVI_supprimerStack;
     window.NVI_selectionner = NVI_selectionner;
     window.NVI_doubleClickItem = NVI_doubleClickItem;
     window.NVI_dragStart = NVI_dragStart;
