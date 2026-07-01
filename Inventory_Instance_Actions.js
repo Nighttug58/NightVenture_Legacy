@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.20-instance-actions-equip";
+    const VERSION = "v0.9.9.21-instance-actions-favorite";
     const MOVE_CLICK_SUPPRESS_MS = 240;
     const DUPLICATE_UNSAFE_ACTIONS = new Set([]);
     const duplicateWarnings = new Set();
@@ -11,6 +11,7 @@
     function inv() { return Array.isArray(window.Game?.data?.personnage?.inventaire) ? window.Game.data.personnage.inventaire : []; }
     function key(item) { return String(item?.uid || item?.instanceId || item?.id || ""); }
     function slotOf(item) { const n = Number(item?.slot); return Number.isInteger(n) && n >= 0 ? n : -1; }
+    function css(value) { const raw = String(value ?? ""); return window.CSS?.escape ? CSS.escape(raw) : raw.replace(/\\/g, "\\\\").replace(/\"/g, "\\\""); }
     function objectData(id) { return typeof window.trouverObjet === "function" ? window.trouverObjet(id) : window.Game?.cache?.objetsParId?.[id] || null; }
     function objectName(id) { return objectData(id)?.nom || id; }
     function journal(message) { if (typeof window.ajouterJournal === "function") window.ajouterJournal(message); }
@@ -18,11 +19,16 @@
 
     function popup() { return document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id]"); }
     function slotNode(slot) { return Array.from(document.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-slot")).find(node => Number(node.dataset.slot) === Number(slot)) || null; }
-    function itemNodeByKey(itemKey) { return document.querySelector(`.nvi-layout--inventory .nvi-item[data-nvi-item-key="${CSS.escape(itemKey)}"]`); }
+    function itemNodeByKey(itemKey) { return document.querySelector(`.nvi-layout--inventory .nvi-item[data-nvi-item-key="${css(itemKey)}"]`); }
+    function itemNodesById(id) { return Array.from(document.querySelectorAll(`.nvi-layout--inventory .nvi-item[data-nvi-item-id="${css(id)}"]`)); }
 
     function duplicateCount(id) {
         if (!id) return 0;
         return inv().filter(entry => entry?.id === id).length;
+    }
+
+    function isFavoriteId(id) {
+        return (window.Game?.data?.personnage?.favoris || []).includes(id);
     }
 
     function resolvePopupItem() {
@@ -45,6 +51,23 @@
     function redrawInventory() {
         if (typeof window.NVI_redessinerVueActive === "function") window.NVI_redessinerVueActive();
         else if (typeof window.NVIMP_applyPagedInventory === "function") window.NVIMP_applyPagedInventory();
+    }
+
+    function refreshFavoriteVisual(id, active) {
+        itemNodesById(id).forEach(node => {
+            let badge = node.querySelector(".nvi-item__favorite");
+            if (active && !badge) {
+                badge = document.createElement("span");
+                badge.className = "nvi-item__favorite";
+                badge.textContent = "Favori";
+                node.prepend(badge);
+            } else if (!active && badge) badge.remove();
+        });
+        const box = popup();
+        if (box?.dataset?.nviprItemId === id) {
+            const button = box.querySelector("[data-nvipr-action='favorite']");
+            if (button) button.textContent = active ? "Retirer favori" : "Ajouter favori";
+        }
     }
 
     function refreshPopupLockText(box, locked) {
@@ -96,6 +119,22 @@
         redrawInventory();
         if (typeof window.afficherPersonnage === "function") window.afficherPersonnage();
         if (typeof window.afficherJournal === "function") window.afficherJournal();
+    }
+
+    function handleFavorite(event) {
+        const resolved = resolvePopupItem();
+        if (!resolved) return false;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        window.Game.data.personnage.favoris ??= [];
+        const active = !isFavoriteId(resolved.id);
+        if (active) window.Game.data.personnage.favoris.push(resolved.id);
+        else window.Game.data.personnage.favoris = window.Game.data.personnage.favoris.filter(entry => entry !== resolved.id);
+        refreshFavoriteVisual(resolved.id, active);
+        journal(active ? `${objectName(resolved.id)} ajouté aux favoris.` : `${objectName(resolved.id)} retiré des favoris.`);
+        autosave("inventory object favorite");
+        return true;
     }
 
     function handleLock(event) {
@@ -276,7 +315,8 @@
         const actionButton = event.target?.closest?.(".nvi-details.nvipr-popup [data-nvipr-action]");
         if (actionButton) {
             const action = actionButton.dataset.nviprAction;
-            if (action === "lock") handleLock(event);
+            if (action === "favorite") handleFavorite(event);
+            else if (action === "lock") handleLock(event);
             else if (action === "delete-confirm") handleDeleteConfirm(event);
             else if (action === "use") handleUse(event);
             else if (action === "equip" || action === "equip-ring1" || action === "equip-ring2") handleEquip(event, action);
