@@ -2,7 +2,8 @@
 (function () {
     "use strict";
 
-    const SLOTS_PER_PAGE = 16;
+    const SLOTS_PER_PAGE = 30;
+    const MIN_MOBILE_SLOTS = 120;
     const PAGE_LABELS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
     let moveModeItemId = null;
     let longPressTimer = null;
@@ -129,7 +130,7 @@
         const items = inventory();
         if (items.length === 0) return;
 
-        const maxSlot = Math.max(71, ...items.map(item => Number(item.slot) || 0));
+        const maxSlot = Math.max(MIN_MOBILE_SLOTS - 1, ...items.map(item => Number(item.slot) || 0));
         const pageCount = Math.max(1, Math.ceil((maxSlot + 1) / SLOTS_PER_PAGE));
 
         for (let page = 0; page < pageCount; page++) {
@@ -180,13 +181,14 @@
             .nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-filters { display:flex!important; max-height:31dvh; overflow:auto; padding-top:8px; }
             .nvi-toolbar.nvimp-toolbar-compact .nvi-filter { flex:1 1 calc(50% - 6px); min-height:32px!important; }
 
-            .nvi-layout--inventory .nvi-grid--inventory { grid-template-columns:repeat(4,minmax(0,1fr))!important; gap:8px!important; touch-action:manipulation; }
-            .nvi-layout--inventory .nvi-slot { min-height:72px!important; border-radius:14px!important; }
+            .nvi-layout--inventory .nvi-grid--inventory { grid-template-columns:repeat(5,minmax(0,1fr))!important; gap:6px!important; touch-action:manipulation; }
+            .nvi-layout--inventory .nvi-slot { min-height:58px!important; border-radius:12px!important; }
             .nvi-layout--inventory .nvi-slot.nvimp-touch-target { border-color:rgba(245,211,122,.70)!important; box-shadow:0 0 14px rgba(245,211,122,.16)!important; }
-            .nvi-layout--inventory .nvi-item { border-radius:13px!important; touch-action:none; user-select:none; -webkit-user-select:none; }
+            .nvi-layout--inventory .nvi-item { border-radius:11px!important; touch-action:none; user-select:none; -webkit-user-select:none; }
             .nvi-layout--inventory .nvi-item.nvimp-moving { outline:2px solid #f5d37a!important; outline-offset:-2px; filter:brightness(1.2); }
-            .nvi-layout--inventory .nvi-item__icon img { width:88%!important; height:88%!important; }
-            .nvi-layout--inventory .nvi-item__text-icon { font-size:.78rem!important; }
+            .nvi-layout--inventory .nvi-item__icon img { width:86%!important; height:86%!important; }
+            .nvi-layout--inventory .nvi-item__text-icon { font-size:.72rem!important; }
+            .nvi-layout--inventory .nvi-item__favorite, .nvi-layout--inventory .nvi-item__lock, .nvi-layout--inventory .nvi-item__qty { font-size:.52rem!important; padding:1px 3px!important; }
             .nvimp-touch-hint { width:100%; margin:6px 0 0; color:#f5d37a; font-size:.72rem; font-weight:850; text-align:center; }
 
             .nvi-details.nvimp-details-popup {
@@ -238,7 +240,7 @@
             .nvi-details.nvimp-details-popup .nvi-quantity { justify-content:center; gap:8px!important; }
             .nvi-layout--inventory .nvi-details:not(.nvimp-details-popup) { display:none!important; }
             @media (min-width:901px) { .nvi-details.nvimp-details-popup { left:50%!important; right:auto!important; width:min(440px,calc(100vw - 24px))!important; transform:translateX(-50%); } }
-            @media (max-width:380px) { .nvi-layout--inventory .nvi-slot { min-height:64px!important; } .nvi-layout--inventory .nvi-grid--inventory { gap:6px!important; } .nvimp-page-btn { width:32px!important; min-width:32px!important; max-width:32px!important; min-height:28px!important; font-size:.68rem!important; } .nvi-details.nvimp-details-popup .nvi-details__actions, .nvi-details.nvimp-details-popup .nvi-delete-confirm { gap:8px!important; } }
+            @media (max-width:380px) { .nvi-layout--inventory .nvi-slot { min-height:52px!important; } .nvi-layout--inventory .nvi-grid--inventory { gap:5px!important; } .nvimp-page-btn { width:32px!important; min-width:32px!important; max-width:32px!important; min-height:28px!important; font-size:.68rem!important; } .nvi-details.nvimp-details-popup .nvi-details__actions, .nvi-details.nvimp-details-popup .nvi-delete-confirm { gap:8px!important; } }
         `;
         document.head.appendChild(style);
     }
@@ -314,7 +316,19 @@
         return pager;
     }
 
+    function ensureMobileSlotCount(grid) {
+        const slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
+        const highest = slots.reduce((max, slot) => Math.max(max, Number(slot.dataset.slot) || 0), -1);
+        for (let i = highest + 1; i < MIN_MOBILE_SLOTS; i++) {
+            const slot = document.createElement("div");
+            slot.className = "nvi-slot";
+            slot.dataset.slot = String(i);
+            grid.appendChild(slot);
+        }
+    }
+
     function applyPagerToGrid(grid) {
+        ensureMobileSlotCount(grid);
         const slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
         if (slots.length === 0) return { pageCount: 1, activePage: 0 };
         const pageCount = Math.max(1, Math.ceil(slots.length / SLOTS_PER_PAGE));
