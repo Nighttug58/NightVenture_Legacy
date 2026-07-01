@@ -2,8 +2,10 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.17-instance-actions";
+    const VERSION = "v0.9.9.18-instance-actions-guard-use-equip";
     const MOVE_CLICK_SUPPRESS_MS = 240;
+    const DUPLICATE_UNSAFE_ACTIONS = new Set(["use", "equip", "equip-ring1", "equip-ring2"]);
+    const duplicateWarnings = new Set();
     let suppressMoveClickUntil = 0;
 
     function inv() { return Array.isArray(window.Game?.data?.personnage?.inventaire) ? window.Game.data.personnage.inventaire : []; }
@@ -17,6 +19,11 @@
     function popup() { return document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id]"); }
     function slotNode(slot) { return Array.from(document.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-slot")).find(node => Number(node.dataset.slot) === Number(slot)) || null; }
     function itemNodeByKey(itemKey) { return document.querySelector(`.nvi-layout--inventory .nvi-item[data-nvi-item-key="${CSS.escape(itemKey)}"]`); }
+
+    function duplicateCount(id) {
+        if (!id) return 0;
+        return inv().filter(entry => entry?.id === id).length;
+    }
 
     function resolvePopupItem() {
         const box = popup();
@@ -102,6 +109,21 @@
         return true;
     }
 
+    function handleDuplicateUnsafeAction(event, action) {
+        if (!DUPLICATE_UNSAFE_ACTIONS.has(action)) return false;
+        const resolved = resolvePopupItem();
+        if (!resolved || duplicateCount(resolved.id) <= 1) return false;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        const warnKey = `${action}:${resolved.id}`;
+        if (!duplicateWarnings.has(warnKey)) {
+            duplicateWarnings.add(warnKey);
+            journal(`${objectName(resolved.id)} existe en plusieurs piles : action ${action} bloquée pour éviter de cibler la mauvaise pile.`);
+        }
+        return true;
+    }
+
     function firstFreeSlotInPage(page, movingItem) {
         const start = Math.max(0, Number(page) || 0) * 30;
         for (let slot = start; slot < start + 30; slot++) {
@@ -163,6 +185,7 @@
             const action = actionButton.dataset.nviprAction;
             if (action === "lock") handleLock(event);
             else if (action === "delete-confirm") handleDeleteConfirm(event);
+            else handleDuplicateUnsafeAction(event, action);
             return;
         }
         const pageButton = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-pager .nvimp-page-btn[data-nvimp-mode='move']");
