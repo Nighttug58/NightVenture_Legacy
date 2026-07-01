@@ -4,7 +4,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.28-paged-drag-ui";
+    const VERSION = "v0.9.9.30-paged-drag-ui";
     const SLOTS_PER_PAGE = 30;
     const MIN_SLOTS = 120;
     const DRAG_THRESHOLD = 8;
@@ -17,6 +17,17 @@
     let dragState = null;
     let dragGhost = null;
     let suppressClickUntil = 0;
+
+    window.NVIPD_SUPPRESS_CLICK_UNTIL = 0;
+
+    function setClickSuppress(until) {
+        suppressClickUntil = Math.max(0, Number(until) || 0);
+        window.NVIPD_SUPPRESS_CLICK_UNTIL = suppressClickUntil;
+    }
+
+    function clickSuppressed() {
+        return Date.now() < Math.max(suppressClickUntil, Number(window.NVIPD_SUPPRESS_CLICK_UNTIL) || 0);
+    }
 
     function hasGame() {
         return typeof window.Game !== "undefined" && window.Game?.data?.personnage && window.Game?.ui;
@@ -312,7 +323,7 @@
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        suppressClickUntil = Date.now() + SYNTHETIC_CLICK_SUPPRESS_MS;
+        setClickSuppress(Date.now() + SYNTHETIC_CLICK_SUPPRESS_MS);
 
         const target = document.elementFromPoint(event.clientX, event.clientY)?.closest?.(".nvi-slot");
         if (target && state.grid.contains(target)) {
@@ -354,7 +365,7 @@
             const grid = item.closest(".nvi-grid--inventory");
             const sourceSlot = slotNo(item.closest(".nvi-slot"));
             if (!grid || sourceSlot < 0) return;
-            suppressClickUntil = 0;
+            setClickSuppress(0);
             neutralizeNativeDragTargets(grid);
             dragState = {
                 key: item.dataset.nviItemKey || "",
@@ -377,7 +388,7 @@
             const dy = event.clientY - dragState.y;
             if (!dragState.dragging && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
                 dragState.dragging = true;
-                suppressClickUntil = Date.now() + SYNTHETIC_CLICK_SUPPRESS_MS;
+                setClickSuppress(Date.now() + SYNTHETIC_CLICK_SUPPRESS_MS);
                 clearDragVisuals();
                 dragState.item.classList.add("nvimp-moving");
                 dragState.grid.querySelectorAll(".nvi-slot").forEach(slot => {
@@ -408,7 +419,7 @@
         document.addEventListener("click", event => {
             const item = event.target?.closest?.(".nvi-layout--inventory .nvi-item");
             if (!item) return;
-            if (Date.now() > suppressClickUntil) return;
+            if (!clickSuppressed()) return;
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
@@ -424,7 +435,7 @@
             if (!popup) return;
             if (event.target?.closest?.(".nvi-details.nvipr-popup")) return;
             if (event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item")) return;
-            if (Date.now() < suppressClickUntil) return;
+            if (clickSuppressed()) return;
             closeInventoryPopup();
         }, false);
     }
