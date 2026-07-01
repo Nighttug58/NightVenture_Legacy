@@ -11,6 +11,7 @@
     let applyPending = false;
     let suppressObserver = false;
     let dragState = null;
+    let dragGhost = null;
     let suppressClickUntil = 0;
 
     function inv() { return Game?.data?.personnage?.inventaire || []; }
@@ -109,8 +110,7 @@
         Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
         moveDom(id, target);
         applyPagedInventory();
-        const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
-        if (popup) popup.dataset.nviprItemId = id;
+        closeInventoryPopup();
     }
 
     function injectStyle() {
@@ -120,8 +120,8 @@
         style.textContent = `
             .nvimp-pager,.nvimp-popup-pager{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}.nvimp-pager{margin:8px 0 10px}.nvimp-popup-pager{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.10)}.nvimp-popup-pager__label{width:100%;color:var(--text-muted,#c7bdad);font-size:.68rem;font-weight:900;letter-spacing:.04em;text-align:center;text-transform:uppercase}.nvimp-page-btn{width:36px!important;min-width:36px!important;max-width:36px!important;min-height:30px!important;padding:4px 0!important;border-radius:999px!important;font-size:.74rem!important;font-weight:900!important;line-height:1!important}.nvimp-page-btn.is-active{border-color:rgba(245,211,122,.65)!important;color:#f5d37a!important;box-shadow:0 0 12px rgba(245,211,122,.18)!important}
             .nvi-toolbar.nvimp-toolbar-compact{padding:10px!important}.nvi-toolbar.nvimp-toolbar-compact .nvi-toolbar__top{margin-bottom:8px!important}.nvimp-toolbar-toggle{width:100%!important;min-height:34px!important;margin:2px 0 0!important;border-radius:999px!important;font-size:.78rem!important;font-weight:900!important}.nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-toolbar__search-row,.nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-filters{display:none!important}.nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-toolbar__search-row{display:grid!important;margin-top:8px!important}.nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-filters{display:flex!important;max-height:31dvh;overflow:auto;padding-top:8px}.nvi-toolbar.nvimp-toolbar-compact .nvi-filter{flex:1 1 calc(50% - 6px);min-height:32px!important}
-            .nvi-layout--inventory.nvimp-no-details{grid-template-columns:minmax(0,1fr)!important}.nvi-layout--inventory .nvi-details:has(.nvi-details__empty){display:none!important}.nvi-layout--inventory .nvi-panel__title{display:none!important;margin:0!important}.nvi-layout--inventory .nvi-grid--inventory{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;touch-action:manipulation}.nvi-layout--inventory .nvi-slot{min-height:58px!important;border-radius:12px!important;pointer-events:auto!important}.nvi-layout--inventory .nvi-slot.nvimp-touch-target{border-color:rgba(245,211,122,.70)!important;box-shadow:0 0 14px rgba(245,211,122,.16)!important}.nvi-layout--inventory .nvi-item{border-radius:11px!important;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.nvi-layout--inventory .nvi-item *,.nvi-layout--inventory .nvi-item img{pointer-events:none;-webkit-user-drag:none;user-drag:none}.nvi-layout--inventory .nvi-item.nvimp-moving{outline:2px solid #f5d37a!important;outline-offset:-2px;filter:brightness(1.18);opacity:.86}.nvi-layout--inventory .nvi-item__icon img{width:86%!important;height:86%!important}.nvi-layout--inventory .nvi-item__text-icon{font-size:.72rem!important}.nvi-layout--inventory .nvi-item__favorite,.nvi-layout--inventory .nvi-item__lock,.nvi-layout--inventory .nvi-item__qty{font-size:.52rem!important;padding:1px 3px!important}
-            .nvimp-grid-footer{display:flex;justify-content:flex-start;align-items:center;margin-top:8px;min-height:24px}.nvimp-gold{display:inline-flex;align-items:center;justify-content:flex-start;min-height:24px;padding:4px 10px;border:1px solid rgba(245,211,122,.22);border-radius:999px;background:rgba(0,0,0,.18);color:#f5d37a;font-size:.78rem;font-weight:900;letter-spacing:.02em}@media(max-width:380px){.nvi-layout--inventory .nvi-slot{min-height:52px!important}.nvi-layout--inventory .nvi-grid--inventory{gap:5px!important}.nvimp-page-btn{width:32px!important;min-width:32px!important;max-width:32px!important;min-height:28px!important;font-size:.68rem!important}}
+            .nvi-layout--inventory.nvimp-no-details{grid-template-columns:minmax(0,1fr)!important}.nvi-layout--inventory .nvi-details:has(.nvi-details__empty){display:none!important}.nvi-layout--inventory .nvi-panel__title{display:none!important;margin:0!important}.nvi-layout--inventory .nvi-grid--inventory{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;touch-action:manipulation}.nvi-layout--inventory .nvi-slot{min-height:58px!important;border-radius:12px!important;pointer-events:auto!important}.nvi-layout--inventory .nvi-slot.nvimp-touch-target{border-color:rgba(245,211,122,.70)!important;box-shadow:0 0 14px rgba(245,211,122,.16)!important}.nvi-layout--inventory .nvi-item{border-radius:11px!important;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.nvi-layout--inventory .nvi-item *,.nvi-layout--inventory .nvi-item img{pointer-events:none;-webkit-user-drag:none;user-drag:none}.nvi-layout--inventory .nvi-item.nvimp-moving{outline:2px solid #f5d37a!important;outline-offset:-2px;filter:brightness(1.18);opacity:.58}.nvi-layout--inventory .nvi-item__icon img{width:86%!important;height:86%!important}.nvi-layout--inventory .nvi-item__text-icon{font-size:.72rem!important}.nvi-layout--inventory .nvi-item__favorite,.nvi-layout--inventory .nvi-item__lock,.nvi-layout--inventory .nvi-item__qty{font-size:.52rem!important;padding:1px 3px!important}
+            .nvimp-drag-ghost{position:fixed;left:0;top:0;z-index:3000;pointer-events:none;opacity:.96;border-radius:12px!important;transform-origin:center center;will-change:transform;filter:brightness(1.18);box-shadow:0 12px 28px rgba(0,0,0,.44),0 0 18px rgba(245,211,122,.28)!important}.nvimp-grid-footer{display:flex;justify-content:flex-start;align-items:center;margin-top:8px;min-height:24px}.nvimp-gold{display:inline-flex;align-items:center;justify-content:flex-start;min-height:24px;padding:4px 10px;border:1px solid rgba(245,211,122,.22);border-radius:999px;background:rgba(0,0,0,.18);color:#f5d37a;font-size:.78rem;font-weight:900;letter-spacing:.02em}@media(max-width:380px){.nvi-layout--inventory .nvi-slot{min-height:52px!important}.nvi-layout--inventory .nvi-grid--inventory{gap:5px!important}.nvimp-page-btn{width:32px!important;min-width:32px!important;max-width:32px!important;min-height:28px!important;font-size:.68rem!important}}
         `;
         document.head.appendChild(style);
     }
@@ -219,6 +219,38 @@
         }, false);
     }
 
+    function installLegacyInventoryGuards() {
+        if (!window.__NVIMP_LEGACY_GUARDS) {
+            window.__NVIMP_LEGACY_GUARDS = true;
+            document.addEventListener("dblclick", event => {
+                if (Game?.ui?.vueActive !== "inventaire") return;
+                const item = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]");
+                if (!item) return;
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+            }, true);
+        }
+
+        if (typeof window.NVI_doubleClickItem === "function" && !window.NVI_doubleClickItem.__NVIMP_SAFE) {
+            const originalDoubleClick = window.NVI_doubleClickItem;
+            window.NVI_doubleClickItem = function (contexte, source, idObjet) {
+                if (Game?.ui?.vueActive === "inventaire" && source === "player") return false;
+                return originalDoubleClick.apply(this, arguments);
+            };
+            window.NVI_doubleClickItem.__NVIMP_SAFE = true;
+        }
+
+        if (typeof window.NVI_utiliserObjetSelectionne === "function" && !window.NVI_utiliserObjetSelectionne.__NVIMP_SAFE) {
+            const originalUse = window.NVI_utiliserObjetSelectionne;
+            window.NVI_utiliserObjetSelectionne = function (idObjet) {
+                if (Game?.ui?.vueActive === "inventaire" && document.querySelector(".nvi-layout--inventory")) return false;
+                return originalUse.apply(this, arguments);
+            };
+            window.NVI_utiliserObjetSelectionne.__NVIMP_SAFE = true;
+        }
+    }
+
     function ensureSlotRange(grid, first, count) {
         const exists = new Set(Array.from(grid.querySelectorAll(":scope > .nvi-slot")).map(slot => slotNo(slot)));
         for (let slot = first; slot < first + count; slot++) {
@@ -271,6 +303,32 @@
         });
     }
 
+    function removeDragGhost() {
+        if (!dragGhost) return;
+        dragGhost.remove();
+        dragGhost = null;
+    }
+
+    function updateDragGhost(event) {
+        if (!dragGhost) return;
+        dragGhost.style.transform = `translate(${Math.round(event.clientX)}px, ${Math.round(event.clientY)}px) translate(-50%, -50%)`;
+    }
+
+    function createDragGhost(source, event) {
+        removeDragGhost();
+        if (!source) return;
+        const rect = source.getBoundingClientRect();
+        const ghost = source.cloneNode(true);
+        ghost.classList.remove("nvimp-moving");
+        ghost.classList.add("nvimp-drag-ghost");
+        ghost.setAttribute("draggable", "false");
+        ghost.style.width = `${Math.max(36, rect.width)}px`;
+        ghost.style.height = `${Math.max(36, rect.height)}px`;
+        document.body.appendChild(ghost);
+        dragGhost = ghost;
+        updateDragGhost(event);
+    }
+
     function finishDrag(event) {
         if (!dragState) return;
         const state = dragState;
@@ -290,6 +348,7 @@
                 applyPagedInventory();
             }
         }
+        removeDragGhost();
         clearDragVisuals();
     }
 
@@ -327,11 +386,13 @@
                 clearDragVisuals();
                 dragState.item.classList.add("nvimp-moving");
                 dragState.grid.querySelectorAll(".nvi-slot").forEach(slot => { if (slot.style.display !== "none") slot.classList.add("nvimp-touch-target"); });
+                createDragGhost(dragState.item, event);
             }
             if (dragState.dragging) {
                 event.preventDefault();
                 event.stopPropagation();
                 event.stopImmediatePropagation();
+                updateDragGhost(event);
             }
         }, true);
 
@@ -344,6 +405,7 @@
         document.addEventListener("pointercancel", event => {
             if (!dragState || dragState.pointerId !== event.pointerId) return;
             dragState = null;
+            removeDragGhost();
             clearDragVisuals();
         }, true);
 
@@ -389,6 +451,7 @@
 
     function applyPagedInventory() {
         injectStyle();
+        installLegacyInventoryGuards();
         if (Game?.ui?.vueActive !== "inventaire") return;
         suppressObserver = true;
         try {
@@ -424,17 +487,19 @@
 
     function install() {
         injectStyle();
+        installLegacyInventoryGuards();
         installPopupPagerActions();
         installOutsidePopupClose();
         installDirectDrag();
         observe();
         scheduleApply();
-        setTimeout(() => { observe(); scheduleApply(); }, 250);
+        setTimeout(() => { observe(); installLegacyInventoryGuards(); scheduleApply(); }, 250);
     }
 
     window.NVIMP_setPage = setPage;
     window.NVIMP_applyPagedInventory = applyPagedInventory;
     window.NVIMP_moveSelectedToPage = moveSelectedToPage;
+    window.NVIMP_closeInventoryPopup = closeInventoryPopup;
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install);
     else install();
