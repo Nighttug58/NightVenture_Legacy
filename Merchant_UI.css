@@ -1,0 +1,67 @@
+/* NightVenture — UI marchand */
+
+.nvm-window .nvi-toolbar__top p {
+    display: block !important;
+}
+
+.nvi-layout--merchant {
+    grid-template-columns: minmax(300px, 0.9fr) minmax(300px, 0.9fr) minmax(280px, 340px);
+}
+
+.nvi-layout--merchant .nvi-item--selected {
+    outline: 2px solid var(--gold, #f5d37a);
+    outline-offset: -2px;
+}
+
+.nvi-layout--merchant .nvi-details__empty {
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    color: var(--text-muted, #c7bdad);
+}
+
+.nvi-layout--merchant .nvi-trade-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.16);
+}
+
+.nvi-layout--merchant .nvi-quantity {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.nvi-layout--merchant .nvi-quantity input {
+    width: 68px;
+    text-align: center;
+}
+
+.nvi-layout--merchant .nvi-lock-toggle {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.nvi-layout--merchant .nvi-details {
+    position: sticky;
+    top: 10px;
+}
+
+@media (max-width: 900px) {
+    .nvi-layout--merchant {
+        grid-template-columns: 1fr;
+    }
+
+    .nvi-layout--merchant .nvi-details {
+        position: static;
+    }
+}
