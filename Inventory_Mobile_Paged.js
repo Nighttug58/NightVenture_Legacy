@@ -536,38 +536,6 @@
         }, false);
     }
 
-    function installLegacyInventoryGuards() {
-        if (!window.__NVIMP_LEGACY_GUARDS) {
-            window.__NVIMP_LEGACY_GUARDS = true;
-            document.addEventListener("dblclick", event => {
-                if (Game?.ui?.vueActive !== "inventaire") return;
-                const item = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]");
-                if (!item) return;
-                event.preventDefault();
-                event.stopPropagation();
-                event.stopImmediatePropagation();
-            }, true);
-        }
-
-        if (typeof window.NVI_doubleClickItem === "function" && !window.NVI_doubleClickItem.__NVIMP_SAFE) {
-            const originalDoubleClick = window.NVI_doubleClickItem;
-            window.NVI_doubleClickItem = function (contexte, source) {
-                if (Game?.ui?.vueActive === "inventaire" && source === "player") return false;
-                return originalDoubleClick.apply(this, arguments);
-            };
-            window.NVI_doubleClickItem.__NVIMP_SAFE = true;
-        }
-
-        if (typeof window.NVI_utiliserObjetSelectionne === "function" && !window.NVI_utiliserObjetSelectionne.__NVIMP_SAFE) {
-            const originalUse = window.NVI_utiliserObjetSelectionne;
-            window.NVI_utiliserObjetSelectionne = function () {
-                if (Game?.ui?.vueActive === "inventaire" && document.querySelector(".nvi-layout--inventory")) return false;
-                return originalUse.apply(this, arguments);
-            };
-            window.NVI_utiliserObjetSelectionne.__NVIMP_SAFE = true;
-        }
-    }
-
     function ensureSlotRange(grid, first, count) {
         const exists = new Set(Array.from(grid.querySelectorAll(":scope > .nvi-slot")).map(slot => slotNo(slot)));
         for (let slot = first; slot < first + count; slot++) {
@@ -615,27 +583,11 @@
     function neutralizeNativeDragTargets(root = document) {
         root.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-item, .nvi-layout--inventory .nvi-grid--inventory .nvi-item *").forEach(node => {
             if (!node?.setAttribute) return;
-            node.removeAttribute("onclick");
-            node.removeAttribute("ondblclick");
-            node.removeAttribute("ondragstart");
-            node.removeAttribute("ondragover");
-            node.removeAttribute("ondrop");
-            node.onclick = null;
-            node.ondblclick = null;
-            node.ondragstart = null;
-            node.ondragover = null;
-            node.ondrop = null;
             node.setAttribute("draggable", "false");
             node.style.webkitTouchCallout = "none";
             node.style.userSelect = "none";
             node.style.webkitUserSelect = "none";
             try { node.draggable = false; } catch (_) {}
-        });
-        root.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-slot").forEach(slot => {
-            slot.removeAttribute("ondragover");
-            slot.removeAttribute("ondrop");
-            slot.ondragover = null;
-            slot.ondrop = null;
         });
     }
 
@@ -812,7 +764,6 @@
 
     function applyPagedInventory() {
         injectStyle();
-        installLegacyInventoryGuards();
         if (Game?.ui?.vueActive !== "inventaire") return;
         suppressObserver = true;
         try {
@@ -849,14 +800,13 @@
 
     function install() {
         injectStyle();
-        installLegacyInventoryGuards();
         installPopupActions();
         installPopupPagerActions();
         installOutsidePopupClose();
         installDirectDrag();
         observe();
         scheduleApply();
-        setTimeout(() => { observe(); installLegacyInventoryGuards(); scheduleApply(); }, 250);
+        setTimeout(() => { observe(); scheduleApply(); }, 250);
     }
 
     window.NVIMP_setPage = setPage;
