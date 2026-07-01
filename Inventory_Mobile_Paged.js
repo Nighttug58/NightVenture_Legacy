@@ -1,4 +1,4 @@
-/* NightVenture — inventaire mobile paginé + popup intégré */
+/* NightVenture — inventaire refonte paginé + popup */
 (function () {
     "use strict";
 
@@ -77,6 +77,10 @@
         return stats.filter(([, stat]) => objet[stat]).map(([label, stat]) => `${label} +${objet[stat]}`).join(" ");
     }
 
+    function findLivePopup() {
+        return document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
+    }
+
     function setPage(page) {
         Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
         applyPagedInventory();
@@ -144,7 +148,7 @@
     }
 
     function selectedItemId() {
-        const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id]");
+        const popup = findLivePopup();
         if (popup?.dataset?.nviprItemId) return popup.dataset.nviprItemId;
         const selected = document.querySelector(".nvi-layout--inventory .nvimp-item--popup-open[data-nvi-item-id]");
         return selected?.dataset?.nviItemId || null;
@@ -152,7 +156,7 @@
 
     function closeInventoryPopup() {
         clearInventorySelectionClasses();
-        const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
+        const popup = findLivePopup();
         if (popup) popup.remove();
         document.querySelector(".nvi-layout--inventory")?.classList.add("nvimp-no-details");
     }
@@ -226,11 +230,6 @@
         return pager;
     }
 
-    function findLiveDetails() {
-        return Array.from(document.querySelectorAll(".nvi-layout--inventory > .nvi-details"))
-            .find(panel => !panel.querySelector(".nvi-details__empty")) || null;
-    }
-
     function refreshItemQuantity(id) {
         const item = itemData(id);
         document.querySelectorAll(selectorForItem(id)).forEach(button => {
@@ -266,7 +265,7 @@
         }
         const favorite = isFavorite(id);
         const locked = isLocked(id);
-        const popupOpen = Boolean(document.querySelector(`.nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id=\"${id}\"]`));
+        const popupOpen = Boolean(findLivePopup()?.dataset?.nviprItemId === id);
         document.querySelectorAll(selectorForItem(id)).forEach(button => {
             button.classList.remove("nvi-item--selected");
             button.classList.toggle("nvimp-item--popup-open", popupOpen);
@@ -294,7 +293,7 @@
     }
 
     function refreshPopupState(id) {
-        const popup = findLiveDetails();
+        const popup = findLivePopup();
         if (!popup || popup.dataset.nviprItemId !== id) return;
         const favoriteButton = popup.querySelector("[data-nvipr-action='favorite']");
         if (favoriteButton) favoriteButton.textContent = isFavorite(id) ? "Retirer favori" : "Ajouter favori";
@@ -413,7 +412,7 @@
         clearInventorySelectionClasses();
         if (clickedItem) clickedItem.classList.add("nvimp-item--popup-open");
 
-        let popup = findLiveDetails() || layout.querySelector(":scope > .nvi-details") || document.createElement("aside");
+        let popup = findLivePopup() || document.createElement("aside");
         if (!popup.parentElement) layout.appendChild(popup);
 
         const rarete = obj.rarete || "commun";
@@ -533,7 +532,7 @@
         window.__NVIMP_OUTSIDE_POPUP_CLOSE = true;
         document.addEventListener("click", event => {
             if (Game?.ui?.vueActive !== "inventaire") return;
-            const popup = document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
+            const popup = findLivePopup();
             if (!popup) return;
             if (event.target?.closest?.(".nvi-details.nvipr-popup")) return;
             if (Date.now() < suppressClickUntil) return;
@@ -736,14 +735,6 @@
         }, true);
     }
 
-    function removeEmptyDetailsCard() {
-        const layout = document.querySelector(".nvi-layout--inventory");
-        if (!layout) return;
-        layout.querySelector(":scope > .nvi-details:has(.nvi-details__empty)")?.remove();
-        const active = layout.querySelector(":scope > .nvi-details:not(:has(.nvi-details__empty))");
-        layout.classList.toggle("nvimp-no-details", !active);
-    }
-
     function ensureGoldFooter() {
         document.querySelectorAll(".nvi-window .nvi-panel").forEach(panel => {
             const grid = panel.querySelector(":scope > .nvi-grid");
@@ -761,7 +752,7 @@
     }
 
     function enhancePopupPager(pageCount, page) {
-        const details = document.querySelector(".nvi-layout--inventory > .nvi-details:not(:has(.nvi-details__empty))");
+        const details = findLivePopup();
         if (!details) return;
         details.querySelector(".nvimp-popup-pager")?.remove();
         details.appendChild(buildPager(pageCount, page, "move"));
@@ -773,7 +764,6 @@
         suppressObserver = true;
         try {
             enhanceToolbar();
-            removeEmptyDetailsCard();
             const grid = document.querySelector(".nvi-layout--inventory .nvi-grid--inventory");
             if (!grid) return;
             const { pageCount, page } = applyPager(grid);
