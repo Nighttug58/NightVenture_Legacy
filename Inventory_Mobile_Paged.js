@@ -189,27 +189,27 @@
             .nvi-layout--inventory .nvi-item__icon img { width:86%!important; height:86%!important; }
             .nvi-layout--inventory .nvi-item__text-icon { font-size:.72rem!important; }
             .nvi-layout--inventory .nvi-item__favorite, .nvi-layout--inventory .nvi-item__lock, .nvi-layout--inventory .nvi-item__qty { font-size:.52rem!important; padding:1px 3px!important; }
-            .nvimp-touch-hint { width:100%; margin:8px 0 0; color:#f5d37a; font-size:.72rem; font-weight:850; text-align:center; }
 
             .nvi-details.nvimp-details-popup {
-                position:fixed!important;
-                left:max(10px,env(safe-area-inset-left))!important;
-                right:max(10px,env(safe-area-inset-right))!important;
-                top:calc(58px + env(safe-area-inset-top))!important;
-                bottom:calc(72px + env(safe-area-inset-bottom))!important;
-                z-index:980!important;
+                position:relative!important;
+                left:auto!important;
+                right:auto!important;
+                top:auto!important;
+                bottom:auto!important;
+                z-index:20!important;
                 height:auto!important;
                 max-height:none!important;
-                overflow:auto!important;
+                overflow:visible!important;
+                margin-top:12px!important;
                 border-radius:20px!important;
                 padding:14px!important;
                 background:rgba(12,10,9,.94)!important;
                 backdrop-filter:blur(5px)!important;
                 -webkit-backdrop-filter:blur(5px)!important;
-                box-shadow:0 18px 38px rgba(0,0,0,.45)!important;
+                box-shadow:0 18px 38px rgba(0,0,0,.35)!important;
             }
-            .nvimp-popup-close { position:absolute; top:10px; right:10px; min-width:68px!important; min-height:30px!important; padding:0 11px!important; border-radius:999px!important; font-size:.72rem!important; font-weight:900!important; z-index:2; }
-            .nvi-details.nvimp-details-popup .nvi-details__header { padding-right:84px; margin-bottom:14px!important; }
+            .nvimp-popup-close { position:absolute; top:10px; left:10px; right:auto!important; min-width:68px!important; min-height:30px!important; padding:0 11px!important; border-radius:999px!important; font-size:.72rem!important; font-weight:900!important; z-index:2; }
+            .nvi-details.nvimp-details-popup .nvi-details__header { padding-left:84px; padding-right:0!important; margin-bottom:14px!important; }
             .nvi-details.nvimp-details-popup h3 { margin:0 0 5px!important; font-size:1.08rem!important; line-height:1.14!important; }
             .nvi-details.nvimp-details-popup .nvi-details__description,
             .nvi-details.nvimp-details-popup .nvi-details__stats { margin:14px 0!important; font-size:.86rem!important; line-height:1.45!important; }
@@ -229,6 +229,7 @@
             }
             .nvi-details.nvimp-details-popup .nvi-trade-box { padding:12px!important; gap:14px!important; }
             .nvi-details.nvimp-details-popup .nvi-lock-toggle { display:grid!important; grid-template-columns:1fr!important; justify-items:center!important; min-height:32px!important; margin-top:16px!important; margin-bottom:4px!important; }
+            .nvi-details.nvimp-details-popup .nvi-lock-toggle__icon { display:none!important; }
             .nvi-details.nvimp-details-popup .nvi-details__actions button,
             .nvi-details.nvimp-details-popup .nvi-lock-toggle,
             .nvi-details.nvimp-details-popup .nvi-danger,
@@ -245,7 +246,7 @@
             .nvi-details.nvimp-details-popup .nvi-danger { grid-column:1 / -1; margin-top:14px!important; }
             .nvi-details.nvimp-details-popup .nvi-quantity { justify-content:center; gap:8px!important; }
             .nvi-layout--inventory .nvi-details:not(.nvimp-details-popup) { display:none!important; }
-            @media (min-width:901px) { .nvi-details.nvimp-details-popup { left:50%!important; right:auto!important; width:min(440px,calc(100vw - 24px))!important; transform:translateX(-50%); } }
+            @media (min-width:901px) { .nvi-details.nvimp-details-popup { width:auto!important; transform:none!important; } }
             @media (max-width:380px) { .nvi-layout--inventory .nvi-slot { min-height:52px!important; } .nvi-layout--inventory .nvi-grid--inventory { gap:5px!important; } .nvimp-page-btn { width:32px!important; min-width:32px!important; max-width:32px!important; min-height:28px!important; font-size:.68rem!important; } .nvi-details.nvimp-details-popup .nvi-details__actions, .nvi-details.nvimp-details-popup .nvi-delete-confirm { gap:12px!important; } }
         `;
         document.head.appendChild(style);
@@ -262,14 +263,13 @@
         const lockText = details.querySelector(".nvi-lock-toggle__text");
         if (lockText) {
             const normalized = String(lockText.textContent || "").trim().toLowerCase();
-            if (normalized === "bloque") lockText.textContent = "Verrouillé";
-            if (normalized === "debloque") lockText.textContent = "Libre";
+            if (normalized.includes("bloque") || normalized.includes("bloqué") || normalized.includes("verrou")) lockText.textContent = "Bloqué";
+            if (normalized.includes("debloque") || normalized.includes("débloque") || normalized.includes("libre")) lockText.textContent = "Libre";
         }
         const lockIcon = details.querySelector(".nvi-lock-toggle__icon");
         if (lockIcon) {
-            const normalized = String(lockIcon.textContent || "").trim().toLowerCase();
-            if (normalized === "lock") lockIcon.textContent = "Case bloquée";
-            if (normalized === "libre") lockIcon.textContent = "Case libre";
+            lockIcon.textContent = "";
+            lockIcon.style.display = "none";
         }
     }
 
@@ -380,7 +380,7 @@
                     document.querySelectorAll(".nvi-item.nvimp-moving").forEach(el => el.classList.remove("nvimp-moving"));
                     item.classList.add("nvimp-moving");
                     grid.querySelectorAll(".nvi-slot").forEach(el => el.classList.add("nvimp-touch-target"));
-                    if (typeof ajouterJournal === "function") ajouterJournal("Mode déplacement : touche une case pour déplacer l'objet.");
+                    if (typeof ajouterJournal === "function") ajouterJournal("Mode déplacement actif.");
                 }, 420);
             });
             item.addEventListener("pointerup", function () { clearTimeout(longPressTimer); });
@@ -411,10 +411,6 @@
         const oldPager = details.querySelector(".nvimp-popup-pager");
         if (oldPager) oldPager.remove();
         const movePager = buildPager(pageCount, activePage, "nvimp-popup-pager", "move");
-        const hint = document.createElement("div");
-        hint.className = "nvimp-touch-hint";
-        hint.textContent = "Mobile : appui long sur un item, puis touche une case pour le déplacer.";
-        movePager.appendChild(hint);
         details.appendChild(movePager);
     }
 
