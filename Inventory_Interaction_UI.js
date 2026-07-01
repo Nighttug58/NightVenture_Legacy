@@ -4,10 +4,10 @@
 (function () {
     "use strict";
 
-    const ENTRY_VERSION = "v0.9.9.24-interaction-popup-renderer";
-    const BRIDGE_VERSION = "v0.9.9.24-instance-metadata-integrated";
-    const ACTIONS_VERSION = "v0.9.9.24-instance-actions-integrated";
-    const POPUP_VERSION = "v0.9.9.24-popup-renderer-integrated";
+    const ENTRY_VERSION = "v0.9.9.26-interaction-popup-renderer";
+    const BRIDGE_VERSION = "v0.9.9.26-instance-metadata-integrated";
+    const ACTIONS_VERSION = "v0.9.9.26-instance-actions-integrated";
+    const POPUP_VERSION = "v0.9.9.26-popup-renderer-integrated";
     const BACKEND_SRC = "Inventory_Mobile_Paged.js";
     const BACKEND_ID = "nvInventoryInteractionBackend";
     const SLOTS_PER_PAGE = 30;
@@ -27,6 +27,8 @@
     window.NVI_INTERACTION_BRIDGE_SRC = "integrated";
     window.NVI_INTERACTION_ACTIONS_SRC = "integrated";
     window.NVI_INTERACTION_POPUP_SRC = "integrated";
+    window.__NVIMP_POPUP_ACTIONS = true;
+    window.__NVIMP_POPUP_PAGER_ACTIONS = true;
 
     function backendReady() {
         return typeof window.NVIMP_applyPagedInventory === "function" || typeof window.NVIPR_applyPopupRework === "function";
