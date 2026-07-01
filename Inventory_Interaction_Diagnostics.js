@@ -2,57 +2,59 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.16-inventory-interaction-diagnostics";
-    const warnedIds = new Set();
+    const VERSION = "v0.9.9.22-inventory-interaction-health";
+    let lastStatus = null;
 
-    function inventory() {
-        return Array.isArray(window.Game?.data?.personnage?.inventaire) ? window.Game.data.personnage.inventaire : [];
+    function inventoryViewActive() {
+        return window.Game?.ui?.vueActive === "inventaire";
     }
 
-    function itemName(id) {
-        if (typeof window.trouverObjet === "function") return window.trouverObjet(id)?.nom || id;
-        return window.Game?.cache?.objetsParId?.[id]?.nom || id;
+    function moduleStatus() {
+        return {
+            entrypoint: Boolean(window.NVI_INTERACTION_VERSION),
+            backend: Boolean(window.NVIMP_applyPagedInventory || window.NVIPR_applyPopupRework),
+            bridge: Boolean(window.NVI_INSTANCE_METADATA_BRIDGE_VERSION),
+            actions: Boolean(window.NVI_INSTANCE_ACTIONS_VERSION),
+            diagnostics: VERSION
+        };
     }
 
-    function journal(message) {
-        if (typeof window.ajouterJournal === "function") window.ajouterJournal(message);
-        else console.warn(message);
+    function sameStatus(a, b) {
+        return Boolean(a && b && a.entrypoint === b.entrypoint && a.backend === b.backend && a.bridge === b.bridge && a.actions === b.actions);
     }
 
-    function duplicateMap() {
-        const map = new Map();
-        inventory().forEach(item => {
-            if (!item?.id) return;
-            if (!map.has(item.id)) map.set(item.id, []);
-            map.get(item.id).push(item);
-        });
-        return map;
-    }
+    function checkHealth(context = "manual") {
+        const status = moduleStatus();
+        if (sameStatus(status, lastStatus)) return status;
+        lastStatus = status;
 
-    function checkDuplicates(context = "inventory") {
-        if (!inventory().length) return;
-        duplicateMap().forEach((items, id) => {
-            if (items.length <= 1 || warnedIds.has(id)) return;
-            warnedIds.add(id);
-            journal(`Diagnostic inventaire : ${itemName(id)} existe en ${items.length} piles. Certaines actions popup utilisent encore l'id objet et seront securisees dans la prochaine passe instance-aware.`);
-            console.warn("[NightVenture][Inventory diagnostics] duplicate item stacks", { context, id, count: items.length, items });
-        });
+        const missing = Object.entries(status)
+            .filter(([key, value]) => key !== "diagnostics" && !value)
+            .map(([key]) => key);
+
+        if (missing.length) {
+            console.warn("[NightVenture][Inventory diagnostics] modules manquants", { context, missing, status });
+        } else {
+            console.info("[NightVenture][Inventory diagnostics] modules inventaire OK", { context, status });
+        }
+        return status;
     }
 
     function installObserver() {
         const root = document.getElementById("vuePrincipale");
         if (!root || window.__NVI_INTERACTION_DIAGNOSTICS_OBSERVER) return;
         window.__NVI_INTERACTION_DIAGNOSTICS_OBSERVER = new MutationObserver(() => {
-            if (window.Game?.ui?.vueActive === "inventaire") checkDuplicates("inventory view mutation");
+            if (inventoryViewActive()) checkHealth("inventory view mutation");
         });
         window.__NVI_INTERACTION_DIAGNOSTICS_OBSERVER.observe(root, { childList: true, subtree: true });
     }
 
     function install() {
         window.NVI_INTERACTION_DIAGNOSTICS_VERSION = VERSION;
+        window.NVI_INTERACTION_HEALTH_CHECK = checkHealth;
         installObserver();
-        checkDuplicates("install");
-        window.addEventListener("nv:inventory-interaction-ready", () => checkDuplicates("interaction ready"));
+        checkHealth("install");
+        window.addEventListener("nv:inventory-interaction-ready", () => checkHealth("interaction ready"));
     }
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install);
