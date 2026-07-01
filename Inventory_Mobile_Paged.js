@@ -338,10 +338,11 @@
                 if (!moveModeItemId) return;
                 event.preventDefault();
                 event.stopPropagation();
+                const id = moveModeItemId;
                 const targetSlot = Number(slot.dataset.slot);
-                if (moveItemToSlot(moveModeItemId, targetSlot)) {
+                if (moveItemToSlot(id, targetSlot)) {
+                    moveItemDomToSlot(id, targetSlot);
                     moveModeItemId = null;
-                    moveItemDomToSlot(moveModeItemId, targetSlot);
                     applyPagedInventory();
                 }
             }, true);
