@@ -1,0 +1,8 @@
+/* NightVenture — Nettoyage titre inventaire */
+.nvi-window .nvi-toolbar .nvi-toolbar__top p {
+    display: none !important;
+}
+
+.nvi-window .nvi-toolbar .nvi-toolbar__top h2 {
+    margin-bottom: 0 !important;
+}
