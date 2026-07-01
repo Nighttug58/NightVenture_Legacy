@@ -4,6 +4,8 @@
 
     let observer = null;
     let applyPending = false;
+    let popupGhost = null;
+    let popupGhostTimer = null;
 
     function injectStyle() {
         if (document.getElementById("nvInventoryPopupReworkStyle")) return;
@@ -50,6 +52,16 @@
                 transform-origin: top center !important;
                 opacity: 1 !important;
                 pointer-events: auto !important;
+            }
+
+            .nvi-details.nvimp-details-popup.nvipr-popup.nvipr-popup-ghost {
+                z-index: 1199 !important;
+                pointer-events: none !important;
+                transition: opacity 90ms ease !important;
+            }
+
+            .nvi-details.nvimp-details-popup.nvipr-popup.nvipr-popup-ghost button {
+                pointer-events: none !important;
             }
 
             .nvi-details.nvimp-details-popup.nvipr-popup .nvimp-popup-close {
@@ -259,6 +271,62 @@
         return Boolean(item.verrouille || item.locked || item.bloque);
     }
 
+    function createPopupGhost() {
+        const details = document.querySelector(".nvi-details.nvimp-details-popup.nvipr-popup:not(.nvipr-popup-ghost)");
+        if (!details || details.querySelector(".nvi-details__empty")) return;
+
+        clearTimeout(popupGhostTimer);
+        if (popupGhost) popupGhost.remove();
+
+        popupGhost = details.cloneNode(true);
+        popupGhost.classList.add("nvipr-popup-ghost");
+        popupGhost.removeAttribute("id");
+        popupGhost.querySelectorAll("[id]").forEach(element => element.removeAttribute("id"));
+        popupGhost.querySelectorAll("button, input, select, textarea").forEach(element => {
+            element.disabled = true;
+            element.removeAttribute("onclick");
+        });
+        document.body.appendChild(popupGhost);
+    }
+
+    function removePopupGhost(delay = 70) {
+        if (!popupGhost) return;
+        clearTimeout(popupGhostTimer);
+        popupGhostTimer = setTimeout(function () {
+            if (!popupGhost) return;
+            popupGhost.style.opacity = "0";
+            setTimeout(function () {
+                popupGhost?.remove();
+                popupGhost = null;
+            }, 100);
+        }, delay);
+    }
+
+    function shouldGhostBeforeClick(target) {
+        if (Game?.ui?.vueActive !== "inventaire") return false;
+        if (!target?.closest) return false;
+        if (target.closest(".nvipr-popup-ghost")) return false;
+        if (target.closest(".nvimp-popup-close")) return false;
+        if (target.closest(".nvimp-page-btn")) return false;
+        return Boolean(
+            target.closest(".nvi-layout--inventory .nvi-item[data-nvi-item-id]") ||
+            target.closest(".nvi-details.nvipr-popup button") ||
+            target.closest(".nvi-details.nvipr-popup input") ||
+            target.closest(".nvi-details.nvipr-popup select")
+        );
+    }
+
+    function installGhostCapture() {
+        if (window.__NVIPR_GHOST_CAPTURE) return;
+        window.__NVIPR_GHOST_CAPTURE = true;
+        document.addEventListener("pointerdown", function (event) {
+            if (shouldGhostBeforeClick(event.target)) createPopupGhost();
+        }, true);
+        document.addEventListener("click", function (event) {
+            if (shouldGhostBeforeClick(event.target)) createPopupGhost();
+        }, true);
+    }
+
     function ensureCloseButton(details) {
         let close = details.querySelector(".nvimp-popup-close");
         if (!close) {
@@ -339,10 +407,16 @@
 
     function applyPopupRework() {
         injectStyle();
-        if (Game?.ui?.vueActive !== "inventaire") return;
+        if (Game?.ui?.vueActive !== "inventaire") {
+            removePopupGhost(0);
+            return;
+        }
 
         const details = findLiveDetails();
-        if (!details) return;
+        if (!details) {
+            removePopupGhost(120);
+            return;
+        }
 
         const idObjet = selectedIdFromDetails(details);
         if (idObjet) details.dataset.nviprItemId = idObjet;
@@ -355,6 +429,7 @@
         ensureCloseButton(details);
         rewriteHeader(details);
         reorderContent(details, idObjet);
+        removePopupGhost(30);
     }
 
     function scheduleApply() {
@@ -377,6 +452,7 @@
 
     function install() {
         injectStyle();
+        installGhostCapture();
         observeInventoryView();
         scheduleApply();
         setTimeout(function () {
