@@ -363,7 +363,6 @@
     window.NVIMP_setPage = setPage;
     window.NVIMP_applyPagedInventory = applyPagedInventory;
     window.NVIMP_moveSelectedToPage = moveSelectedToPage;
-    window.NVIMP_mobilePageSort = mobilePageSort;
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install);
     else install();
