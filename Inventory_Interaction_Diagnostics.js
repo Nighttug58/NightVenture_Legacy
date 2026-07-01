@@ -2,7 +2,8 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.28-inventory-interaction-health-paged-drag";
+    const VERSION = "v0.9.9.29-inventory-interaction-health-clean";
+    const EXPECTED_BACKEND_SRC = "Inventory_Paged_Drag_UI.js";
     let lastStatus = null;
 
     function inventoryViewActive() {
@@ -13,6 +14,7 @@
         return {
             entrypoint: Boolean(window.NVI_INTERACTION_VERSION),
             backend: Boolean(window.NVIMP_applyPagedInventory || window.NVIPR_applyPopupRework),
+            backendSource: window.NVI_INTERACTION_BACKEND_SRC === EXPECTED_BACKEND_SRC,
             pagedDrag: Boolean(window.NVIPD_VERSION),
             bridge: Boolean(window.NVI_INSTANCE_METADATA_BRIDGE_VERSION),
             popup: Boolean(window.NVI_INTERACTION_POPUP_VERSION || window.NVI_INTERACTION_POPUP_SRC === "integrated"),
@@ -26,6 +28,7 @@
             a && b &&
             a.entrypoint === b.entrypoint &&
             a.backend === b.backend &&
+            a.backendSource === b.backendSource &&
             a.pagedDrag === b.pagedDrag &&
             a.bridge === b.bridge &&
             a.popup === b.popup &&
