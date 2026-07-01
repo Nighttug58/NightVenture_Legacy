@@ -7,6 +7,9 @@
     const PAGE_LABELS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
     let moveModeItemId = null;
     let longPressTimer = null;
+    let observer = null;
+    let applyPending = false;
+    let suppressObserver = false;
 
     function getPage() {
         Game.ui.nvInventairePage ??= 0;
@@ -101,7 +104,7 @@
             moveModeItemId = null;
             Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
             if (typeof NVI_redessinerVueActive === "function") NVI_redessinerVueActive();
-            requestAnimationFrame(applyPagedInventory);
+            scheduleApply();
         }
     }
 
@@ -148,7 +151,7 @@
         if (typeof ajouterJournal === "function") ajouterJournal("Inventaire trié page par page.");
         if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("mobile inventory page sort");
         if (typeof NVI_redessinerVueActive === "function") NVI_redessinerVueActive();
-        requestAnimationFrame(applyPagedInventory);
+        scheduleApply();
     }
 
     function filtersExpanded() {
@@ -294,6 +297,18 @@
             else toolbar.appendChild(toggle);
         }
         toggle.textContent = filtersExpanded() ? "Masquer tri & filtres" : "Afficher tri & filtres";
+
+        const triButton = Array.from(toolbar.querySelectorAll(".nvi-toolbar__top button"))
+            .find(button => String(button.textContent || "").trim().toLowerCase() === "tri auto");
+        if (triButton && !triButton.__NVIMP_MOBILE_SORT) {
+            triButton.__NVIMP_MOBILE_SORT = true;
+            triButton.removeAttribute("onclick");
+            triButton.onclick = function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                mobilePageSort();
+            };
+        }
     }
 
     function buildPager(pageCount, activePage, extraClass, mode = "navigate") {
@@ -364,7 +379,7 @@
                 if (moveItemToSlot(moveModeItemId, targetSlot)) {
                     moveModeItemId = null;
                     if (typeof NVI_redessinerVueActive === "function") NVI_redessinerVueActive();
-                    requestAnimationFrame(applyPagedInventory);
+                    scheduleApply();
                 }
             }, true);
         });
@@ -417,48 +432,48 @@
     function applyPagedInventory() {
         injectStyle();
         if (Game?.ui?.vueActive !== "inventaire") return;
-        enhanceToolbar();
-        const grid = document.querySelector(".nvi-layout--inventory .nvi-grid--inventory");
-        if (!grid) return;
-        const { pageCount, activePage } = applyPagerToGrid(grid);
-        enableTouchMove(grid);
-        enhanceDetailsPopup(pageCount, activePage);
+
+        suppressObserver = true;
+        try {
+            enhanceToolbar();
+            const grid = document.querySelector(".nvi-layout--inventory .nvi-grid--inventory");
+            if (!grid) return;
+            const { pageCount, activePage } = applyPagerToGrid(grid);
+            enableTouchMove(grid);
+            enhanceDetailsPopup(pageCount, activePage);
+        } finally {
+            requestAnimationFrame(function () {
+                suppressObserver = false;
+            });
+        }
     }
 
-    function patchRenderHooks() {
-        if (window.__NVIMP_PATCHED) return;
-        window.__NVIMP_PATCHED = true;
-        if (typeof afficherVuePrincipale === "function") {
-            const originalAfficher = afficherVuePrincipale;
-            afficherVuePrincipale = function () {
-                const result = originalAfficher.apply(this, arguments);
-                requestAnimationFrame(applyPagedInventory);
-                return result;
-            };
-        }
-        const patchNamed = function (name) {
-            if (typeof window[name] !== "function") return;
-            const original = window[name];
-            window[name] = function () {
-                const result = original.apply(this, arguments);
-                requestAnimationFrame(applyPagedInventory);
-                return result;
-            };
-        };
-        patchNamed("NVI_ouvrirInventaire");
-        patchNamed("NVI_redessinerVueActive");
-        patchNamed("ouvrirInventaire");
-        if (typeof window.NVI_triAutomatiqueInventaire === "function") {
-            window.NVI_triAutomatiqueInventaire = mobilePageSort;
-            try { NVI_triAutomatiqueInventaire = mobilePageSort; } catch (erreur) {}
-        }
+    function scheduleApply() {
+        if (suppressObserver || applyPending) return;
+        applyPending = true;
+        requestAnimationFrame(function () {
+            applyPending = false;
+            applyPagedInventory();
+        });
+    }
+
+    function observeInventoryView() {
+        if (observer) return;
+        const root = document.getElementById("vuePrincipale");
+        if (!root) return;
+
+        observer = new MutationObserver(scheduleApply);
+        observer.observe(root, { childList: true, subtree: true });
     }
 
     function install() {
         injectStyle();
-        patchRenderHooks();
-        requestAnimationFrame(applyPagedInventory);
-        setTimeout(applyPagedInventory, 250);
+        observeInventoryView();
+        scheduleApply();
+        setTimeout(function () {
+            observeInventoryView();
+            scheduleApply();
+        }, 250);
     }
 
     window.NVIMP_setPage = setPage;
