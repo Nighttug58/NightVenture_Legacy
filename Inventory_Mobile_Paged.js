@@ -170,8 +170,8 @@
         style.textContent = `
             .nvimp-pager, .nvimp-popup-pager { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
             .nvimp-pager { justify-content:center; margin:8px 0 10px; }
-            .nvimp-popup-pager { justify-content:center; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.10); }
-            .nvimp-popup-pager__label { width:100%; color:var(--text-muted,#c7bdad); font-size:.72rem; font-weight:900; letter-spacing:.04em; text-align:center; text-transform:uppercase; }
+            .nvimp-popup-pager { justify-content:center; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,.10); }
+            .nvimp-popup-pager__label { width:100%; color:var(--text-muted,#c7bdad); font-size:.68rem; font-weight:900; letter-spacing:.04em; text-align:center; text-transform:uppercase; }
             .nvimp-page-btn { width:36px!important; min-width:36px!important; max-width:36px!important; min-height:30px!important; padding:4px 0!important; border-radius:999px!important; font-size:.74rem!important; font-weight:900!important; line-height:1!important; }
             .nvimp-page-btn.is-active { border-color:rgba(245,211,122,.65)!important; color:#f5d37a!important; box-shadow:0 0 12px rgba(245,211,122,.18)!important; }
 
@@ -192,88 +192,9 @@
             .nvi-layout--inventory .nvi-item__icon img { width:86%!important; height:86%!important; }
             .nvi-layout--inventory .nvi-item__text-icon { font-size:.72rem!important; }
             .nvi-layout--inventory .nvi-item__favorite, .nvi-layout--inventory .nvi-item__lock, .nvi-layout--inventory .nvi-item__qty { font-size:.52rem!important; padding:1px 3px!important; }
-
-            .nvi-details.nvimp-details-popup {
-                position:relative!important;
-                left:auto!important;
-                right:auto!important;
-                top:auto!important;
-                bottom:auto!important;
-                z-index:20!important;
-                height:auto!important;
-                max-height:none!important;
-                overflow:visible!important;
-                margin-top:12px!important;
-                border-radius:20px!important;
-                padding:14px!important;
-                background:rgba(12,10,9,.94)!important;
-                backdrop-filter:blur(5px)!important;
-                -webkit-backdrop-filter:blur(5px)!important;
-                box-shadow:0 18px 38px rgba(0,0,0,.35)!important;
-            }
-            .nvimp-popup-close { position:absolute; top:10px; left:10px; right:auto!important; min-width:68px!important; min-height:30px!important; padding:0 11px!important; border-radius:999px!important; font-size:.72rem!important; font-weight:900!important; z-index:2; }
-            .nvi-details.nvimp-details-popup .nvi-details__header { padding-left:84px; padding-right:0!important; margin-bottom:14px!important; }
-            .nvi-details.nvimp-details-popup h3 { margin:0 0 5px!important; font-size:1.08rem!important; line-height:1.14!important; }
-            .nvi-details.nvimp-details-popup .nvi-details__description,
-            .nvi-details.nvimp-details-popup .nvi-details__stats { margin:14px 0!important; font-size:.86rem!important; line-height:1.45!important; }
-            .nvi-details.nvimp-details-popup .nvi-details__actions,
-            .nvi-details.nvimp-details-popup .nvi-delete-confirm,
-            .nvi-details.nvimp-details-popup .nvi-trade-box {
-                display:grid!important;
-                grid-template-columns:1fr!important;
-                gap:14px!important;
-                margin-top:18px!important;
-                align-items:stretch!important;
-            }
-            .nvi-details.nvimp-details-popup .nvi-details__actions {
-                padding:12px 0!important;
-                border-top:1px solid rgba(255,255,255,.08)!important;
-                border-bottom:1px solid rgba(255,255,255,.08)!important;
-            }
-            .nvi-details.nvimp-details-popup .nvi-trade-box { padding:12px!important; gap:14px!important; }
-            .nvi-details.nvimp-details-popup .nvi-lock-toggle { display:grid!important; grid-template-columns:1fr!important; justify-items:center!important; min-height:32px!important; margin-top:16px!important; margin-bottom:4px!important; }
-            .nvi-details.nvimp-details-popup .nvi-lock-toggle__icon { display:none!important; }
-            .nvi-details.nvimp-details-popup .nvi-details__actions button,
-            .nvi-details.nvimp-details-popup .nvi-lock-toggle,
-            .nvi-details.nvimp-details-popup .nvi-danger,
-            .nvi-details.nvimp-details-popup .nvi-trade-box button,
-            .nvi-details.nvimp-details-popup .nvi-delete-confirm button {
-                width:100%!important;
-                min-height:32px!important;
-                padding:6px 10px!important;
-                border-radius:10px!important;
-                font-size:.74rem!important;
-                font-weight:850!important;
-                line-height:1.08!important;
-            }
-            .nvi-details.nvimp-details-popup .nvi-danger { grid-column:1 / -1; margin-top:14px!important; }
-            .nvi-details.nvimp-details-popup .nvi-quantity { justify-content:center; gap:8px!important; }
-            .nvi-layout--inventory .nvi-details:not(.nvimp-details-popup) { display:none!important; }
-            @media (min-width:901px) { .nvi-details.nvimp-details-popup { width:auto!important; transform:none!important; } }
-            @media (max-width:380px) { .nvi-layout--inventory .nvi-slot { min-height:52px!important; } .nvi-layout--inventory .nvi-grid--inventory { gap:5px!important; } .nvimp-page-btn { width:32px!important; min-width:32px!important; max-width:32px!important; min-height:28px!important; font-size:.68rem!important; } .nvi-details.nvimp-details-popup .nvi-details__actions, .nvi-details.nvimp-details-popup .nvi-delete-confirm { gap:12px!important; } }
+            @media (max-width:380px) { .nvi-layout--inventory .nvi-slot { min-height:52px!important; } .nvi-layout--inventory .nvi-grid--inventory { gap:5px!important; } .nvimp-page-btn { width:32px!important; min-width:32px!important; max-width:32px!important; min-height:28px!important; font-size:.68rem!important; } }
         `;
         document.head.appendChild(style);
-    }
-
-    function renameButton(button) {
-        const text = String(button.textContent || "").trim().toLowerCase();
-        const replacements = { "equiper":"Équiper", "utiliser":"Utiliser", "favori":"Ajouter favori", "retirer favori":"Retirer favori", "supprimer":"Jeter l'objet", "bague 1":"Anneau I", "bague 2":"Anneau II", "vendre":"Vendre", "acheter":"Acheter", "oui":"Confirmer", "non":"Annuler", "max":"MAX" };
-        if (replacements[text]) button.textContent = replacements[text];
-    }
-
-    function polishPopupButtons(details) {
-        details.querySelectorAll("button").forEach(renameButton);
-        const lockText = details.querySelector(".nvi-lock-toggle__text");
-        if (lockText) {
-            const normalized = String(lockText.textContent || "").trim().toLowerCase();
-            if (normalized.includes("bloque") || normalized.includes("bloqué") || normalized.includes("verrou")) lockText.textContent = "Bloqué";
-            if (normalized.includes("debloque") || normalized.includes("débloque") || normalized.includes("libre")) lockText.textContent = "Libre";
-        }
-        const lockIcon = details.querySelector(".nvi-lock-toggle__icon");
-        if (lockIcon) {
-            lockIcon.textContent = "";
-            lockIcon.style.display = "none";
-        }
     }
 
     function enhanceToolbar() {
@@ -404,25 +325,9 @@
         });
     }
 
-    function enhanceDetailsPopup(pageCount, activePage) {
-        const details = document.querySelector(".nvi-layout--inventory > .nvi-details");
+    function enhanceDetailsMovePager(pageCount, activePage) {
+        const details = document.querySelector(".nvi-layout--inventory > .nvi-details:not(:has(.nvi-details__empty))");
         if (!details) return;
-        const isEmpty = Boolean(details.querySelector(".nvi-details__empty"));
-        details.classList.toggle("nvimp-details-popup", !isEmpty);
-        if (isEmpty) return;
-        if (!details.querySelector(".nvimp-popup-close")) {
-            const close = document.createElement("button");
-            close.type = "button";
-            close.className = "nvimp-popup-close";
-            close.textContent = "Fermer";
-            close.addEventListener("click", function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                if (typeof NVI_ouvrirInventaire === "function") NVI_ouvrirInventaire();
-            });
-            details.prepend(close);
-        }
-        polishPopupButtons(details);
         const oldPager = details.querySelector(".nvimp-popup-pager");
         if (oldPager) oldPager.remove();
         const movePager = buildPager(pageCount, activePage, "nvimp-popup-pager", "move");
@@ -440,7 +345,7 @@
             if (!grid) return;
             const { pageCount, activePage } = applyPagerToGrid(grid);
             enableTouchMove(grid);
-            enhanceDetailsPopup(pageCount, activePage);
+            enhanceDetailsMovePager(pageCount, activePage);
         } finally {
             requestAnimationFrame(function () {
                 suppressObserver = false;
