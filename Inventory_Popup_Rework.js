@@ -283,6 +283,9 @@
         const details = findLiveDetails();
         if (!details) return;
         details.classList.add("nvimp-details-popup", "nvipr-popup");
+        details.style.display = "block";
+        details.style.opacity = "1";
+        details.style.pointerEvents = "auto";
 
         const close = details.querySelector(".nvimp-popup-close");
         if (close) close.textContent = "×";
@@ -297,22 +300,44 @@
         const patchNamed = function (name) {
             if (typeof window[name] !== "function") return;
             const original = window[name];
-            window[name] = function () {
+            if (original.__NVIPR_WRAPPED) return;
+            const wrapped = function () {
                 const result = original.apply(this, arguments);
                 applyPopupRework();
                 requestAnimationFrame(applyPopupRework);
+                setTimeout(applyPopupRework, 0);
                 return result;
             };
+            wrapped.__NVIPR_WRAPPED = true;
+            window[name] = wrapped;
+            try { eval(name + " = wrapped"); } catch (erreur) {}
         };
         patchNamed("NVI_ouvrirInventaire");
         patchNamed("NVI_redessinerVueActive");
+        patchNamed("NVI_selectionner");
         patchNamed("ouvrirInventaire");
+    }
+
+    function observeInventory() {
+        const root = document.getElementById("vuePrincipale");
+        if (!root || root.__NVIPR_OBSERVER) return;
+        root.__NVIPR_OBSERVER = true;
+        const observer = new MutationObserver(function () {
+            applyPopupRework();
+        });
+        observer.observe(root, { childList: true, subtree: true });
     }
 
     function install() {
         injectStyle();
         patch();
+        observeInventory();
         applyPopupRework();
+        setTimeout(function () {
+            patch();
+            observeInventory();
+            applyPopupRework();
+        }, 250);
     }
 
     window.NVIPR_applyPopupRework = applyPopupRework;
