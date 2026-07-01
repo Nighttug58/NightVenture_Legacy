@@ -389,14 +389,19 @@
         if (!item) return;
         const qty = Number(item.quantite || 1);
         const itemKey = key(item);
-        Game.data.personnage.inventaire = inv().filter(entry => entry !== item && entry.id !== id);
-        Game.data.personnage.favoris = (Game.data.personnage.favoris || []).filter(entry => entry !== id);
+        Game.data.personnage.inventaire = inv().filter(entry => entry !== item);
+        const hasSameItemRemaining = inv().some(entry => entry.id === id);
+        if (!hasSameItemRemaining) Game.data.personnage.favoris = (Game.data.personnage.favoris || []).filter(entry => entry !== id);
         if (Game.data.personnage.inventaireSlots) delete Game.data.personnage.inventaireSlots[itemKey];
         if (Game.data.personnage.inventaireVerrous) delete Game.data.personnage.inventaireVerrous[itemKey];
-        removeGridItem(id);
         if (typeof ajouterJournal === "function") ajouterJournal(`${objectName(id)} x${qty} supprimé de l'inventaire.`);
         if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup delete");
         closeInventoryPopup();
+        if (typeof NVI_redessinerVueActive === "function") NVI_redessinerVueActive();
+        else {
+            if (!hasSameItemRemaining) removeGridItem(id);
+            applyPagedInventory();
+        }
         if (typeof afficherJournal === "function") afficherJournal();
     }
 
