@@ -331,7 +331,8 @@
         if (window.__NVIPR_CLICK_FALLBACK) return;
         window.__NVIPR_CLICK_FALLBACK = true;
         document.addEventListener("click", function (event) {
-            if (!event.target?.closest?.(".nvi-layout--inventory .nvi-item[data-nvi-item-id]")) return;
+            const target = event.target?.closest?.(".nvi-layout--inventory .nvi-item[data-nvi-item-id], .nvimp-popup-pager .nvimp-page-btn");
+            if (!target) return;
             runSoon();
         }, true);
     }
