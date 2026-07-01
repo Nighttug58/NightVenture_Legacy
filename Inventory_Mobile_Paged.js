@@ -163,6 +163,11 @@
         applyPagedInventory();
     }
 
+    function playerGoldLabel() {
+        const gold = Number(Game?.data?.personnage?.or || 0);
+        return `Or : ${gold}`;
+    }
+
     function injectStyle() {
         if (document.getElementById("nvInventoryMobilePagedStyle")) return;
         const style = document.createElement("style");
@@ -184,6 +189,8 @@
             .nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-filters { display:flex!important; max-height:31dvh; overflow:auto; padding-top:8px; }
             .nvi-toolbar.nvimp-toolbar-compact .nvi-filter { flex:1 1 calc(50% - 6px); min-height:32px!important; }
 
+            .nvi-layout--inventory.nvimp-no-details { grid-template-columns:minmax(0,1fr)!important; }
+            .nvi-layout--inventory .nvi-details:has(.nvi-details__empty) { display:none!important; }
             .nvi-layout--inventory .nvi-grid--inventory { grid-template-columns:repeat(5,minmax(0,1fr))!important; gap:6px!important; touch-action:manipulation; }
             .nvi-layout--inventory .nvi-slot { min-height:58px!important; border-radius:12px!important; }
             .nvi-layout--inventory .nvi-slot.nvimp-touch-target { border-color:rgba(245,211,122,.70)!important; box-shadow:0 0 14px rgba(245,211,122,.16)!important; }
@@ -192,6 +199,10 @@
             .nvi-layout--inventory .nvi-item__icon img { width:86%!important; height:86%!important; }
             .nvi-layout--inventory .nvi-item__text-icon { font-size:.72rem!important; }
             .nvi-layout--inventory .nvi-item__favorite, .nvi-layout--inventory .nvi-item__lock, .nvi-layout--inventory .nvi-item__qty { font-size:.52rem!important; padding:1px 3px!important; }
+
+            .nvimp-grid-footer { display:flex; justify-content:flex-start; align-items:center; margin-top:8px; min-height:24px; }
+            .nvimp-gold { display:inline-flex; align-items:center; justify-content:flex-start; min-height:24px; padding:4px 10px; border:1px solid rgba(245,211,122,.22); border-radius:999px; background:rgba(0,0,0,.18); color:#f5d37a; font-size:.78rem; font-weight:900; letter-spacing:.02em; }
+
             @media (max-width:380px) { .nvi-layout--inventory .nvi-slot { min-height:52px!important; } .nvi-layout--inventory .nvi-grid--inventory { gap:5px!important; } .nvimp-page-btn { width:32px!important; min-width:32px!important; max-width:32px!important; min-height:28px!important; font-size:.68rem!important; } }
         `;
         document.head.appendChild(style);
@@ -325,6 +336,36 @@
         });
     }
 
+    function removeEmptyDetailsCard() {
+        const layout = document.querySelector(".nvi-layout--inventory");
+        if (!layout) return;
+
+        const emptyDetails = layout.querySelector(":scope > .nvi-details:has(.nvi-details__empty)");
+        if (emptyDetails) emptyDetails.remove();
+
+        const activeDetails = layout.querySelector(":scope > .nvi-details:not(:has(.nvi-details__empty))");
+        layout.classList.toggle("nvimp-no-details", !activeDetails);
+    }
+
+    function ensureGoldFooter() {
+        const panels = document.querySelectorAll(".nvi-window .nvi-panel");
+        panels.forEach(panel => {
+            const grid = panel.querySelector(":scope > .nvi-grid");
+            if (!grid) return;
+
+            let footer = panel.querySelector(":scope > .nvimp-grid-footer");
+            if (!footer) {
+                footer = document.createElement("div");
+                footer.className = "nvimp-grid-footer";
+                footer.innerHTML = `<span class="nvimp-gold"></span>`;
+                grid.after(footer);
+            }
+
+            const gold = footer.querySelector(".nvimp-gold");
+            if (gold) gold.textContent = playerGoldLabel();
+        });
+    }
+
     function enhanceDetailsMovePager(pageCount, activePage) {
         const details = document.querySelector(".nvi-layout--inventory > .nvi-details:not(:has(.nvi-details__empty))");
         if (!details) return;
@@ -341,9 +382,11 @@
         suppressObserver = true;
         try {
             enhanceToolbar();
+            removeEmptyDetailsCard();
             const grid = document.querySelector(".nvi-layout--inventory .nvi-grid--inventory");
             if (!grid) return;
             const { pageCount, activePage } = applyPagerToGrid(grid);
+            ensureGoldFooter();
             enableTouchMove(grid);
             enhanceDetailsMovePager(pageCount, activePage);
         } finally {
