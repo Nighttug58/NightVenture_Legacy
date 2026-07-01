@@ -98,7 +98,7 @@
         const id = selectedItemId();
         if (!id) return;
         const target = firstFreeSlotInPage(page, id);
-        if (!moveData(id, target, false)) return;
+        if (!moveData(id, target, true)) return;
         Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
         moveDom(id, target);
         applyPagedInventory();
@@ -161,12 +161,29 @@
             button.addEventListener("click", event => {
                 event.preventDefault();
                 event.stopPropagation();
+                event.stopImmediatePropagation();
                 if (mode === "move") moveSelectedToPage(i);
                 else setPage(i);
-            });
+            }, true);
             pager.appendChild(button);
         }
         return pager;
+    }
+
+    function installPopupPagerActions() {
+        if (window.__NVIMP_POPUP_PAGER_ACTIONS) return;
+        window.__NVIMP_POPUP_PAGER_ACTIONS = true;
+        document.addEventListener("click", event => {
+            if (Game?.ui?.vueActive !== "inventaire") return;
+            const button = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-pager .nvimp-page-btn[data-nvimp-mode='move']");
+            if (!button) return;
+            const page = Number(button.dataset.nvimpPage);
+            if (!Number.isInteger(page) || page < 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            moveSelectedToPage(page);
+        }, true);
     }
 
     function ensureSlotRange(grid, first, count) {
@@ -333,6 +350,7 @@
             ensureGoldFooter();
             enhancePopupPager(pageCount, page);
             installDirectDrag();
+            installPopupPagerActions();
         } finally {
             requestAnimationFrame(() => { suppressObserver = false; });
         }
@@ -354,6 +372,7 @@
 
     function install() {
         injectStyle();
+        installPopupPagerActions();
         installDirectDrag();
         observe();
         scheduleApply();
