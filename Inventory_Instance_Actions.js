@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.21-instance-actions-favorite";
+    const VERSION = "v0.9.9.22-instance-actions-popup-state";
     const MOVE_CLICK_SUPPRESS_MS = 240;
     const DUPLICATE_UNSAFE_ACTIONS = new Set([]);
     const duplicateWarnings = new Set();
@@ -12,6 +12,7 @@
     function key(item) { return String(item?.uid || item?.instanceId || item?.id || ""); }
     function slotOf(item) { const n = Number(item?.slot); return Number.isInteger(n) && n >= 0 ? n : -1; }
     function css(value) { const raw = String(value ?? ""); return window.CSS?.escape ? CSS.escape(raw) : raw.replace(/\\/g, "\\\\").replace(/\"/g, "\\\""); }
+    function escapeHtml(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;"); }
     function objectData(id) { return typeof window.trouverObjet === "function" ? window.trouverObjet(id) : window.Game?.cache?.objetsParId?.[id] || null; }
     function objectName(id) { return objectData(id)?.nom || id; }
     function journal(message) { if (typeof window.ajouterJournal === "function") window.ajouterJournal(message); }
@@ -94,6 +95,29 @@
         } else if (!locked && badge) badge.remove();
     }
 
+    function renderDeleteConfirm(box, id) {
+        const existing = box?.querySelector?.(".nvi-danger, .nvi-delete-confirm");
+        if (!existing) return false;
+        const confirm = document.createElement("div");
+        confirm.className = "nvi-delete-confirm";
+        confirm.innerHTML = `<span>Supprimer toute la pile ?</span><button type="button" data-nvipr-action="delete-confirm" data-nvipr-id="${escapeHtml(id)}">Confirmer</button><button type="button" data-nvipr-action="delete-cancel" data-nvipr-id="${escapeHtml(id)}">Annuler</button>`;
+        existing.replaceWith(confirm);
+        return true;
+    }
+
+    function renderDeleteButton(box, id) {
+        const existing = box?.querySelector?.(".nvi-delete-confirm");
+        if (!existing) return false;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "nvi-danger";
+        button.dataset.nviprAction = "delete-open";
+        button.dataset.nviprId = id;
+        button.textContent = "Jeter l'objet";
+        existing.replaceWith(button);
+        return true;
+    }
+
     function removeExactItem(resolved) {
         window.Game.data.personnage.inventaire = inv().filter(entry => entry !== resolved.item);
         if (window.Game.data.personnage.inventaireSlots) delete window.Game.data.personnage.inventaireSlots[resolved.key];
@@ -121,12 +145,22 @@
         if (typeof window.afficherJournal === "function") window.afficherJournal();
     }
 
-    function handleFavorite(event) {
-        const resolved = resolvePopupItem();
-        if (!resolved) return false;
+    function stopActionEvent(event) {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
+    }
+
+    function handleClose(event) {
+        stopActionEvent(event);
+        closePopup();
+        return true;
+    }
+
+    function handleFavorite(event) {
+        const resolved = resolvePopupItem();
+        if (!resolved) return false;
+        stopActionEvent(event);
         window.Game.data.personnage.favoris ??= [];
         const active = !isFavoriteId(resolved.id);
         if (active) window.Game.data.personnage.favoris.push(resolved.id);
@@ -140,9 +174,7 @@
     function handleLock(event) {
         const resolved = resolvePopupItem();
         if (!resolved) return false;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        stopActionEvent(event);
         const next = !Boolean(window.Game.data.personnage.inventaireVerrous?.[resolved.key] || resolved.item.verrouille);
         window.Game.data.personnage.inventaireVerrous ??= {};
         window.Game.data.personnage.inventaireVerrous[resolved.key] = next;
@@ -156,12 +188,26 @@
         return true;
     }
 
+    function handleDeleteOpen(event) {
+        const resolved = resolvePopupItem();
+        if (!resolved) return false;
+        stopActionEvent(event);
+        renderDeleteConfirm(resolved.box, resolved.id);
+        return true;
+    }
+
+    function handleDeleteCancel(event) {
+        const resolved = resolvePopupItem();
+        if (!resolved) return false;
+        stopActionEvent(event);
+        renderDeleteButton(resolved.box, resolved.id);
+        return true;
+    }
+
     function handleDeleteConfirm(event) {
         const resolved = resolvePopupItem();
         if (!resolved) return false;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        stopActionEvent(event);
         const qty = Number(resolved.item.quantite || 1);
         removeExactItem(resolved);
         journal(`${objectName(resolved.id)} x${qty} supprimé de l'inventaire.`);
@@ -175,9 +221,7 @@
         const resolved = resolvePopupItem();
         const obj = resolved ? objectData(resolved.id) : null;
         if (!resolved || !obj || obj.type !== "consommable" || typeof window.appliquerEffetObjet !== "function") return false;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        stopActionEvent(event);
         const applied = window.appliquerEffetObjet(obj);
         if (!applied) {
             if (typeof window.afficherJournal === "function") window.afficherJournal();
@@ -207,9 +251,7 @@
         if (!resolved || !obj || !p?.equipement) return false;
         const slot = equipmentSlotFor(action, obj);
         if (!slot) return false;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        stopActionEvent(event);
 
         if (p.niveau < (obj.niveauRequis || 1)) {
             journal(`${obj.nom} nécessite le niveau ${obj.niveauRequis}.`);
@@ -245,9 +287,7 @@
         if (!DUPLICATE_UNSAFE_ACTIONS.has(action)) return false;
         const resolved = resolvePopupItem();
         if (!resolved || duplicateCount(resolved.id) <= 1) return false;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        stopActionEvent(event);
         const warnKey = `${action}:${resolved.id}`;
         if (!duplicateWarnings.has(warnKey)) {
             duplicateWarnings.add(warnKey);
@@ -288,9 +328,7 @@
         const page = Number(button.dataset.nvimpPage);
         if (!Number.isInteger(page) || page < 0) return false;
         if (event.type === "click" && Date.now() < suppressMoveClickUntil) return true;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        stopActionEvent(event);
         suppressMoveClickUntil = Date.now() + MOVE_CLICK_SUPPRESS_MS;
         const sourceSlot = slotOf(resolved.item);
         const targetSlot = firstFreeSlotInPage(page, resolved.item);
@@ -312,11 +350,18 @@
 
     function intercept(event) {
         if (window.Game?.ui?.vueActive !== "inventaire") return;
+        const closeButton = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-close");
+        if (closeButton) {
+            handleClose(event);
+            return;
+        }
         const actionButton = event.target?.closest?.(".nvi-details.nvipr-popup [data-nvipr-action]");
         if (actionButton) {
             const action = actionButton.dataset.nviprAction;
             if (action === "favorite") handleFavorite(event);
             else if (action === "lock") handleLock(event);
+            else if (action === "delete-open") handleDeleteOpen(event);
+            else if (action === "delete-cancel") handleDeleteCancel(event);
             else if (action === "delete-confirm") handleDeleteConfirm(event);
             else if (action === "use") handleUse(event);
             else if (action === "equip" || action === "equip-ring1" || action === "equip-ring2") handleEquip(event, action);
