@@ -1,4 +1,4 @@
-/* NightVenture — Popup objet inventaire mobile */
+/* NightVenture — Popup objet inventaire mobile stable */
 (function () {
     "use strict";
 
@@ -27,6 +27,8 @@
                 backdrop-filter: blur(5px) !important;
                 -webkit-backdrop-filter: blur(5px) !important;
                 transform-origin: top center !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
             }
 
             .nvi-details.nvimp-details-popup.nvipr-popup .nvimp-popup-close {
@@ -94,7 +96,7 @@
 
             .nvi-details.nvimp-details-popup.nvipr-popup .nvi-details__stats {
                 display: block !important;
-                margin: 8px 0 8px !important;
+                margin: 8px 0 !important;
                 padding: 8px 9px !important;
                 border-radius: 12px !important;
                 background: rgba(245, 211, 122, 0.08) !important;
@@ -149,9 +151,7 @@
                 margin: 0 !important;
             }
 
-            .nvi-details.nvimp-details-popup.nvipr-popup .nvi-lock-toggle__icon {
-                display: none !important;
-            }
+            .nvi-details.nvimp-details-popup.nvipr-popup .nvi-lock-toggle__icon { display: none !important; }
 
             .nvi-details.nvimp-details-popup.nvipr-popup .nvi-danger {
                 display: block !important;
@@ -188,10 +188,7 @@
                 gap: 7px !important;
             }
 
-            .nvi-details.nvimp-details-popup.nvipr-popup .nvimp-popup-pager__label {
-                font-size: 0.66rem !important;
-            }
-
+            .nvi-details.nvimp-details-popup.nvipr-popup .nvimp-popup-pager__label { font-size: 0.66rem !important; }
             .nvi-details.nvimp-details-popup.nvipr-popup .nvimp-page-btn {
                 width: 32px !important;
                 min-width: 32px !important;
@@ -212,6 +209,11 @@
         document.head.appendChild(style);
     }
 
+    function findLiveDetails() {
+        return Array.from(document.querySelectorAll(".nvi-layout--inventory > .nvi-details"))
+            .find(panel => !panel.querySelector(".nvi-details__empty")) || null;
+    }
+
     function simplifyLock(details) {
         const lock = details.querySelector(".nvi-lock-toggle");
         if (!lock) return null;
@@ -230,8 +232,7 @@
 
     function rewriteHeader(details) {
         const header = details.querySelector(".nvi-details__header");
-        if (!header) return;
-        const p = header.querySelector("p");
+        const p = header?.querySelector("p");
         if (!p || p.dataset.nviprMeta === "1") return;
         const parts = String(p.textContent || "").split("·").map(part => part.trim()).filter(Boolean);
         const quantity = parts.find(part => /^x\d+/i.test(part)) || "x1";
@@ -243,9 +244,7 @@
     function reorderContent(details) {
         const desc = details.querySelector(".nvi-details__description");
         const stats = details.querySelector(".nvi-details__stats");
-        if (stats && desc && stats.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING) {
-            desc.before(stats);
-        }
+        if (stats && desc && stats.nextElementSibling !== desc) desc.before(stats);
 
         const actions = details.querySelector(".nvi-details__actions");
         const lock = simplifyLock(details);
@@ -260,7 +259,6 @@
             row = document.createElement("div");
             row.className = "nvipr-secondary-row";
         }
-
         if (favorite && favorite.parentElement !== row) row.appendChild(favorite);
         if (lock && lock.parentElement !== row) row.appendChild(lock);
         if (row.children.length && row.parentElement !== details) actions.after(row);
@@ -269,12 +267,7 @@
         if (danger && row.parentElement && danger.previousElementSibling !== row) row.after(danger);
 
         const pager = details.querySelector(".nvimp-popup-pager");
-        if (pager && danger) danger.after(pager);
-    }
-
-    function findLiveDetails() {
-        const details = Array.from(document.querySelectorAll(".nvi-layout--inventory > .nvi-details"));
-        return details.find(panel => !panel.querySelector(".nvi-details__empty")) || null;
+        if (pager && danger && pager.previousElementSibling !== danger) danger.after(pager);
     }
 
     function applyPopupRework() {
@@ -282,6 +275,7 @@
         if (Game?.ui?.vueActive !== "inventaire") return;
         const details = findLiveDetails();
         if (!details) return;
+
         details.classList.add("nvimp-details-popup", "nvipr-popup");
         details.style.display = "block";
         details.style.opacity = "1";
@@ -294,49 +288,48 @@
         reorderContent(details);
     }
 
-    function patch() {
-        if (window.__NVIPR_PATCHED) return;
-        window.__NVIPR_PATCHED = true;
-        const patchNamed = function (name) {
-            if (typeof window[name] !== "function") return;
-            const original = window[name];
-            if (original.__NVIPR_WRAPPED) return;
-            const wrapped = function () {
-                const result = original.apply(this, arguments);
-                applyPopupRework();
-                requestAnimationFrame(applyPopupRework);
-                setTimeout(applyPopupRework, 0);
-                return result;
-            };
-            wrapped.__NVIPR_WRAPPED = true;
-            window[name] = wrapped;
-            try { eval(name + " = wrapped"); } catch (erreur) {}
+    function runSoon() {
+        applyPopupRework();
+        requestAnimationFrame(applyPopupRework);
+        setTimeout(applyPopupRework, 0);
+    }
+
+    function patchNamed(name) {
+        const fn = window[name];
+        if (typeof fn !== "function" || fn.__NVIPR_WRAPPED) return;
+        const wrapped = function () {
+            const result = fn.apply(this, arguments);
+            runSoon();
+            return result;
         };
+        wrapped.__NVIPR_WRAPPED = true;
+        window[name] = wrapped;
+    }
+
+    function installClickFallback() {
+        if (window.__NVIPR_CLICK_FALLBACK) return;
+        window.__NVIPR_CLICK_FALLBACK = true;
+        document.addEventListener("click", function (event) {
+            if (!event.target?.closest?.(".nvi-layout--inventory .nvi-item[data-nvi-item-id]")) return;
+            runSoon();
+        }, true);
+    }
+
+    function patch() {
         patchNamed("NVI_ouvrirInventaire");
         patchNamed("NVI_redessinerVueActive");
         patchNamed("NVI_selectionner");
         patchNamed("ouvrirInventaire");
-    }
-
-    function observeInventory() {
-        const root = document.getElementById("vuePrincipale");
-        if (!root || root.__NVIPR_OBSERVER) return;
-        root.__NVIPR_OBSERVER = true;
-        const observer = new MutationObserver(function () {
-            applyPopupRework();
-        });
-        observer.observe(root, { childList: true, subtree: true });
+        installClickFallback();
     }
 
     function install() {
         injectStyle();
         patch();
-        observeInventory();
-        applyPopupRework();
+        runSoon();
         setTimeout(function () {
             patch();
-            observeInventory();
-            applyPopupRework();
+            runSoon();
         }, 250);
     }
 
