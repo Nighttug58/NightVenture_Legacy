@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    const NVI_VERSION = "v0.9.9.15-inventory-grid-ui-stable";
+    const NVI_VERSION = "v0.9.9.16-inventory-grid-ui-instance-metadata";
     const SLOT_COUNT = 72;
 
     function hasGame() { return typeof Game !== "undefined" && Game?.data?.personnage; }
@@ -83,7 +83,7 @@
         const o = obj(item.id);
         if (!o) return "";
         const lock = locked(item);
-        return `<button type="button" class="nvi-item nvi-item--${esc(rare(o))} ${lock ? "nvi-item--locked" : ""}" draggable="false" title="${esc(o.nom || item.id)}" data-nvi-item-id="${esc(item.id)}">${fav(item.id) ? `<span class="nvi-item__favorite">Favori</span>` : ""}${lock ? `<span class="nvi-item__lock">Lock</span>` : ""}<span class="nvi-item__icon">${icon(o)}</span>${Number(item.quantite || 1) > 1 ? `<span class="nvi-item__qty">${Number(item.quantite || 1)}</span>` : ""}</button>`;
+        return `<button type="button" class="nvi-item nvi-item--${esc(rare(o))} ${lock ? "nvi-item--locked" : ""}" draggable="false" title="${esc(o.nom || item.id)}" data-nvi-item-id="${esc(item.id)}" data-nvi-item-key="${esc(key(item))}" data-nvi-item-slot="${Number(item.slot || 0)}">${fav(item.id) ? `<span class="nvi-item__favorite">Favori</span>` : ""}${lock ? `<span class="nvi-item__lock">Lock</span>` : ""}<span class="nvi-item__icon">${icon(o)}</span>${Number(item.quantite || 1) > 1 ? `<span class="nvi-item__qty">${Number(item.quantite || 1)}</span>` : ""}</button>`;
     }
 
     function gridHtml() {
