@@ -2,9 +2,9 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.19-instance-actions-use";
+    const VERSION = "v0.9.9.20-instance-actions-equip";
     const MOVE_CLICK_SUPPRESS_MS = 240;
-    const DUPLICATE_UNSAFE_ACTIONS = new Set(["equip", "equip-ring1", "equip-ring2"]);
+    const DUPLICATE_UNSAFE_ACTIONS = new Set([]);
     const duplicateWarnings = new Set();
     let suppressMoveClickUntil = 0;
 
@@ -89,6 +89,15 @@
         return true;
     }
 
+    function refreshAfterCharacterChange(reason) {
+        if (typeof window.corrigerRessources === "function") window.corrigerRessources();
+        autosave(reason);
+        closePopup();
+        redrawInventory();
+        if (typeof window.afficherPersonnage === "function") window.afficherPersonnage();
+        if (typeof window.afficherJournal === "function") window.afficherJournal();
+    }
+
     function handleLock(event) {
         const resolved = resolvePopupItem();
         if (!resolved) return false;
@@ -136,12 +145,60 @@
             return true;
         }
         consumeOneFromExactStack(resolved);
-        if (typeof window.corrigerRessources === "function") window.corrigerRessources();
-        autosave("inventory instance use");
-        closePopup();
-        redrawInventory();
-        if (typeof window.afficherPersonnage === "function") window.afficherPersonnage();
-        if (typeof window.afficherJournal === "function") window.afficherJournal();
+        refreshAfterCharacterChange("inventory instance use");
+        return true;
+    }
+
+    function forcedEquipSlot(action, obj) {
+        if (action === "equip-ring1") return "bague1";
+        if (action === "equip-ring2") return "bague2";
+        if (obj?.type === "bague") return "bague1";
+        return null;
+    }
+
+    function equipmentSlotFor(action, obj) {
+        const forced = forcedEquipSlot(action, obj);
+        return forced || obj?.type || "";
+    }
+
+    function handleEquip(event, action) {
+        const resolved = resolvePopupItem();
+        const obj = resolved ? objectData(resolved.id) : null;
+        const p = window.Game?.data?.personnage;
+        if (!resolved || !obj || !p?.equipement) return false;
+        const slot = equipmentSlotFor(action, obj);
+        if (!slot) return false;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        if (p.niveau < (obj.niveauRequis || 1)) {
+            journal(`${obj.nom} nécessite le niveau ${obj.niveauRequis}.`);
+            if (typeof window.afficherJournal === "function") window.afficherJournal();
+            return true;
+        }
+        if (!Object.prototype.hasOwnProperty.call(p.equipement, slot)) {
+            journal("Cet objet ne peut pas être équipé.");
+            if (typeof window.afficherJournal === "function") window.afficherJournal();
+            return true;
+        }
+        if (obj.type !== "bague" && Object.values(p.equipement).includes(resolved.id)) {
+            journal(`${obj.nom} est déjà équipé.`);
+            if (typeof window.afficherJournal === "function") window.afficherJournal();
+            return true;
+        }
+
+        const previousId = p.equipement[slot];
+        if (previousId) {
+            if (typeof window.ajouterObjetInventaire === "function") window.ajouterObjetInventaire(previousId, 1);
+            const previousObj = objectData(previousId);
+            if (previousObj) journal(`${previousObj.nom} retiré.`);
+        }
+
+        consumeOneFromExactStack(resolved);
+        p.equipement[slot] = resolved.id;
+        journal(`${obj.nom} équipé.`);
+        refreshAfterCharacterChange("inventory instance equip");
         return true;
     }
 
@@ -222,6 +279,7 @@
             if (action === "lock") handleLock(event);
             else if (action === "delete-confirm") handleDeleteConfirm(event);
             else if (action === "use") handleUse(event);
+            else if (action === "equip" || action === "equip-ring1" || action === "equip-ring2") handleEquip(event, action);
             else handleDuplicateUnsafeAction(event, action);
             return;
         }
