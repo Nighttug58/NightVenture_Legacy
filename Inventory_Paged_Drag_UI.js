@@ -4,7 +4,7 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.30-paged-drag-ui";
+    const VERSION = "v0.9.9.31-paged-drag-ui-click-guard";
     const SLOTS_PER_PAGE = 30;
     const MIN_SLOTS = 120;
     const DRAG_THRESHOLD = 8;
@@ -27,6 +27,16 @@
 
     function clickSuppressed() {
         return Date.now() < Math.max(suppressClickUntil, Number(window.NVIPD_SUPPRESS_CLICK_UNTIL) || 0);
+    }
+
+    function stopSyntheticClick(event) {
+        if (!clickSuppressed()) return false;
+        const item = event.target?.closest?.(".nvi-layout--inventory .nvi-item");
+        if (!item) return false;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return true;
     }
 
     function hasGame() {
@@ -416,14 +426,8 @@
             clearDragVisuals();
         }, true);
 
-        document.addEventListener("click", event => {
-            const item = event.target?.closest?.(".nvi-layout--inventory .nvi-item");
-            if (!item) return;
-            if (!clickSuppressed()) return;
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-        }, true);
+        window.addEventListener("click", event => { stopSyntheticClick(event); }, true);
+        document.addEventListener("click", event => { stopSyntheticClick(event); }, true);
     }
 
     function installOutsidePopupClose() {
