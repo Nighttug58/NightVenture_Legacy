@@ -408,6 +408,23 @@
     letter-spacing: 0.02em;
 }
 
+/* Neutralisation de l'ancien état sélectionné généré par appui long / onclick legacy. */
+.nvi-layout--inventory > .nvi-details:not(.nvipr-popup) {
+    display: none !important;
+}
+
+.nvi-layout--inventory:not(:has(> .nvi-details.nvipr-popup[data-nvipr-item-id])) .nvi-item.nvi-item--selected,
+.nvi-layout--inventory:not(:has(> .nvi-details.nvipr-popup[data-nvipr-item-id])) .nvi-item.nvi-item--selected:focus,
+.nvi-layout--inventory:not(:has(> .nvi-details.nvipr-popup[data-nvipr-item-id])) .nvi-item.nvi-item--selected:active {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+    border-color: transparent !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.20)) !important;
+}
+
 @media (min-width: 720px) {
     .nvi-details.nvimp-details-popup.nvipr-popup {
         left: 50% !important;
