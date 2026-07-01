@@ -317,14 +317,19 @@
             close = document.createElement("button");
             close.type = "button";
             close.className = "nvimp-popup-close";
-            close.addEventListener("click", function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                closeDirectPopup();
-            });
             details.prepend(close);
         }
         close.textContent = "×";
+        close.removeAttribute("onclick");
+        if (!close.__NVIPR_CLOSE_BOUND) {
+            close.__NVIPR_CLOSE_BOUND = true;
+            close.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                closeDirectPopup();
+            }, true);
+        }
     }
 
     function closeDirectPopup() {
@@ -333,13 +338,47 @@
         if (details) details.remove();
     }
 
+    function refreshItemQuantity(idObjet) {
+        const item = inventoryItem(idObjet);
+        document.querySelectorAll(selectorForItem(idObjet)).forEach(button => {
+            const quantity = Number(item?.quantite || 0);
+            let badge = button.querySelector(".nvi-item__qty");
+            if (quantity > 1) {
+                if (!badge) {
+                    badge = document.createElement("span");
+                    badge.className = "nvi-item__qty";
+                    button.appendChild(badge);
+                }
+                badge.textContent = String(quantity);
+            } else if (badge) {
+                badge.remove();
+            }
+        });
+    }
+
+    function removeGridItem(idObjet) {
+        document.querySelectorAll(selectorForItem(idObjet)).forEach(button => {
+            const slot = button.closest(".nvi-slot");
+            button.remove();
+            if (slot) {
+                slot.classList.remove("nvi-slot--occupied", "nvi-slot--locked");
+                if (!slot.children.length) slot.textContent = "";
+            }
+        });
+    }
+
     function refreshGridItemState(idObjet) {
         const item = inventoryItem(idObjet);
+        if (!item) {
+            removeGridItem(idObjet);
+            return;
+        }
+
         const favorite = isFavorite(idObjet);
         const locked = isLocked(idObjet);
 
         document.querySelectorAll(selectorForItem(idObjet)).forEach(button => {
-            button.classList.toggle("nvi-item--selected", Boolean(item));
+            button.classList.toggle("nvi-item--selected", true);
             button.classList.toggle("nvi-item--locked", locked);
             button.draggable = !locked;
 
@@ -364,6 +403,7 @@
             const slot = button.closest(".nvi-slot");
             if (slot) slot.classList.toggle("nvi-slot--locked", locked);
         });
+        refreshItemQuantity(idObjet);
     }
 
     function refreshPopupState(idObjet) {
@@ -409,6 +449,46 @@
         refreshPopupState(idObjet);
     }
 
+    function updateAfterStackMutation(idObjet) {
+        const item = inventoryItem(idObjet);
+        if (item) refreshGridItemState(idObjet);
+        else removeGridItem(idObjet);
+    }
+
+    function equipNoRedraw(idObjet, emplacement = null) {
+        const objet = objectData(idObjet);
+        if (!objet) return;
+
+        if (typeof equiperObjet === "function") equiperObjet(idObjet, emplacement);
+        else if (typeof equiperObjetInterface === "function") equiperObjetInterface(idObjet, emplacement);
+
+        updateAfterStackMutation(idObjet);
+        closeDirectPopup();
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup equip no redraw");
+        if (typeof afficherPersonnage === "function") afficherPersonnage();
+        if (typeof afficherJournal === "function") afficherJournal();
+    }
+
+    function useNoRedraw(idObjet) {
+        const objet = objectData(idObjet);
+        if (!objet || objet.type !== "consommable") return;
+        if (typeof appliquerEffetObjet !== "function") return;
+
+        const applied = appliquerEffetObjet(objet);
+        if (!applied) {
+            if (typeof afficherJournal === "function") afficherJournal();
+            return;
+        }
+
+        if (typeof retirerObjetInventaire === "function") retirerObjetInventaire(idObjet, 1);
+        if (typeof corrigerRessources === "function") corrigerRessources();
+        updateAfterStackMutation(idObjet);
+        closeDirectPopup();
+        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup use no redraw");
+        if (typeof afficherPersonnage === "function") afficherPersonnage();
+        if (typeof afficherJournal === "function") afficherJournal();
+    }
+
     function renderDeleteConfirm(details, idObjet) {
         const existing = details.querySelector(".nvi-danger, .nvi-delete-confirm");
         if (!existing) return;
@@ -445,18 +525,11 @@
         if (Game.data.personnage.inventaireSlots) delete Game.data.personnage.inventaireSlots[key];
         if (Game.data.personnage.inventaireVerrous) delete Game.data.personnage.inventaireVerrous[key];
 
-        document.querySelectorAll(selectorForItem(idObjet)).forEach(button => {
-            const slot = button.closest(".nvi-slot");
-            button.remove();
-            if (slot) {
-                slot.classList.remove("nvi-slot--occupied", "nvi-slot--locked");
-                if (!slot.children.length) slot.textContent = "";
-            }
-        });
-
+        removeGridItem(idObjet);
         if (typeof ajouterJournal === "function") ajouterJournal(`${objectName(idObjet)} x${quantity} supprimé de l'inventaire.`);
         if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory popup delete no redraw");
         closeDirectPopup();
+        if (typeof afficherJournal === "function") afficherJournal();
     }
 
     function simplifyLock(details, idObjet) {
@@ -514,6 +587,14 @@
                 button.removeAttribute("onclick");
             } else if (onclick.includes("NVI_supprimerStack")) {
                 button.dataset.nviprAction = "delete-confirm";
+                button.dataset.nviprId = idObjet;
+                button.removeAttribute("onclick");
+            } else if (onclick.includes("NVI_equiperObjetSelectionne")) {
+                button.dataset.nviprAction = onclick.includes("bague1") ? "equip-ring1" : onclick.includes("bague2") ? "equip-ring2" : "equip";
+                button.dataset.nviprId = idObjet;
+                button.removeAttribute("onclick");
+            } else if (onclick.includes("NVI_utiliserObjetSelectionne")) {
+                button.dataset.nviprAction = "use";
                 button.dataset.nviprId = idObjet;
                 button.removeAttribute("onclick");
             }
@@ -591,7 +672,7 @@
             ${detailsStats ? `<p class="nvi-details__stats">${detailsStats}</p>` : ""}
             <p class="nvi-details__description">${escapeHtml(objet.description || "Aucune description.")}</p>
             <div class="nvi-details__actions">
-                ${objet.type === "consommable" ? `<button type="button" onclick="NVI_utiliserObjetSelectionne('${escapeHtml(idObjet)}')">Utiliser</button>` : objet.type === "bague" ? `<button type="button" onclick="NVI_equiperObjetSelectionne('${escapeHtml(idObjet)}', 'bague1')">Anneau I</button><button type="button" onclick="NVI_equiperObjetSelectionne('${escapeHtml(idObjet)}', 'bague2')">Anneau II</button>` : `<button type="button" onclick="NVI_equiperObjetSelectionne('${escapeHtml(idObjet)}')">Équiper</button>`}
+                ${objet.type === "consommable" ? `<button type="button" data-nvipr-action="use" data-nvipr-id="${escapeHtml(idObjet)}">Utiliser</button>` : objet.type === "bague" ? `<button type="button" data-nvipr-action="equip-ring1" data-nvipr-id="${escapeHtml(idObjet)}">Anneau I</button><button type="button" data-nvipr-action="equip-ring2" data-nvipr-id="${escapeHtml(idObjet)}">Anneau II</button>` : `<button type="button" data-nvipr-action="equip" data-nvipr-id="${escapeHtml(idObjet)}">Équiper</button>`}
             </div>
             <div class="nvipr-secondary-row">
                 <button type="button" class="nvipr-secondary-action" data-nvipr-action="favorite" data-nvipr-id="${escapeHtml(idObjet)}">${favorite ? "Retirer favori" : "Ajouter favori"}</button>
@@ -601,7 +682,6 @@
         `;
 
         ensureCloseButton(details);
-        if (typeof window.NVIMP_applyPagedInventory === "function") requestAnimationFrame(window.NVIMP_applyPagedInventory);
     }
 
     function applyPopupRework() {
@@ -635,6 +715,15 @@
 
     function handleDirectAction(event) {
         if (Game?.ui?.vueActive !== "inventaire") return;
+        const close = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-close");
+        if (close) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            closeDirectPopup();
+            return;
+        }
+
         const button = event.target?.closest?.(".nvi-details.nvipr-popup [data-nvipr-action]");
         if (!button) return;
 
@@ -652,6 +741,10 @@
         else if (action === "delete-open") renderDeleteConfirm(details, idObjet);
         else if (action === "delete-cancel") renderDeleteButton(details, idObjet);
         else if (action === "delete-confirm") deleteStackNoRedraw(idObjet);
+        else if (action === "equip") equipNoRedraw(idObjet, null);
+        else if (action === "equip-ring1") equipNoRedraw(idObjet, "bague1");
+        else if (action === "equip-ring2") equipNoRedraw(idObjet, "bague2");
+        else if (action === "use") useNoRedraw(idObjet);
     }
 
     function handleDirectSelection(event) {
