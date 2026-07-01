@@ -2,9 +2,9 @@
 (function () {
     "use strict";
 
-    const VERSION = "v0.9.9.18-instance-actions-guard-use-equip";
+    const VERSION = "v0.9.9.19-instance-actions-use";
     const MOVE_CLICK_SUPPRESS_MS = 240;
-    const DUPLICATE_UNSAFE_ACTIONS = new Set(["use", "equip", "equip-ring1", "equip-ring2"]);
+    const DUPLICATE_UNSAFE_ACTIONS = new Set(["equip", "equip-ring1", "equip-ring2"]);
     const duplicateWarnings = new Set();
     let suppressMoveClickUntil = 0;
 
@@ -71,6 +71,24 @@
         } else if (!locked && badge) badge.remove();
     }
 
+    function removeExactItem(resolved) {
+        window.Game.data.personnage.inventaire = inv().filter(entry => entry !== resolved.item);
+        if (window.Game.data.personnage.inventaireSlots) delete window.Game.data.personnage.inventaireSlots[resolved.key];
+        if (window.Game.data.personnage.inventaireVerrous) delete window.Game.data.personnage.inventaireVerrous[resolved.key];
+        const hasSameId = inv().some(entry => entry.id === resolved.id);
+        if (!hasSameId) window.Game.data.personnage.favoris = (window.Game.data.personnage.favoris || []).filter(entry => entry !== resolved.id);
+    }
+
+    function consumeOneFromExactStack(resolved) {
+        const qty = Number(resolved.item.quantite || 1);
+        if (qty > 1) {
+            resolved.item.quantite = qty - 1;
+            return false;
+        }
+        removeExactItem(resolved);
+        return true;
+    }
+
     function handleLock(event) {
         const resolved = resolvePopupItem();
         if (!resolved) return false;
@@ -97,15 +115,33 @@
         event.stopPropagation();
         event.stopImmediatePropagation();
         const qty = Number(resolved.item.quantite || 1);
-        window.Game.data.personnage.inventaire = inv().filter(entry => entry !== resolved.item);
-        if (window.Game.data.personnage.inventaireSlots) delete window.Game.data.personnage.inventaireSlots[resolved.key];
-        if (window.Game.data.personnage.inventaireVerrous) delete window.Game.data.personnage.inventaireVerrous[resolved.key];
-        const hasSameId = inv().some(entry => entry.id === resolved.id);
-        if (!hasSameId) window.Game.data.personnage.favoris = (window.Game.data.personnage.favoris || []).filter(entry => entry !== resolved.id);
+        removeExactItem(resolved);
         journal(`${objectName(resolved.id)} x${qty} supprimé de l'inventaire.`);
         autosave("inventory instance delete");
         closePopup();
         redrawInventory();
+        return true;
+    }
+
+    function handleUse(event) {
+        const resolved = resolvePopupItem();
+        const obj = resolved ? objectData(resolved.id) : null;
+        if (!resolved || !obj || obj.type !== "consommable" || typeof window.appliquerEffetObjet !== "function") return false;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        const applied = window.appliquerEffetObjet(obj);
+        if (!applied) {
+            if (typeof window.afficherJournal === "function") window.afficherJournal();
+            return true;
+        }
+        consumeOneFromExactStack(resolved);
+        if (typeof window.corrigerRessources === "function") window.corrigerRessources();
+        autosave("inventory instance use");
+        closePopup();
+        redrawInventory();
+        if (typeof window.afficherPersonnage === "function") window.afficherPersonnage();
+        if (typeof window.afficherJournal === "function") window.afficherJournal();
         return true;
     }
 
@@ -185,6 +221,7 @@
             const action = actionButton.dataset.nviprAction;
             if (action === "lock") handleLock(event);
             else if (action === "delete-confirm") handleDeleteConfirm(event);
+            else if (action === "use") handleUse(event);
             else handleDuplicateUnsafeAction(event, action);
             return;
         }
