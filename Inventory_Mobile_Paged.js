@@ -142,6 +142,14 @@
         toggle.textContent = Game.ui.nvInventaireFiltresOuverts ? "Masquer tri & filtres" : "Afficher tri & filtres";
     }
 
+    function handlePageButtonEvent(event, page, mode) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        if (mode === "move") moveSelectedToPage(page);
+        else setPage(page);
+    }
+
     function buildPager(pageCount, activePage, mode) {
         const pager = document.createElement("div");
         pager.className = mode === "move" ? "nvimp-popup-pager" : "nvimp-pager";
@@ -158,13 +166,10 @@
             button.dataset.nvimpPage = String(i);
             button.dataset.nvimpMode = mode;
             button.textContent = label(i);
-            button.addEventListener("click", event => {
-                event.preventDefault();
-                event.stopPropagation();
-                event.stopImmediatePropagation();
-                if (mode === "move") moveSelectedToPage(i);
-                else setPage(i);
-            }, true);
+            if (mode === "move") {
+                button.addEventListener("pointerdown", event => handlePageButtonEvent(event, i, mode), true);
+            }
+            button.addEventListener("click", event => handlePageButtonEvent(event, i, mode), true);
             pager.appendChild(button);
         }
         return pager;
@@ -173,7 +178,7 @@
     function installPopupPagerActions() {
         if (window.__NVIMP_POPUP_PAGER_ACTIONS) return;
         window.__NVIMP_POPUP_PAGER_ACTIONS = true;
-        document.addEventListener("click", event => {
+        const handle = event => {
             if (Game?.ui?.vueActive !== "inventaire") return;
             const button = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-pager .nvimp-page-btn[data-nvimp-mode='move']");
             if (!button) return;
@@ -182,8 +187,16 @@
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
+            if (event.type === "pointerdown") {
+                suppressClickUntil = Date.now() + 700;
+                moveSelectedToPage(page);
+                return;
+            }
+            if (Date.now() < suppressClickUntil) return;
             moveSelectedToPage(page);
-        }, true);
+        };
+        document.addEventListener("pointerdown", handle, true);
+        document.addEventListener("click", handle, true);
     }
 
     function ensureSlotRange(grid, first, count) {
