@@ -6,17 +6,3 @@
 .nvi-window .nvi-toolbar .nvi-toolbar__top h2 {
     margin-bottom: 0 !important;
 }
-
-/* Inventaire mobile : le panneau objet doit apparaître au-dessus de la grille, sans scroll interne. */
-.nvi-layout--inventory {
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-.nvi-layout--inventory > .nvi-details.nvimp-details-popup {
-    order: 1 !important;
-}
-
-.nvi-layout--inventory > .nvi-panel {
-    order: 2 !important;
-}
