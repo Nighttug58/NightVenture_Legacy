@@ -114,14 +114,18 @@
     }
 
     function injectStyle() {
-        if (document.getElementById("nvInventoryMobilePagedStyle")) return;
+        if (document.getElementById("nvInventoryMobilePagedStyle")) document.getElementById("nvInventoryMobilePagedStyle").remove();
         const style = document.createElement("style");
         style.id = "nvInventoryMobilePagedStyle";
         style.textContent = `
+            .nvi-layout--inventory,.nvi-layout--inventory *,.nvi-details.nvipr-popup,.nvi-details.nvipr-popup *{-webkit-tap-highlight-color:transparent!important}
+            .nvi-layout--inventory .nvi-item,.nvi-details.nvipr-popup button{outline:none!important;-webkit-tap-highlight-color:transparent!important;user-select:none!important;-webkit-user-select:none!important}
+            .nvi-layout--inventory .nvi-item:focus,.nvi-layout--inventory .nvi-item:focus-visible,.nvi-layout--inventory .nvi-item:active{outline:none!important;box-shadow:none!important}
+            .nvi-layout--inventory .nvi-item.nvi-item--selected:not(.nvimp-moving){outline:none!important;box-shadow:none!important;filter:none!important}
             .nvimp-pager,.nvimp-popup-pager{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}.nvimp-pager{margin:8px 0 10px}.nvimp-popup-pager{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.10)}.nvimp-popup-pager__label{width:100%;color:var(--text-muted,#c7bdad);font-size:.68rem;font-weight:900;letter-spacing:.04em;text-align:center;text-transform:uppercase}.nvimp-page-btn{width:36px!important;min-width:36px!important;max-width:36px!important;min-height:30px!important;padding:4px 0!important;border-radius:999px!important;font-size:.74rem!important;font-weight:900!important;line-height:1!important}.nvimp-page-btn.is-active{border-color:rgba(245,211,122,.65)!important;color:#f5d37a!important;box-shadow:0 0 12px rgba(245,211,122,.18)!important}
             .nvi-toolbar.nvimp-toolbar-compact{padding:10px!important}.nvi-toolbar.nvimp-toolbar-compact .nvi-toolbar__top{margin-bottom:8px!important}.nvimp-toolbar-toggle{width:100%!important;min-height:34px!important;margin:2px 0 0!important;border-radius:999px!important;font-size:.78rem!important;font-weight:900!important}.nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-toolbar__search-row,.nvi-toolbar.nvimp-toolbar-compact:not(.is-expanded) .nvi-filters{display:none!important}.nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-toolbar__search-row{display:grid!important;margin-top:8px!important}.nvi-toolbar.nvimp-toolbar-compact.is-expanded .nvi-filters{display:flex!important;max-height:31dvh;overflow:auto;padding-top:8px}.nvi-toolbar.nvimp-toolbar-compact .nvi-filter{flex:1 1 calc(50% - 6px);min-height:32px!important}
-            .nvi-layout--inventory.nvimp-no-details{grid-template-columns:minmax(0,1fr)!important}.nvi-layout--inventory .nvi-details:has(.nvi-details__empty){display:none!important}.nvi-layout--inventory .nvi-panel__title{display:none!important;margin:0!important}.nvi-layout--inventory .nvi-grid--inventory{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;touch-action:manipulation}.nvi-layout--inventory .nvi-slot{min-height:58px!important;border-radius:12px!important;pointer-events:auto!important}.nvi-layout--inventory .nvi-slot.nvimp-touch-target{border-color:rgba(245,211,122,.70)!important;box-shadow:0 0 14px rgba(245,211,122,.16)!important}.nvi-layout--inventory .nvi-item{border-radius:11px!important;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.nvi-layout--inventory .nvi-item *,.nvi-layout--inventory .nvi-item img{pointer-events:none;-webkit-user-drag:none;user-drag:none}.nvi-layout--inventory .nvi-item.nvimp-moving{outline:2px solid #f5d37a!important;outline-offset:-2px;filter:brightness(1.18);opacity:.58}.nvi-layout--inventory .nvi-item__icon img{width:86%!important;height:86%!important}.nvi-layout--inventory .nvi-item__text-icon{font-size:.72rem!important}.nvi-layout--inventory .nvi-item__favorite,.nvi-layout--inventory .nvi-item__lock,.nvi-layout--inventory .nvi-item__qty{font-size:.52rem!important;padding:1px 3px!important}
-            .nvimp-drag-ghost{position:fixed;left:0;top:0;z-index:3000;pointer-events:none;opacity:.96;border-radius:12px!important;transform-origin:center center;will-change:transform;filter:brightness(1.18);box-shadow:0 12px 28px rgba(0,0,0,.44),0 0 18px rgba(245,211,122,.28)!important}.nvimp-grid-footer{display:flex;justify-content:flex-start;align-items:center;margin-top:8px;min-height:24px}.nvimp-gold{display:inline-flex;align-items:center;justify-content:flex-start;min-height:24px;padding:4px 10px;border:1px solid rgba(245,211,122,.22);border-radius:999px;background:rgba(0,0,0,.18);color:#f5d37a;font-size:.78rem;font-weight:900;letter-spacing:.02em}@media(max-width:380px){.nvi-layout--inventory .nvi-slot{min-height:52px!important}.nvi-layout--inventory .nvi-grid--inventory{gap:5px!important}.nvimp-page-btn{width:32px!important;min-width:32px!important;max-width:32px!important;min-height:28px!important;font-size:.68rem!important}}
+            .nvi-layout--inventory.nvimp-no-details{grid-template-columns:minmax(0,1fr)!important}.nvi-layout--inventory .nvi-details:has(.nvi-details__empty){display:none!important}.nvi-layout--inventory .nvi-panel__title{display:none!important;margin:0!important}.nvi-layout--inventory .nvi-grid--inventory{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;touch-action:manipulation}.nvi-layout--inventory .nvi-slot{min-height:58px!important;border-radius:12px!important;pointer-events:auto!important}.nvi-layout--inventory .nvi-slot.nvimp-touch-target{border-color:rgba(245,211,122,.70)!important;box-shadow:0 0 14px rgba(245,211,122,.16)!important}.nvi-layout--inventory .nvi-item{border-radius:11px!important;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}.nvi-layout--inventory .nvi-item *,.nvi-layout--inventory .nvi-item img{pointer-events:none;-webkit-user-drag:none;user-drag:none}.nvi-layout--inventory .nvi-item.nvimp-moving{outline:2px solid #f5d37a!important;outline-offset:-2px;filter:brightness(1.18);opacity:.34}.nvi-layout--inventory .nvi-item__icon img{width:86%!important;height:86%!important}.nvi-layout--inventory .nvi-item__text-icon{font-size:.72rem!important}.nvi-layout--inventory .nvi-item__favorite,.nvi-layout--inventory .nvi-item__lock,.nvi-layout--inventory .nvi-item__qty{font-size:.52rem!important;padding:1px 3px!important}
+            .nvimp-drag-ghost{position:fixed!important;left:0!important;top:0!important;z-index:999999!important;pointer-events:none!important;opacity:0;border-radius:12px!important;transform-origin:center center!important;will-change:transform!important;filter:brightness(1.22)!important;box-shadow:0 14px 34px rgba(0,0,0,.52),0 0 22px rgba(245,211,122,.35)!important;background:rgba(28,24,20,.96)!important;border:1px solid rgba(245,211,122,.45)!important;display:flex!important;align-items:center!important;justify-content:center!important}.nvimp-drag-ghost.is-visible{opacity:.98!important}.nvimp-drag-ghost *{pointer-events:none!important}.nvimp-grid-footer{display:flex;justify-content:flex-start;align-items:center;margin-top:8px;min-height:24px}.nvimp-gold{display:inline-flex;align-items:center;justify-content:flex-start;min-height:24px;padding:4px 10px;border:1px solid rgba(245,211,122,.22);border-radius:999px;background:rgba(0,0,0,.18);color:#f5d37a;font-size:.78rem;font-weight:900;letter-spacing:.02em}@media(max-width:380px){.nvi-layout--inventory .nvi-slot{min-height:52px!important}.nvi-layout--inventory .nvi-grid--inventory{gap:5px!important}.nvimp-page-btn{width:32px!important;min-width:32px!important;max-width:32px!important;min-height:28px!important;font-size:.68rem!important}}
         `;
         document.head.appendChild(style);
     }
@@ -173,9 +177,7 @@
             button.dataset.nvimpPage = String(i);
             button.dataset.nvimpMode = mode;
             button.textContent = label(i);
-            if (mode === "move") {
-                button.addEventListener("pointerdown", event => handlePageButtonEvent(event, i, mode), true);
-            }
+            if (mode === "move") button.addEventListener("pointerdown", event => handlePageButtonEvent(event, i, mode), true);
             button.addEventListener("click", event => handlePageButtonEvent(event, i, mode), true);
             pager.appendChild(button);
         }
@@ -234,7 +236,7 @@
 
         if (typeof window.NVI_doubleClickItem === "function" && !window.NVI_doubleClickItem.__NVIMP_SAFE) {
             const originalDoubleClick = window.NVI_doubleClickItem;
-            window.NVI_doubleClickItem = function (contexte, source, idObjet) {
+            window.NVI_doubleClickItem = function (contexte, source) {
                 if (Game?.ui?.vueActive === "inventaire" && source === "player") return false;
                 return originalDoubleClick.apply(this, arguments);
             };
@@ -243,7 +245,7 @@
 
         if (typeof window.NVI_utiliserObjetSelectionne === "function" && !window.NVI_utiliserObjetSelectionne.__NVIMP_SAFE) {
             const originalUse = window.NVI_utiliserObjetSelectionne;
-            window.NVI_utiliserObjetSelectionne = function (idObjet) {
+            window.NVI_utiliserObjetSelectionne = function () {
                 if (Game?.ui?.vueActive === "inventaire" && document.querySelector(".nvi-layout--inventory")) return false;
                 return originalUse.apply(this, arguments);
             };
@@ -311,21 +313,35 @@
 
     function updateDragGhost(event) {
         if (!dragGhost) return;
-        dragGhost.style.transform = `translate(${Math.round(event.clientX)}px, ${Math.round(event.clientY)}px) translate(-50%, -50%)`;
+        dragGhost.style.transform = `translate3d(${Math.round(event.clientX)}px, ${Math.round(event.clientY)}px, 0) translate(-50%, -120%) scale(1.12)`;
     }
 
-    function createDragGhost(source, event) {
+    function createDragGhost(source, event, visible = false) {
         removeDragGhost();
         if (!source) return;
         const rect = source.getBoundingClientRect();
         const ghost = source.cloneNode(true);
-        ghost.classList.remove("nvimp-moving");
+        ghost.removeAttribute("id");
+        ghost.removeAttribute("onclick");
+        ghost.removeAttribute("ondblclick");
+        ghost.removeAttribute("ondragstart");
+        ghost.classList.remove("nvimp-moving", "nvi-item--selected");
         ghost.classList.add("nvimp-drag-ghost");
         ghost.setAttribute("draggable", "false");
-        ghost.style.width = `${Math.max(36, rect.width)}px`;
-        ghost.style.height = `${Math.max(36, rect.height)}px`;
+        ghost.style.width = `${Math.max(42, rect.width)}px`;
+        ghost.style.height = `${Math.max(42, rect.height)}px`;
+        ghost.style.opacity = visible ? "0.98" : "0";
         document.body.appendChild(ghost);
         dragGhost = ghost;
+        if (visible) ghost.classList.add("is-visible");
+        updateDragGhost(event);
+    }
+
+    function showDragGhost(event) {
+        if (!dragGhost && dragState?.item) createDragGhost(dragState.item, event, true);
+        if (!dragGhost) return;
+        dragGhost.classList.add("is-visible");
+        dragGhost.style.opacity = "0.98";
         updateDragGhost(event);
     }
 
@@ -333,7 +349,11 @@
         if (!dragState) return;
         const state = dragState;
         dragState = null;
-        if (!state.dragging) return;
+        if (!state.dragging) {
+            removeDragGhost();
+            clearDragVisuals();
+            return;
+        }
 
         event.preventDefault();
         event.stopPropagation();
@@ -373,6 +393,7 @@
             if (!grid) return;
             neutralizeNativeDragTargets(grid);
             dragState = { id: item.dataset.nviItemId, item, grid, pointerId: event.pointerId, x: event.clientX, y: event.clientY, dragging: false };
+            createDragGhost(item, event, false);
             try { item.setPointerCapture(event.pointerId); } catch (_) {}
         }, true);
 
@@ -386,13 +407,12 @@
                 clearDragVisuals();
                 dragState.item.classList.add("nvimp-moving");
                 dragState.grid.querySelectorAll(".nvi-slot").forEach(slot => { if (slot.style.display !== "none") slot.classList.add("nvimp-touch-target"); });
-                createDragGhost(dragState.item, event);
             }
             if (dragState.dragging) {
                 event.preventDefault();
                 event.stopPropagation();
                 event.stopImmediatePropagation();
-                updateDragGhost(event);
+                showDragGhost(event);
             }
         }, true);
 
