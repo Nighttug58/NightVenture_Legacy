@@ -6,6 +6,8 @@
     const MIN_MOBILE_SLOTS = 120;
     const PAGE_LABELS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
     let moveModeItemId = null;
+    let moveModeStartedAt = 0;
+    let moveModeOriginSlot = null;
     let longPressTimer = null;
     let observer = null;
     let applyPending = false;
@@ -130,6 +132,18 @@
         return true;
     }
 
+    function clearMoveModeVisuals() {
+        document.querySelectorAll(".nvi-slot.nvimp-touch-target").forEach(el => el.classList.remove("nvimp-touch-target"));
+        document.querySelectorAll(".nvi-item.nvimp-moving").forEach(el => el.classList.remove("nvimp-moving"));
+    }
+
+    function resetMoveMode() {
+        moveModeItemId = null;
+        moveModeStartedAt = 0;
+        moveModeOriginSlot = null;
+        clearMoveModeVisuals();
+    }
+
     function moveSelectedToPage(page, forcedId = null) {
         const id = forcedId || selectedItemId();
         if (!id) return;
@@ -137,7 +151,7 @@
         const target = firstFreeSlotInPage(page, id);
         if (!moveItemToSlot(id, target)) return;
 
-        moveModeItemId = null;
+        resetMoveMode();
         Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
         moveItemDomToSlot(id, target);
         applyPagedInventory();
@@ -374,12 +388,14 @@
         event.stopPropagation();
         event.stopImmediatePropagation();
 
+        if (targetSlot === moveModeOriginSlot && Date.now() - moveModeStartedAt < 850) {
+            return;
+        }
+
         const id = moveModeItemId;
         if (moveItemToSlot(id, targetSlot)) {
             moveItemDomToSlot(id, targetSlot);
-            moveModeItemId = null;
-            document.querySelectorAll(".nvi-slot.nvimp-touch-target").forEach(el => el.classList.remove("nvimp-touch-target"));
-            document.querySelectorAll(".nvi-item.nvimp-moving").forEach(el => el.classList.remove("nvimp-moving"));
+            resetMoveMode();
             applyPagedInventory();
         }
     }
@@ -388,7 +404,6 @@
         if (!grid.__NVIMP_DELEGATED_SLOT_MOVE) {
             grid.__NVIMP_DELEGATED_SLOT_MOVE = true;
             grid.addEventListener("click", function (event) { delegatedSlotMove(event, grid); }, true);
-            grid.addEventListener("pointerup", function (event) { delegatedSlotMove(event, grid); }, true);
         }
 
         const slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
@@ -402,11 +417,10 @@
                 const id = moveModeItemId;
                 const targetSlot = slotNumber(slot, -1);
                 if (targetSlot < 0) return;
+                if (targetSlot === moveModeOriginSlot && Date.now() - moveModeStartedAt < 850) return;
                 if (moveItemToSlot(id, targetSlot)) {
                     moveItemDomToSlot(id, targetSlot);
-                    moveModeItemId = null;
-                    document.querySelectorAll(".nvi-slot.nvimp-touch-target").forEach(el => el.classList.remove("nvimp-touch-target"));
-                    document.querySelectorAll(".nvi-item.nvimp-moving").forEach(el => el.classList.remove("nvimp-moving"));
+                    resetMoveMode();
                     applyPagedInventory();
                 }
             }, true);
@@ -420,7 +434,9 @@
                 const id = item.dataset.nviItemId;
                 longPressTimer = setTimeout(function () {
                     moveModeItemId = id;
-                    document.querySelectorAll(".nvi-item.nvimp-moving").forEach(el => el.classList.remove("nvimp-moving"));
+                    moveModeStartedAt = Date.now();
+                    moveModeOriginSlot = slotNumber(item.closest(".nvi-slot"), null);
+                    clearMoveModeVisuals();
                     item.classList.add("nvimp-moving");
                     grid.querySelectorAll(".nvi-slot").forEach(el => el.classList.add("nvimp-touch-target"));
                     if (typeof ajouterJournal === "function") ajouterJournal("Mode déplacement actif.");
