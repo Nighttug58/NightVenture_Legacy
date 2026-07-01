@@ -1,19 +1,11 @@
 (function () {
     "use strict";
 
-    const NV_INVENTORY_GRID_VERSION = "v0.9.9.12-no-dead-player-actions";
+    const NV_INVENTORY_GRID_VERSION = "v0.9.9.13-inventory-only-grid";
 
     const NVI_CONFIG = {
         inventorySlots: 72,
-        merchantSlots: 48,
-        columnsInventory: 9,
-        columnsMerchant: 8
-    };
-
-    const NVI_STATE = {
-        selection: null,
-        drag: null,
-        quantity: 1
+        columnsInventory: 9
     };
 
     function NVI_hasGame() {
@@ -49,10 +41,6 @@
     function NVI_objet(idObjet) {
         if (typeof trouverObjet === "function") return trouverObjet(idObjet);
         return Game.cache?.objetsParId?.[idObjet] || null;
-    }
-
-    function NVI_objetNom(idObjet) {
-        return NVI_objet(idObjet)?.nom || idObjet;
     }
 
     function NVI_rarete(objet) {
@@ -274,44 +262,17 @@
         return `<span class="nvi-item__text-icon">${NVI_escape(NVI_labelObjet(objet))}</span>`;
     }
 
-    function NVI_selectionKey(contexte, source, idObjet) {
-        return `${contexte}:${source}:${idObjet}`;
-    }
-
-    function NVI_estSelectionne(contexte, source, idObjet) {
-        return NVI_STATE.selection === NVI_selectionKey(contexte, source, idObjet);
-    }
-
-    function NVI_selectionner(contexte, source, idObjet) {
-        if (contexte === "inventaire" && source === "player") return;
-        const cle = NVI_selectionKey(contexte, source, idObjet);
-        NVI_STATE.selection = NVI_STATE.selection === cle ? null : cle;
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_itemElementHTML(item, contexte, source, options = {}) {
+    function NVI_itemElementHTML(item) {
         const objet = NVI_objet(item.id);
         if (!objet) return "";
-        const isPlayerInventory = contexte === "inventaire" && source === "player";
         const rarete = NVI_rarete(objet);
-        const selectionne = !isPlayerInventory && NVI_estSelectionne(contexte, source, item.id);
-        const verrouille = source === "player" && NVI_estItemVerrouille(item);
-        const peutDrag = !isPlayerInventory && Boolean(options.draggable) && !verrouille;
-        const idJs = NVI_escapeJs(item.id);
-        const contexteJs = NVI_escapeJs(contexte);
-        const sourceJs = NVI_escapeJs(source);
-        const dragAttr = peutDrag ? `ondragstart="NVI_dragStart(event, '${idJs}', ${Number(item.slot || 0)})"` : "";
-        const clickAttr = isPlayerInventory ? "" : `onclick="NVI_selectionner('${contexteJs}', '${sourceJs}', '${idJs}')"`;
-        const dblClickAttr = isPlayerInventory ? "" : `ondblclick="NVI_doubleClickItem('${contexteJs}', '${sourceJs}', '${idJs}')"`;
+        const verrouille = NVI_estItemVerrouille(item);
 
         return `
             <button
                 type="button"
-                class="nvi-item nvi-item--${NVI_escapeAttr(rarete)} ${selectionne ? "nvi-item--selected" : ""} ${verrouille ? "nvi-item--locked" : ""}"
-                draggable="${peutDrag ? "true" : "false"}"
-                ${dragAttr}
-                ${clickAttr}
-                ${dblClickAttr}
+                class="nvi-item nvi-item--${NVI_escapeAttr(rarete)} ${verrouille ? "nvi-item--locked" : ""}"
+                draggable="false"
                 title="${NVI_escapeAttr(objet.nom || item.id)}${verrouille ? " - emplacement verrouille" : ""}"
                 data-nvi-item-id="${NVI_escapeAttr(item.id)}"
             >
@@ -323,146 +284,26 @@
         `;
     }
 
-    function NVI_slotHTML(index, item, contexte, source, options = {}) {
-        const isPlayerInventory = contexte === "inventaire" && source === "player";
+    function NVI_slotHTML(index, item) {
         const visible = item ? NVI_itemVisible(item) : false;
         const hiddenOccupied = item && !visible;
-        const verrouille = source === "player" && item && NVI_estItemVerrouille(item);
-        const droppableAttr = !isPlayerInventory && options.droppable ? `ondragover="NVI_dragOver(event)" ondrop="NVI_dropOnSlot(event, ${index})"` : "";
+        const verrouille = item && NVI_estItemVerrouille(item);
         return `
             <div
                 class="nvi-slot ${item ? "nvi-slot--occupied" : ""} ${hiddenOccupied ? "nvi-slot--filtered" : ""} ${verrouille ? "nvi-slot--locked" : ""}"
                 data-slot="${index}"
-                ${droppableAttr}
             >
-                ${item && visible ? NVI_itemElementHTML(item, contexte, source, options) : hiddenOccupied ? `<span class="nvi-slot__filtered-dot" title="Objet masque par les filtres"></span>` : ""}
+                ${item && visible ? NVI_itemElementHTML(item) : hiddenOccupied ? `<span class="nvi-slot__filtered-dot" title="Objet masque par les filtres"></span>` : ""}
             </div>
         `;
     }
 
-    function NVI_gridInventaireHTML(contexte = "inventaire", source = "player") {
+    function NVI_gridInventaireHTML() {
         const slots = NVI_slotsOccupesMap();
         const total = NVI_inventoryMaxSlot();
         let html = "";
-        for (let i = 0; i < total; i++) html += NVI_slotHTML(i, slots.get(i), contexte, source, { draggable: true, droppable: true });
+        for (let i = 0; i < total; i++) html += NVI_slotHTML(i, slots.get(i));
         return `<div class="nvi-grid nvi-grid--inventory" style="--nvi-columns:${NVI_CONFIG.columnsInventory};">${html}</div>`;
-    }
-
-    function NVI_gridMarchandHTML() {
-        const items = Game.ui.marchandActuel?.inventaire || [];
-        const total = Math.max(NVI_CONFIG.merchantSlots, items.length);
-        let html = "";
-        for (let i = 0; i < total; i++) html += NVI_slotHTML(i, items[i] || null, "marchand", "merchant", { draggable: false, droppable: false });
-        return `<div class="nvi-grid nvi-grid--merchant" style="--nvi-columns:${NVI_CONFIG.columnsMerchant};">${html}</div>`;
-    }
-
-    function NVI_obtenirItemSelectionne() {
-        if (!NVI_STATE.selection) return null;
-        const [contexte, source, idObjet] = NVI_STATE.selection.split(":");
-        if (!idObjet) return null;
-        if (source === "player") {
-            const item = (Game.data.personnage.inventaire || []).find(entree => entree.id === idObjet);
-            if (!item) return null;
-            return { contexte, source, idObjet, item, objet: NVI_objet(idObjet) };
-        }
-        if (source === "merchant") {
-            const item = (Game.ui.marchandActuel?.inventaire || []).find(entree => entree.id === idObjet);
-            if (!item) return null;
-            return { contexte, source, idObjet, item, objet: NVI_objet(idObjet) };
-        }
-        return null;
-    }
-
-    function NVI_detailsObjet(objet) {
-        if (!objet) return "";
-        if (typeof creerDetailsObjetInventaire === "function") return creerDetailsObjetInventaire(objet);
-        if (typeof creerDetailsObjet === "function") return creerDetailsObjet(objet);
-        const stats = [
-            ["ATK", "attaque"], ["DEF", "defense"], ["ATK MAGIC", "attaqueMagique"], ["DEF MAGIC", "defenseMagique"],
-            ["PV", "pvMax"], ["MANA", "manaMax"], ["STAMINA", "staminaMax"],
-            ["FOR", "force"], ["DEX", "dexterite"], ["INT", "intelligence"], ["VIT", "vitalite"], ["LUCK", "chance"]
-        ];
-        return stats.filter(([, key]) => objet[key]).map(([label, key]) => `${label} +${objet[key]}`).join(" ");
-    }
-
-    function NVI_quantiteInput(max, prefix = "nviActionQty") {
-        const value = Math.min(Math.max(1, Number(NVI_STATE.quantity || 1)), Math.max(1, Number(max || 1)));
-        NVI_STATE.quantity = value;
-        return `
-            <div class="nvi-quantity">
-                <button onclick="NVI_modifierQuantite(-1, ${max})">-</button>
-                <input id="${prefix}" type="number" min="1" max="${max}" value="${value}" oninput="NVI_setQuantite(this.value, ${max})">
-                <button onclick="NVI_modifierQuantite(1, ${max})">+</button>
-                <button onclick="NVI_setQuantite(${max}, ${max})">MAX</button>
-            </div>
-        `;
-    }
-
-    function NVI_actionPrix(type, objet, quantite) {
-        const prix = type === "achat" ? Number(objet?.prix || 0) : Math.floor(Number(objet?.prix || 0) / 2);
-        return prix * Math.max(1, Number(quantite || 1));
-    }
-
-    function NVI_detailsPanelHTML(contexte) {
-        const selection = NVI_obtenirItemSelectionne();
-        if (!selection || !selection.objet) {
-            return `
-                <aside class="nvi-details">
-                    <div class="nvi-details__empty">
-                        <strong>Aucun objet selectionne</strong>
-                        <span>Clique sur une case pour inspecter un objet.</span>
-                    </div>
-                </aside>
-            `;
-        }
-        const { source, idObjet, item, objet } = selection;
-        const rarete = NVI_rarete(objet);
-        const quantite = Number(item.quantite || 1);
-        const details = NVI_detailsObjet(objet);
-        const prixAchat = NVI_actionPrix("achat", objet, NVI_STATE.quantity);
-        const prixVente = NVI_actionPrix("vente", objet, NVI_STATE.quantity);
-        let actions = "";
-
-        if (source === "player" && contexte === "marchand") {
-            const verrouille = NVI_estItemVerrouille(item);
-            actions += `
-                <button class="nvi-lock-toggle ${verrouille ? "nvi-lock-toggle--locked" : "nvi-lock-toggle--unlocked"}" onclick="event.stopPropagation(); NVI_toggleVerrouillage('${NVI_escapeJs(idObjet)}')">
-                    <span class="nvi-lock-toggle__text">${verrouille ? "Bloque" : "Debloque"}</span>
-                </button>
-                <div class="nvi-trade-box">
-                    <strong>Vente</strong>
-                    ${NVI_quantiteInput(quantite, "nviSellQty")}
-                    <p>Gain : <strong>${prixVente} or</strong></p>
-                    <button onclick="NVI_vendreSelection('${NVI_escapeJs(idObjet)}')">Vendre</button>
-                </div>
-            `;
-        }
-
-        if (source === "merchant") {
-            actions += `
-                <div class="nvi-trade-box">
-                    <strong>Achat</strong>
-                    ${NVI_quantiteInput(quantite, "nviBuyQty")}
-                    <p>Cout : <strong>${prixAchat} or</strong></p>
-                    <button onclick="NVI_acheterSelection('${NVI_escapeJs(idObjet)}')">Acheter</button>
-                </div>
-            `;
-        }
-
-        return `
-            <aside class="nvi-details">
-                <div class="nvi-details__header">
-                    <div class="nvi-details__icon nvi-item--${NVI_escapeAttr(rarete)}">${NVI_iconeObjet(objet)}</div>
-                    <div>
-                        <h3 class="${NVI_escapeAttr(rarete)}">${NVI_escape(objet.nom || idObjet)}</h3>
-                        <p>${NVI_escape(objet.type || "divers")} · ${NVI_escape(objet.rarete || "commun")}${quantite > 1 ? ` · x${quantite}` : ""}</p>
-                    </div>
-                </div>
-                <p class="nvi-details__description">${NVI_escape(objet.description || "Aucune description.")}</p>
-                ${details ? `<p class="nvi-details__stats">${details}</p>` : ""}
-                ${actions}
-            </aside>
-        `;
     }
 
     function NVI_etatFiltre(idFiltre) {
@@ -476,7 +317,7 @@
         return Game.ui.etatFiltresInventaire.types[idFiltre] || "neutre";
     }
 
-    function NVI_toolbarHTML(contexte) {
+    function NVI_toolbarHTML() {
         const filtres = Game.constants?.filtresInventaire || [
             { id: "tous", nom: "Tous" }, { id: "favoris", nom: "Favoris" }, { id: "arme", nom: "Armes" },
             { id: "armure", nom: "Armures" }, { id: "accessoire", nom: "Accessoires" }, { id: "consommable", nom: "Consommables" },
@@ -491,8 +332,8 @@
             <div class="nvi-toolbar">
                 <div class="nvi-toolbar__top">
                     <div>
-                        <h2>${contexte === "marchand" ? "Marchand" : "Inventaire"}</h2>
-                        ${contexte === "marchand" && Game.ui.marchandActuel ? `<p>${NVI_escape(Game.ui.marchandActuel.nom || "Marchand")}</p>` : `<p>Inventaire refonte.</p>`}
+                        <h2>Inventaire</h2>
+                        <p>Inventaire refonte.</p>
                     </div>
                     <button onclick="NVI_triAutomatiqueInventaire()">Tri auto</button>
                     <button onclick="ouvrirExploration()">Retour</button>
@@ -514,31 +355,12 @@
     function NVI_vueInventaireHTML() {
         return `
             <section class="nvi-window">
-                ${NVI_toolbarHTML("inventaire")}
+                ${NVI_toolbarHTML()}
                 <div class="nvi-layout nvi-layout--inventory nvimp-no-details">
                     <div class="nvi-panel">
                         <div class="nvi-panel__title"><strong>Sac</strong><span>${(Game.data.personnage.inventaire || []).length} pile(s)</span></div>
-                        ${NVI_gridInventaireHTML("inventaire", "player")}
+                        ${NVI_gridInventaireHTML()}
                     </div>
-                </div>
-            </section>
-        `;
-    }
-
-    function NVI_vueMarchandHTML() {
-        return `
-            <section class="nvi-window">
-                ${NVI_toolbarHTML("marchand")}
-                <div class="nvi-layout nvi-layout--merchant">
-                    <div class="nvi-panel">
-                        <div class="nvi-panel__title"><strong>Marchand</strong><span>${(Game.ui.marchandActuel?.inventaire || []).length} objet(s)</span></div>
-                        ${NVI_gridMarchandHTML()}
-                    </div>
-                    <div class="nvi-panel">
-                        <div class="nvi-panel__title"><strong>Ton sac</strong><span>${(Game.data.personnage.inventaire || []).length} pile(s)</span></div>
-                        ${NVI_gridInventaireHTML("marchand", "player")}
-                    </div>
-                    ${NVI_detailsPanelHTML("marchand")}
                 </div>
             </section>
         `;
@@ -549,47 +371,22 @@
         if (typeof changerVue === "function") changerVue("inventaire");
         NVI_assurerEtatFiltres();
         NVI_normaliserSlotsInventaire();
-        NVI_STATE.selection = null;
-        NVI_STATE.quantity = 1;
         if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(NVI_vueInventaireHTML());
-    }
-
-    function NVI_ouvrirMarchand(idPnj) {
-        if (!NVI_hasGame()) return;
-        if (typeof changerVue === "function") changerVue("marchand");
-        if (idPnj) Game.ui.marchandActuel = Game.cache?.pnjParId?.[idPnj] || null;
-        if (!Game.ui.marchandActuel) {
-            NVI_journal("Marchand introuvable.");
-            return;
-        }
-        NVI_assurerEtatFiltres();
-        NVI_normaliserSlotsInventaire();
-        NVI_STATE.selection = null;
-        NVI_STATE.quantity = 1;
-        if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(NVI_vueMarchandHTML());
     }
 
     function NVI_redessinerVueActive() {
         if (!NVI_hasGame()) return;
-        if (Game.ui.vueActive === "marchand" && Game.ui.marchandActuel) {
-            if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(NVI_vueMarchandHTML());
-            return;
-        }
         if (Game.ui.vueActive === "inventaire") {
             if (typeof afficherVuePrincipale === "function") afficherVuePrincipale(NVI_vueInventaireHTML());
+            return;
         }
-    }
-
-    function NVI_changerModeMarchand(mode) {
-        Game.ui.modeMarchand = mode;
-        NVI_STATE.selection = null;
-        NVI_STATE.quantity = 1;
-        NVI_redessinerVueActive();
+        if (Game.ui.vueActive === "marchand" && typeof NVM_redessinerVueActive === "function") {
+            NVM_redessinerVueActive();
+        }
     }
 
     function NVI_changerRecherche(value) {
         Game.ui.rechercheInventaire = NVI_normaliserTexte(value);
-        NVI_STATE.selection = null;
         NVI_redessinerVueActive();
         setTimeout(() => {
             const search = document.getElementById("nviSearch");
@@ -620,34 +417,18 @@
                 Game.ui.etatFiltresInventaire.favoris = false;
                 Object.keys(Game.ui.etatFiltresInventaire.types).forEach(key => Game.ui.etatFiltresInventaire.types[key] = "neutre");
             }
-            NVI_STATE.selection = null;
             NVI_redessinerVueActive();
             return;
         }
         if (idFiltre === "favoris") {
             Game.ui.etatFiltresInventaire.favoris = !Game.ui.etatFiltresInventaire.favoris;
             if (typeof synchroniserFiltreInventaireLegacy === "function") synchroniserFiltreInventaireLegacy();
-            NVI_STATE.selection = null;
             NVI_redessinerVueActive();
             return;
         }
         const actuel = Game.ui.etatFiltresInventaire.types[idFiltre] || "neutre";
         Game.ui.etatFiltresInventaire.types[idFiltre] = actuel === "neutre" ? "actif" : actuel === "actif" ? "exclu" : "neutre";
         if (typeof synchroniserFiltreInventaireLegacy === "function") synchroniserFiltreInventaireLegacy();
-        NVI_STATE.selection = null;
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_toggleVerrouillage(idObjet) {
-        const item = (Game.data.personnage.inventaire || []).find(entree => entree.id === idObjet);
-        if (!item) return;
-        const prochainEtat = !NVI_estItemVerrouille(item);
-        NVI_ecrireVerrouPersiste(item, prochainEtat);
-        const slot = Number(item.slot);
-        if (Number.isInteger(slot) && slot >= 0) NVI_ecrireSlotPersiste(item, slot);
-        NVI_journal(prochainEtat ? `${NVI_objetNom(idObjet)} est bloque sur sa case.` : `${NVI_objetNom(idObjet)} est debloque.`);
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory grid persistent lock toggle");
-        NVI_STATE.selection = NVI_selectionKey(Game.ui.vueActive === "marchand" ? "marchand" : "inventaire", "player", idObjet);
         NVI_redessinerVueActive();
     }
 
@@ -715,105 +496,11 @@
         NVI_redessinerVueActive();
     }
 
-    function NVI_modifierQuantite(delta, max) {
-        NVI_setQuantite(Number(NVI_STATE.quantity || 1) + Number(delta || 0), max);
-    }
-
-    function NVI_setQuantite(value, max) {
-        NVI_STATE.quantity = Math.max(1, Math.min(Number(max || 1), Number(value || 1)));
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_acheterSelection(idObjet) {
-        if (typeof acheterObjet === "function") acheterObjet(idObjet, NVI_STATE.quantity || 1);
-        NVI_STATE.quantity = 1;
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory grid buy");
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_vendreSelection(idObjet) {
-        if (typeof vendreObjet === "function") vendreObjet(idObjet, NVI_STATE.quantity || 1);
-        NVI_STATE.quantity = 1;
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory grid sell");
-        NVI_redessinerVueActive();
-    }
-
-    function NVI_doubleClickItem(contexte, source, idObjet) {
-        if (contexte === "inventaire" && source === "player") return false;
-        NVI_selectionner(contexte, source, idObjet);
-    }
-
-    function NVI_dragStart(event, idObjet, slot) {
-        const slotElement = event.target.closest(".nvi-slot");
-        const slotActuel = slotElement ? Number(slotElement.dataset.slot) : Number(slot);
-        NVI_STATE.drag = { idObjet, slot: slotActuel };
-        if (!event.dataTransfer) return;
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", JSON.stringify(NVI_STATE.drag));
-    }
-
-    function NVI_dragOver(event) {
-        event.preventDefault();
-        if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-    }
-
-    function NVI_deplacerDOMSansRedraw(sourceSlot, targetSlot) {
-        const conteneur = document.getElementById("vuePrincipale");
-        if (!conteneur) return false;
-        const sourceSlotElement = conteneur.querySelector(`.nvi-grid--inventory .nvi-slot[data-slot="${sourceSlot}"]`);
-        const targetSlotElement = conteneur.querySelector(`.nvi-grid--inventory .nvi-slot[data-slot="${targetSlot}"]`);
-        const sourceItemElement = sourceSlotElement?.querySelector(".nvi-item");
-        if (!sourceSlotElement || !targetSlotElement || !sourceItemElement) return false;
-        const targetItemElement = targetSlotElement.querySelector(".nvi-item");
-        if (targetItemElement) {
-            const placeholder = document.createComment("nvi-swap-placeholder");
-            sourceSlotElement.appendChild(placeholder);
-            targetSlotElement.appendChild(sourceItemElement);
-            sourceSlotElement.appendChild(targetItemElement);
-            placeholder.remove();
-        } else targetSlotElement.appendChild(sourceItemElement);
-        [sourceSlotElement, targetSlotElement].forEach(slot => {
-            slot.classList.toggle("nvi-slot--occupied", Boolean(slot.querySelector(".nvi-item")));
-            slot.classList.toggle("nvi-slot--locked", Boolean(slot.querySelector(".nvi-item--locked")));
-        });
-        return true;
-    }
-
-    function NVI_dropOnSlot(event, targetSlot) {
-        event.preventDefault();
-        let drag = NVI_STATE.drag;
-        try {
-            const data = event.dataTransfer?.getData("text/plain");
-            if (data) drag = JSON.parse(data);
-        } catch (erreur) {}
-        if (!drag || drag.idObjet == null) return;
-        const sourceSlot = Number(drag.slot);
-        const target = Number(targetSlot);
-        if (!Number.isInteger(sourceSlot) || !Number.isInteger(target) || sourceSlot === target) {
-            NVI_STATE.drag = null;
-            return;
-        }
-        const inventaire = Game.data.personnage.inventaire || [];
-        const sourceItem = inventaire.find(item => item.id === drag.idObjet && Number(item.slot) === sourceSlot) || inventaire.find(item => item.id === drag.idObjet);
-        if (!sourceItem || NVI_estItemVerrouille(sourceItem)) return;
-        const cibleItem = inventaire.find(item => Number(item.slot) === target);
-        if (cibleItem && (!NVI_itemVisible(cibleItem) || NVI_estItemVerrouille(cibleItem))) return;
-        if (cibleItem && cibleItem.id !== sourceItem.id) NVI_ecrireSlotPersiste(cibleItem, sourceSlot);
-        NVI_ecrireSlotPersiste(sourceItem, target);
-        const deplacementDomOk = NVI_deplacerDOMSansRedraw(sourceSlot, target);
-        NVI_STATE.drag = null;
-        if (!deplacementDomOk) NVI_redessinerVueActive();
-        if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory grid move no redraw");
-    }
-
     function NVI_patchCoreFunctions() {
         window.NVI_ouvrirInventaire = NVI_ouvrirInventaire;
-        window.NVI_ouvrirMarchand = NVI_ouvrirMarchand;
         window.NVI_redessinerVueActive = NVI_redessinerVueActive;
         window.ouvrirInventaire = NVI_ouvrirInventaire;
-        window.ouvrirMarchand = NVI_ouvrirMarchand;
         try { ouvrirInventaire = NVI_ouvrirInventaire; } catch (erreur) {}
-        try { ouvrirMarchand = NVI_ouvrirMarchand; } catch (erreur) {}
         const boutonInventaire = document.getElementById("btnInventaire");
         if (boutonInventaire) {
             boutonInventaire.setAttribute("onclick", "NVI_ouvrirInventaire()");
@@ -862,24 +549,12 @@
     }
 
     window.NVI_ouvrirInventaire = NVI_ouvrirInventaire;
-    window.NVI_ouvrirMarchand = NVI_ouvrirMarchand;
     window.NVI_redessinerVueActive = NVI_redessinerVueActive;
-    window.NVI_changerModeMarchand = NVI_changerModeMarchand;
     window.NVI_changerRecherche = NVI_changerRecherche;
     window.NVI_changerTri = NVI_changerTri;
     window.NVI_inverserOrdreTri = NVI_inverserOrdreTri;
     window.NVI_changerFiltre = NVI_changerFiltre;
-    window.NVI_toggleVerrouillage = NVI_toggleVerrouillage;
     window.NVI_triAutomatiqueInventaire = NVI_triAutomatiqueInventaire;
-    window.NVI_modifierQuantite = NVI_modifierQuantite;
-    window.NVI_setQuantite = NVI_setQuantite;
-    window.NVI_acheterSelection = NVI_acheterSelection;
-    window.NVI_vendreSelection = NVI_vendreSelection;
-    window.NVI_selectionner = NVI_selectionner;
-    window.NVI_doubleClickItem = NVI_doubleClickItem;
-    window.NVI_dragStart = NVI_dragStart;
-    window.NVI_dragOver = NVI_dragOver;
-    window.NVI_dropOnSlot = NVI_dropOnSlot;
     window.NVI_VERSION = NV_INVENTORY_GRID_VERSION;
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", NVI_installer);
