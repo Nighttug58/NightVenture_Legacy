@@ -37,6 +37,11 @@
         return inventory().find(item => item.id === id) || null;
     }
 
+    function slotNumber(slot, fallback = 0) {
+        const value = Number(slot?.dataset?.slot);
+        return Number.isInteger(value) && value >= 0 ? value : fallback;
+    }
+
     function slotMap() {
         const map = new Map();
         inventory().forEach(item => {
@@ -101,11 +106,14 @@
         return true;
     }
 
+    function cssEscape(value) {
+        if (typeof CSS !== "undefined" && CSS.escape) return CSS.escape(String(value));
+        return String(value).replace(/\\/g, "\\\\").replace(/\"/g, "\\\"");
+    }
+
     function moveItemDomToSlot(idObjet, targetSlot) {
-        const escapedId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(String(idObjet)) : String(idObjet).replace(/\\/g, "\\\\").replace(/\"/g, "\\\"");
-        const escapedSlot = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(String(targetSlot)) : String(targetSlot);
-        const item = document.querySelector(`.nvi-layout--inventory .nvi-item[data-nvi-item-id="${escapedId}"]`);
-        const target = document.querySelector(`.nvi-layout--inventory .nvi-grid--inventory .nvi-slot[data-slot="${escapedSlot}"]`);
+        const item = document.querySelector(`.nvi-layout--inventory .nvi-item[data-nvi-item-id="${cssEscape(idObjet)}"]`);
+        const target = document.querySelector(`.nvi-layout--inventory .nvi-grid--inventory .nvi-slot[data-slot="${cssEscape(targetSlot)}"]`);
         if (!item || !target) return false;
 
         const source = item.closest(".nvi-slot");
@@ -223,7 +231,7 @@
             .nvi-layout--inventory .nvi-details:has(.nvi-details__empty) { display:none!important; }
             .nvi-layout--inventory .nvi-panel__title { display:none!important; margin:0!important; }
             .nvi-layout--inventory .nvi-grid--inventory { grid-template-columns:repeat(5,minmax(0,1fr))!important; gap:6px!important; touch-action:manipulation; }
-            .nvi-layout--inventory .nvi-slot { min-height:58px!important; border-radius:12px!important; }
+            .nvi-layout--inventory .nvi-slot { min-height:58px!important; border-radius:12px!important; pointer-events:auto!important; }
             .nvi-layout--inventory .nvi-slot.nvimp-touch-target { border-color:rgba(245,211,122,.70)!important; box-shadow:0 0 14px rgba(245,211,122,.16)!important; }
             .nvi-layout--inventory .nvi-item { border-radius:11px!important; touch-action:none; user-select:none; -webkit-user-select:none; }
             .nvi-layout--inventory .nvi-item.nvimp-moving { outline:2px solid #f5d37a!important; outline-offset:-2px; filter:brightness(1.2); }
@@ -302,28 +310,51 @@
         return pager;
     }
 
-    function ensureMobileSlotCount(grid) {
-        const slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
-        const highest = slots.reduce((max, slot) => Math.max(max, Number(slot.dataset.slot) || 0), -1);
-        for (let i = highest + 1; i < MIN_MOBILE_SLOTS; i++) {
+    function ensureSlotRange(grid, firstSlot, count) {
+        const existing = new Set(Array.from(grid.querySelectorAll(":scope > .nvi-slot")).map(slot => slotNumber(slot)));
+        for (let slotIndex = firstSlot; slotIndex < firstSlot + count; slotIndex++) {
+            if (existing.has(slotIndex)) continue;
             const slot = document.createElement("div");
             slot.className = "nvi-slot";
-            slot.dataset.slot = String(i);
+            slot.dataset.slot = String(slotIndex);
             grid.appendChild(slot);
         }
     }
 
+    function ensureMobileSlotCount(grid) {
+        const slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
+        slots.forEach((slot, index) => {
+            if (!slot.dataset.slot) slot.dataset.slot = String(index);
+        });
+
+        const highestDom = slots.reduce((max, slot, index) => Math.max(max, slotNumber(slot, index)), -1);
+        const highestData = inventory().reduce((max, item) => Math.max(max, Number(item.slot) || 0), -1);
+        const highest = Math.max(MIN_MOBILE_SLOTS - 1, highestDom, highestData);
+        ensureSlotRange(grid, 0, highest + 1);
+    }
+
     function applyPagerToGrid(grid) {
         ensureMobileSlotCount(grid);
-        const slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
+        let slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
         if (slots.length === 0) return { pageCount: 1, activePage: 0 };
-        const pageCount = Math.max(1, Math.ceil(slots.length / SLOTS_PER_PAGE));
+
+        const highestSlot = slots.reduce((max, slot, index) => Math.max(max, slotNumber(slot, index)), 0);
+        const pageCount = Math.max(1, Math.ceil((highestSlot + 1) / SLOTS_PER_PAGE));
         const activePage = Math.min(getPage(), pageCount - 1);
         Game.ui.nvInventairePage = activePage;
+
+        ensureSlotRange(grid, firstSlotOfPage(activePage), SLOTS_PER_PAGE);
+        slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
+
+        const start = firstSlotOfPage(activePage);
+        const end = start + SLOTS_PER_PAGE;
         slots.forEach((slot, index) => {
-            const visible = index >= activePage * SLOTS_PER_PAGE && index < (activePage + 1) * SLOTS_PER_PAGE;
+            const slotId = slotNumber(slot, index);
+            const visible = slotId >= start && slotId < end;
             slot.style.display = visible ? "" : "none";
+            slot.classList.toggle("nvimp-visible-slot", visible);
         });
+
         let pager = grid.parentElement?.querySelector(":scope > .nvimp-pager");
         if (pager) pager.remove();
         pager = buildPager(pageCount, activePage, "nvimp-pager", "navigate");
@@ -331,7 +362,35 @@
         return { pageCount, activePage };
     }
 
+    function delegatedSlotMove(event, grid) {
+        if (!moveModeItemId) return;
+        const slot = event.target?.closest?.(".nvi-slot");
+        if (!slot || !grid.contains(slot)) return;
+
+        const targetSlot = slotNumber(slot, -1);
+        if (targetSlot < 0) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        const id = moveModeItemId;
+        if (moveItemToSlot(id, targetSlot)) {
+            moveItemDomToSlot(id, targetSlot);
+            moveModeItemId = null;
+            document.querySelectorAll(".nvi-slot.nvimp-touch-target").forEach(el => el.classList.remove("nvimp-touch-target"));
+            document.querySelectorAll(".nvi-item.nvimp-moving").forEach(el => el.classList.remove("nvimp-moving"));
+            applyPagedInventory();
+        }
+    }
+
     function enableTouchMove(grid) {
+        if (!grid.__NVIMP_DELEGATED_SLOT_MOVE) {
+            grid.__NVIMP_DELEGATED_SLOT_MOVE = true;
+            grid.addEventListener("click", function (event) { delegatedSlotMove(event, grid); }, true);
+            grid.addEventListener("pointerup", function (event) { delegatedSlotMove(event, grid); }, true);
+        }
+
         const slots = Array.from(grid.querySelectorAll(":scope > .nvi-slot"));
         slots.forEach(slot => {
             if (slot.__NVIMP_TOUCH) return;
@@ -341,10 +400,13 @@
                 event.preventDefault();
                 event.stopPropagation();
                 const id = moveModeItemId;
-                const targetSlot = Number(slot.dataset.slot);
+                const targetSlot = slotNumber(slot, -1);
+                if (targetSlot < 0) return;
                 if (moveItemToSlot(id, targetSlot)) {
                     moveItemDomToSlot(id, targetSlot);
                     moveModeItemId = null;
+                    document.querySelectorAll(".nvi-slot.nvimp-touch-target").forEach(el => el.classList.remove("nvimp-touch-target"));
+                    document.querySelectorAll(".nvi-item.nvimp-moving").forEach(el => el.classList.remove("nvimp-moving"));
                     applyPagedInventory();
                 }
             }, true);
