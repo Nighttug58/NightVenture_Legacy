@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const NV_INVENTORY_GRID_VERSION = "v0.9.9.10-clean-player-renderer";
+    const NV_INVENTORY_GRID_VERSION = "v0.9.9.10-static-styles";
 
     const NVI_CONFIG = {
         inventorySlots: 72,
@@ -1005,55 +1005,7 @@
     }
 
     function NVI_injecterStyle() {
-        if (document.getElementById("nviGridInventoryStyle")) return;
-        const style = document.createElement("style");
-        style.id = "nviGridInventoryStyle";
-        style.textContent = `
-            .nvi-window { display: flex; flex-direction: column; gap: 12px; }
-            .nvi-toolbar { padding: 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; background: radial-gradient(circle at top right, rgba(245,211,122,0.055), transparent 42%), rgba(0,0,0,0.18); }
-            .nvi-toolbar__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
-            .nvi-toolbar__top h2 { margin: 0 0 4px; }
-            .nvi-toolbar__top p { margin: 0; color: var(--text-muted, #c7bdad); font-size: 0.86rem; }
-            .nvi-toolbar__search-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(130px, 180px) auto; gap: 8px; margin-bottom: 10px; }
-            .nvi-toolbar__search-row input, .nvi-toolbar__search-row select { width: 100%; min-height: 34px; box-sizing: border-box; border-radius: 999px; border: 1px solid rgba(255,255,255,0.10); background: rgba(0,0,0,0.24); color: var(--text, #f1eadf); padding: 7px 10px; outline: none; }
-            .nvi-filters { display: flex; flex-wrap: wrap; gap: 6px; }
-            .nvi-filter { padding: 6px 9px; border-radius: 999px; font-size: 0.78rem; }
-            .nvi-filter[data-etat="actif"] { border-color: rgba(80,220,130,0.38); color: #9dffb8; box-shadow: 0 0 10px rgba(80,220,130,0.10); }
-            .nvi-filter[data-etat="exclu"] { border-color: rgba(255,100,100,0.34); color: #ffb4b4; opacity: 0.72; }
-            .nvi-layout { display: grid; gap: 12px; align-items: start; }
-            .nvi-layout--inventory { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); }
-            .nvi-layout--merchant { grid-template-columns: minmax(300px, 0.9fr) minmax(300px, 0.9fr) minmax(280px, 340px); }
-            .nvi-panel, .nvi-details { border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; background: rgba(0,0,0,0.16); padding: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.16); }
-            .nvi-panel__title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: var(--text-muted, #c7bdad); }
-            .nvi-grid { display: grid; grid-template-columns: repeat(var(--nvi-columns), minmax(34px, 1fr)); gap: 5px; }
-            .nvi-slot { position: relative; aspect-ratio: 1 / 1; min-height: 38px; border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; background: rgba(0,0,0,0.24); overflow: hidden; }
-            .nvi-slot--locked { border-color: rgba(245,211,122,0.36); }
-            .nvi-slot--filtered { opacity: 0.38; }
-            .nvi-item { position: relative; width: 100%; height: 100%; padding: 0; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.20)); color: var(--text, #f1eadf); cursor: pointer; overflow: hidden; }
-            .nvi-layout--merchant .nvi-item--selected { outline: 2px solid var(--gold, #f5d37a); outline-offset: -2px; }
-            .nvi-item--locked { filter: saturate(0.85); }
-            .nvi-item__icon img { width: 80%; height: 80%; object-fit: contain; display: block; }
-            .nvi-item__text-icon { display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.02em; color: var(--gold, #f5d37a); }
-            .nvi-item__favorite, .nvi-item__lock, .nvi-item__qty { position: absolute; z-index: 2; padding: 1px 4px; border-radius: 999px; background: rgba(0,0,0,0.72); color: var(--gold, #f5d37a); font-size: 0.58rem; line-height: 1.2; }
-            .nvi-item__favorite { left: 2px; top: 2px; }
-            .nvi-item__lock { right: 2px; top: 2px; }
-            .nvi-item__qty { right: 2px; bottom: 2px; color: #fff; }
-            .nvi-details { position: sticky; top: 10px; }
-            .nvi-details__empty { min-height: 140px; display: flex; flex-direction: column; justify-content: center; gap: 6px; color: var(--text-muted, #c7bdad); }
-            .nvi-details__header { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-            .nvi-details__icon { width: 54px; height: 54px; border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.22); }
-            .nvi-details__icon img { width: 84%; height: 84%; object-fit: contain; }
-            .nvi-details__description { color: var(--text-muted, #c7bdad); line-height: 1.45; }
-            .nvi-details__stats { color: var(--gold, #f5d37a); font-weight: bold; }
-            .nvi-details__actions, .nvi-trade-box, .nvi-delete-confirm { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-            .nvi-trade-box { padding: 10px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; background: rgba(0,0,0,0.16); }
-            .nvi-quantity { display: flex; gap: 5px; align-items: center; }
-            .nvi-quantity input { width: 68px; text-align: center; }
-            .nvi-danger { border-color: rgba(255, 100, 100, 0.35) !important; color: #ffb4b4 !important; }
-            .nvi-lock-toggle { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
-            @media (max-width: 900px) { .nvi-layout, .nvi-layout--inventory, .nvi-layout--merchant { grid-template-columns: 1fr; } .nvi-details { position: static; } .nvi-grid { grid-template-columns: repeat(6, minmax(34px, 1fr)); } .nvi-toolbar__search-row { grid-template-columns: 1fr; } }
-        `;
-        document.head.appendChild(style);
+        document.getElementById("nviGridInventoryStyle")?.remove();
     }
 
     function NVI_installer() {
