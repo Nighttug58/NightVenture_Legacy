@@ -11,8 +11,8 @@
                 position: fixed !important;
                 left: max(10px, env(safe-area-inset-left)) !important;
                 right: max(10px, env(safe-area-inset-right)) !important;
-                bottom: calc(74px + env(safe-area-inset-bottom)) !important;
-                top: auto !important;
+                top: calc(12px + env(safe-area-inset-top)) !important;
+                bottom: auto !important;
                 z-index: 1190 !important;
                 width: auto !important;
                 height: auto !important;
@@ -20,6 +20,7 @@
                 overflow: visible !important;
                 margin: 0 !important;
                 transform: none !important;
+                transform-origin: top center !important;
             }
 
             .nvi-layout--inventory > .nvi-details.nvimp-details-popup:not(:has(.nvi-details__empty)):not(.nvipr-popup) {
@@ -28,6 +29,8 @@
             }
 
             .nvi-layout--inventory > .nvi-details.nvimp-details-popup.nvipr-popup {
+                top: calc(12px + env(safe-area-inset-top)) !important;
+                bottom: auto !important;
                 opacity: 1 !important;
                 pointer-events: auto !important;
             }
