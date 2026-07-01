@@ -30,37 +30,42 @@
         return Math.max(0, Number(page) || 0) * SLOTS_PER_PAGE;
     }
 
-    function firstFreeSlotInPage(page, ignoredId) {
-        const start = firstSlotOfPage(page);
-        const used = new Map();
-        inventory().forEach(item => {
-            const slot = Number(item.slot);
-            if (Number.isInteger(slot) && slot >= 0) used.set(slot, item);
-        });
-
-        for (let slot = start; slot < start + SLOTS_PER_PAGE; slot++) {
-            const occupant = used.get(slot);
-            if (!occupant || occupant.id === ignoredId) return slot;
-        }
-        return start;
-    }
-
     function cssEscape(value) {
         if (typeof CSS !== "undefined" && CSS.escape) return CSS.escape(String(value));
         return String(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+    }
+
+    function domSlotOccupied(slot, ignoredId) {
+        const target = document.querySelector(`.nvi-layout--inventory .nvi-grid--inventory .nvi-slot[data-slot="${cssEscape(slot)}"]`);
+        const occupant = target?.querySelector(".nvi-item[data-nvi-item-id]");
+        if (!occupant) return false;
+        return occupant.dataset.nviItemId !== ignoredId;
+    }
+
+    function dataSlotOccupied(slot, ignoredId) {
+        return inventory().some(item => {
+            if (item.id === ignoredId) return false;
+            return Number(item.slot) === Number(slot);
+        });
+    }
+
+    function firstFreeSlotInPage(page, ignoredId) {
+        const start = firstSlotOfPage(page);
+        for (let slot = start; slot < start + SLOTS_PER_PAGE; slot++) {
+            if (!dataSlotOccupied(slot, ignoredId) && !domSlotOccupied(slot, ignoredId)) return slot;
+        }
+        return start + SLOTS_PER_PAGE - 1;
     }
 
     function moveItemData(idObjet, targetSlot) {
         const item = findItem(idObjet);
         if (!item) return false;
 
-        const sourceSlot = Number(item.slot);
         const target = Number(targetSlot);
         if (!Number.isInteger(target) || target < 0) return false;
 
-        const occupant = inventory().find(entry => entry !== item && Number(entry.slot) === target);
-        if (occupant && Number.isInteger(sourceSlot) && sourceSlot >= 0) {
-            persistSlot(occupant, sourceSlot);
+        if (dataSlotOccupied(target, idObjet)) {
+            return false;
         }
 
         persistSlot(item, target);
@@ -74,8 +79,9 @@
         if (!item || !target) return false;
 
         const source = item.closest(".nvi-slot");
-        const occupant = target.querySelector(".nvi-item");
-        if (occupant && source && occupant !== item) source.appendChild(occupant);
+        const occupant = target.querySelector(".nvi-item[data-nvi-item-id]");
+        if (occupant && occupant.dataset.nviItemId !== idObjet) return false;
+
         target.appendChild(item);
 
         [source, target].forEach(slot => {
@@ -108,11 +114,16 @@
         const idObjet = forcedId || itemIdFromPopup(document.activeElement);
         if (!idObjet || page < 0) return false;
 
-        const targetSlot = firstFreeSlotInPage(page, idObjet);
-        if (!moveItemData(idObjet, targetSlot)) return false;
+        let targetSlot = firstFreeSlotInPage(page, idObjet);
+        if (!moveItemData(idObjet, targetSlot)) {
+            targetSlot = firstFreeSlotInPage(page, idObjet);
+            if (!moveItemData(idObjet, targetSlot)) return false;
+        }
 
         Game.ui.nvInventairePage = Math.max(0, Number(page) || 0);
-        moveItemDom(idObjet, targetSlot);
+        if (!moveItemDom(idObjet, targetSlot)) {
+            if (typeof window.NVIMP_applyPagedInventory === "function") requestAnimationFrame(window.NVIMP_applyPagedInventory);
+        }
 
         const details = document.querySelector(".nvi-layout--inventory > .nvi-details[data-nvipr-item-id]");
         if (details) details.dataset.nviprItemId = idObjet;
