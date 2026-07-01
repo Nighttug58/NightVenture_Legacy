@@ -641,11 +641,27 @@
     function neutralizeNativeDragTargets(root = document) {
         root.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-item, .nvi-layout--inventory .nvi-grid--inventory .nvi-item *").forEach(node => {
             if (!node?.setAttribute) return;
+            node.removeAttribute("onclick");
+            node.removeAttribute("ondblclick");
+            node.removeAttribute("ondragstart");
+            node.removeAttribute("ondragover");
+            node.removeAttribute("ondrop");
+            node.onclick = null;
+            node.ondblclick = null;
+            node.ondragstart = null;
+            node.ondragover = null;
+            node.ondrop = null;
             node.setAttribute("draggable", "false");
             node.style.webkitTouchCallout = "none";
             node.style.userSelect = "none";
             node.style.webkitUserSelect = "none";
             try { node.draggable = false; } catch (_) {}
+        });
+        root.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-slot").forEach(slot => {
+            slot.removeAttribute("ondragover");
+            slot.removeAttribute("ondrop");
+            slot.ondragover = null;
+            slot.ondrop = null;
         });
     }
 
