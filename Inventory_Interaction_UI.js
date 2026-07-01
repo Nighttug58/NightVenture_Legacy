@@ -1,15 +1,18 @@
 /* NightVenture — Inventory Interaction UI
    Public entrypoint for inventory popup, pagination, direct drag and item actions.
-   Backend temporaire restant : Inventory_Mobile_Paged.js pour pagination, drag/drop et rendu popup. */
+   Backend temporaire restant : Inventory_Mobile_Paged.js pour pagination et drag/drop. */
 (function () {
     "use strict";
 
-    const ENTRY_VERSION = "v0.9.9.23-interaction-integrated-instance";
-    const BRIDGE_VERSION = "v0.9.9.23-instance-metadata-integrated";
-    const ACTIONS_VERSION = "v0.9.9.23-instance-actions-integrated";
+    const ENTRY_VERSION = "v0.9.9.24-interaction-popup-renderer";
+    const BRIDGE_VERSION = "v0.9.9.24-instance-metadata-integrated";
+    const ACTIONS_VERSION = "v0.9.9.24-instance-actions-integrated";
+    const POPUP_VERSION = "v0.9.9.24-popup-renderer-integrated";
     const BACKEND_SRC = "Inventory_Mobile_Paged.js";
     const BACKEND_ID = "nvInventoryInteractionBackend";
+    const SLOTS_PER_PAGE = 30;
     const MOVE_CLICK_SUPPRESS_MS = 240;
+    const PAGE_LABELS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
     const DUPLICATE_UNSAFE_ACTIONS = new Set([]);
 
     let lastClickedMeta = null;
@@ -23,6 +26,7 @@
     window.NVI_INTERACTION_BACKEND_SRC = BACKEND_SRC;
     window.NVI_INTERACTION_BRIDGE_SRC = "integrated";
     window.NVI_INTERACTION_ACTIONS_SRC = "integrated";
+    window.NVI_INTERACTION_POPUP_SRC = "integrated";
 
     function backendReady() {
         return typeof window.NVIMP_applyPagedInventory === "function" || typeof window.NVIPR_applyPopupRework === "function";
@@ -67,6 +71,23 @@
         return objectData(id)?.nom || id;
     }
 
+    function objectIcon(obj) {
+        if (obj?.image) return `<img src="${escapeHtml(obj.image)}" alt="${escapeHtml(obj.nom || "Objet")}">`;
+        return `<span class="nvi-item__text-icon">OBJ</span>`;
+    }
+
+    function objectDetails(obj) {
+        if (!obj) return "";
+        if (typeof window.creerDetailsObjetInventaire === "function") return window.creerDetailsObjetInventaire(obj);
+        if (typeof window.creerDetailsObjet === "function") return window.creerDetailsObjet(obj);
+        const stats = [
+            ["ATK", "attaque"], ["DEF", "defense"], ["ATK MAGIC", "attaqueMagique"], ["DEF MAGIC", "defenseMagique"],
+            ["PV", "pvMax"], ["MANA", "manaMax"], ["STAMINA", "staminaMax"],
+            ["FOR", "force"], ["DEX", "dexterite"], ["INT", "intelligence"], ["VIT", "vitalite"], ["LUCK", "chance"]
+        ];
+        return stats.filter(([, stat]) => obj[stat]).map(([label, stat]) => `${label} +${obj[stat]}`).join(" ");
+    }
+
     function journal(message) {
         if (typeof window.ajouterJournal === "function") window.ajouterJournal(message);
     }
@@ -81,6 +102,10 @@
 
     function popup() {
         return document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id]");
+    }
+
+    function inventoryLayout() {
+        return document.querySelector(".nvi-layout--inventory");
     }
 
     function slotNode(slot) {
@@ -105,6 +130,45 @@
         return (window.Game?.data?.personnage?.favoris || []).includes(id);
     }
 
+    function isLockedItem(item) {
+        if (!item) return false;
+        const itemKey = key(item);
+        const locks = window.Game?.data?.personnage?.inventaireVerrous || {};
+        if (Object.prototype.hasOwnProperty.call(locks, itemKey)) return Boolean(locks[itemKey]);
+        return Boolean(item.verrouille || item.locked || item.bloque);
+    }
+
+    function label(page) {
+        return PAGE_LABELS[page] || String(page + 1);
+    }
+
+    function currentPage() {
+        window.Game.ui.nvInventairePage ??= 0;
+        return Math.max(0, Number(window.Game.ui.nvInventairePage) || 0);
+    }
+
+    function pageCount() {
+        const slots = Array.from(document.querySelectorAll(".nvi-layout--inventory .nvi-grid--inventory .nvi-slot"));
+        const maxDom = slots.reduce((max, slot) => Math.max(max, Number(slot.dataset.slot) || 0), 0);
+        const maxData = inv().reduce((max, item) => Math.max(max, slotOf(item)), 0);
+        return Math.max(1, Math.ceil((Math.max(maxDom, maxData) + 1) / SLOTS_PER_PAGE));
+    }
+
+    function buildPopupPager() {
+        const count = pageCount();
+        const active = Math.min(currentPage(), count - 1);
+        let html = `<div class="nvimp-popup-pager"><span class="nvimp-popup-pager__label">Déplacer l'objet vers page</span>`;
+        for (let page = 0; page < count; page++) {
+            html += `<button type="button" class="nvimp-page-btn${page === active ? " is-active" : ""}" data-nvimp-page="${page}" data-nvimp-mode="move">${label(page)}</button>`;
+        }
+        return html + `</div>`;
+    }
+
+    function clearInventorySelectionClasses(root = document) {
+        root.querySelectorAll(".nvi-layout--inventory .nvi-item--selected, .nvi-layout--inventory .nvimp-item--popup-open")
+            .forEach(item => item.classList.remove("nvi-item--selected", "nvimp-item--popup-open"));
+    }
+
     function extractMeta(button) {
         if (!button) return null;
         return {
@@ -112,6 +176,15 @@
             key: button.dataset.nviItemKey || "",
             slot: button.closest(".nvi-slot")?.dataset?.slot || button.dataset.nviItemSlot || ""
         };
+    }
+
+    function resolveItemFromMeta(meta) {
+        if (!meta) return null;
+        let item = meta.key ? inv().find(entry => key(entry) === meta.key) : null;
+        const slot = Number(meta.slot);
+        if (!item && Number.isInteger(slot) && slot >= 0) item = inv().find(entry => entry.id === meta.id && slotOf(entry) === slot);
+        if (!item) item = inv().find(entry => entry.id === meta.id) || null;
+        return item;
     }
 
     function attachMetaToPopup() {
@@ -135,13 +208,63 @@
     }
 
     function closePopup() {
-        if (typeof window.NVIMP_closeInventoryPopup === "function") window.NVIMP_closeInventoryPopup();
-        else livePopup()?.remove();
+        clearInventorySelectionClasses();
+        livePopup()?.remove();
+        inventoryLayout()?.classList.add("nvimp-no-details");
     }
 
     function redrawInventory() {
         if (typeof window.NVI_redessinerVueActive === "function") window.NVI_redessinerVueActive();
         else if (typeof window.NVIMP_applyPagedInventory === "function") window.NVIMP_applyPagedInventory();
+    }
+
+    function renderInventoryPopupFromButton(button) {
+        const layout = inventoryLayout();
+        const meta = extractMeta(button);
+        const item = resolveItemFromMeta(meta);
+        const obj = item ? objectData(item.id) : null;
+        if (!layout || !item || !obj) return false;
+
+        lastClickedMeta = { id: item.id, key: key(item), slot: String(slotOf(item)) };
+        clearInventorySelectionClasses();
+        button.classList.add("nvimp-item--popup-open");
+
+        let box = livePopup() || document.createElement("aside");
+        if (!box.parentElement) layout.appendChild(box);
+
+        const rarete = obj.rarete || "commun";
+        const qty = Number(item.quantite || 1);
+        const stats = objectDetails(obj);
+        const favorite = isFavoriteId(item.id);
+        const locked = isLockedItem(item);
+
+        box.className = "nvi-details nvimp-details-popup nvipr-popup";
+        box.dataset.nviprItemId = item.id;
+        box.dataset.nviprItemKey = key(item);
+        box.dataset.nviprSlot = String(slotOf(item));
+        box.innerHTML = `
+            <button type="button" class="nvimp-popup-close">×</button>
+            <div class="nvi-details__header">
+                <div class="nvi-details__icon nvi-item--${escapeHtml(rarete)}">${objectIcon(obj)}</div>
+                <div>
+                    <h3 class="${escapeHtml(rarete)}">${escapeHtml(obj.nom || item.id)}</h3>
+                    <p data-nvipr-meta="1"><span class="nvipr-meta-line">${escapeHtml(obj.type || "divers")} · ${escapeHtml(obj.rarete || "commun")}</span><span class="nvipr-meta-line">Quantité : ${qty}</span></p>
+                </div>
+            </div>
+            ${stats ? `<p class="nvi-details__stats">${stats}</p>` : ""}
+            <p class="nvi-details__description">${escapeHtml(obj.description || "Aucune description.")}</p>
+            <div class="nvi-details__actions">
+                ${obj.type === "consommable" ? `<button type="button" data-nvipr-action="use" data-nvipr-id="${escapeHtml(item.id)}">Utiliser</button>` : obj.type === "bague" ? `<button type="button" data-nvipr-action="equip-ring1" data-nvipr-id="${escapeHtml(item.id)}">Anneau I</button><button type="button" data-nvipr-action="equip-ring2" data-nvipr-id="${escapeHtml(item.id)}">Anneau II</button>` : `<button type="button" data-nvipr-action="equip" data-nvipr-id="${escapeHtml(item.id)}">Équiper</button>`}
+            </div>
+            <div class="nvipr-secondary-row">
+                <button type="button" class="nvipr-secondary-action" data-nvipr-action="favorite" data-nvipr-id="${escapeHtml(item.id)}">${favorite ? "Retirer favori" : "Ajouter favori"}</button>
+                <button type="button" class="nvi-lock-toggle ${locked ? "nvi-lock-toggle--locked" : "nvi-lock-toggle--unlocked"}" data-nvipr-action="lock" data-nvipr-id="${escapeHtml(item.id)}"><span class="nvi-lock-toggle__text">${locked ? "Bloqué" : "Libre"}</span></button>
+            </div>
+            <button type="button" class="nvi-danger" data-nvipr-action="delete-open" data-nvipr-id="${escapeHtml(item.id)}">Jeter l'objet</button>
+            ${buildPopupPager()}
+        `;
+        layout.classList.remove("nvimp-no-details");
+        return true;
     }
 
     function refreshFavoriteVisual(id, active) {
@@ -387,8 +510,8 @@
     }
 
     function firstFreeSlotInPage(page, movingItem) {
-        const start = Math.max(0, Number(page) || 0) * 30;
-        for (let slot = start; slot < start + 30; slot++) {
+        const start = Math.max(0, Number(page) || 0) * SLOTS_PER_PAGE;
+        for (let slot = start; slot < start + SLOTS_PER_PAGE; slot++) {
             const used = inv().some(entry => entry !== movingItem && slotOf(entry) === slot);
             if (!used) return slot;
         }
@@ -438,6 +561,14 @@
         return true;
     }
 
+    function handleItemSelection(event) {
+        if (window.Game?.ui?.vueActive !== "inventaire") return;
+        const button = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]");
+        if (!button) return;
+        stopActionEvent(event);
+        renderInventoryPopupFromButton(button);
+    }
+
     function handleInstanceActions(event) {
         if (window.Game?.ui?.vueActive !== "inventaire") return;
         const closeButton = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-close");
@@ -484,6 +615,13 @@
         attachMetaToPopup();
     }
 
+    function installPopupRenderer() {
+        window.NVI_INTERACTION_POPUP_VERSION = POPUP_VERSION;
+        if (window.__NVI_INTERACTION_POPUP_RENDERER) return;
+        window.__NVI_INTERACTION_POPUP_RENDERER = true;
+        window.addEventListener("click", handleItemSelection, true);
+    }
+
     function installInstanceActions() {
         window.NVI_INSTANCE_ACTIONS_VERSION = ACTIONS_VERSION;
         if (window.__NVI_INSTANCE_ACTIONS) return;
@@ -494,6 +632,7 @@
 
     function installIntegratedInstanceLayer() {
         installMetadataBridge();
+        installPopupRenderer();
         installInstanceActions();
     }
 
@@ -504,6 +643,7 @@
                 version: ENTRY_VERSION,
                 backend: BACKEND_SRC,
                 bridge: "integrated",
+                popup: "integrated",
                 actions: "integrated",
                 ready: backendReady()
             }
