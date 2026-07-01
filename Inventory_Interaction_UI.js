@@ -1,23 +1,20 @@
 /* NightVenture — Inventory Interaction UI
-   Public entrypoint for inventory popup, pagination, direct drag and item actions.
-   Backend temporaire restant : Inventory_Mobile_Paged.js pour pagination et drag/drop. */
+   Popup renderer + instance-aware inventory actions.
+   Pagination and direct drag/drop are handled by Inventory_Paged_Drag_UI.js. */
 (function () {
     "use strict";
 
-    const ENTRY_VERSION = "v0.9.9.26-interaction-popup-renderer";
-    const BRIDGE_VERSION = "v0.9.9.26-instance-metadata-integrated";
-    const ACTIONS_VERSION = "v0.9.9.26-instance-actions-integrated";
-    const POPUP_VERSION = "v0.9.9.26-popup-renderer-integrated";
-    const BACKEND_SRC = "Inventory_Mobile_Paged.js";
-    const BACKEND_ID = "nvInventoryInteractionBackend";
+    const ENTRY_VERSION = "v0.9.9.29-interaction-clean";
+    const BRIDGE_VERSION = "v0.9.9.29-instance-metadata-integrated";
+    const ACTIONS_VERSION = "v0.9.9.29-instance-actions-integrated";
+    const POPUP_VERSION = "v0.9.9.29-popup-renderer-integrated";
+    const BACKEND_SRC = "Inventory_Paged_Drag_UI.js";
     const SLOTS_PER_PAGE = 30;
     const MOVE_CLICK_SUPPRESS_MS = 240;
     const PAGE_LABELS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
-    const DUPLICATE_UNSAFE_ACTIONS = new Set([]);
 
     let lastClickedMeta = null;
     let suppressMoveClickUntil = 0;
-    const duplicateWarnings = new Set();
 
     if (window.__NVI_INTERACTION_ENTRYPOINT_LOADED) return;
     window.__NVI_INTERACTION_ENTRYPOINT_LOADED = true;
@@ -27,15 +24,12 @@
     window.NVI_INTERACTION_BRIDGE_SRC = "integrated";
     window.NVI_INTERACTION_ACTIONS_SRC = "integrated";
     window.NVI_INTERACTION_POPUP_SRC = "integrated";
-    window.__NVIMP_POPUP_ACTIONS = true;
-    window.__NVIMP_POPUP_PAGER_ACTIONS = true;
+    window.NVI_INSTANCE_METADATA_BRIDGE_VERSION = BRIDGE_VERSION;
+    window.NVI_INSTANCE_ACTIONS_VERSION = ACTIONS_VERSION;
+    window.NVI_INTERACTION_POPUP_VERSION = POPUP_VERSION;
 
     function backendReady() {
-        return typeof window.NVIMP_applyPagedInventory === "function" || typeof window.NVIPR_applyPopupRework === "function";
-    }
-
-    function existingBackendScript() {
-        return document.getElementById(BACKEND_ID) || document.querySelector(`script[src="${BACKEND_SRC}"]`);
+        return Boolean(window.NVIPD_VERSION && typeof window.NVIMP_applyPagedInventory === "function");
     }
 
     function inv() {
@@ -98,16 +92,16 @@
         if (typeof window.NV_demanderAutosave === "function") window.NV_demanderAutosave(reason);
     }
 
+    function inventoryLayout() {
+        return document.querySelector(".nvi-layout--inventory");
+    }
+
     function livePopup() {
         return document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup");
     }
 
     function popup() {
         return document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id]");
-    }
-
-    function inventoryLayout() {
-        return document.querySelector(".nvi-layout--inventory");
     }
 
     function slotNode(slot) {
@@ -123,13 +117,14 @@
         return Array.from(document.querySelectorAll(`.nvi-layout--inventory .nvi-item[data-nvi-item-id="${css(id)}"]`));
     }
 
-    function duplicateCount(id) {
-        if (!id) return 0;
-        return inv().filter(entry => entry?.id === id).length;
-    }
-
     function isFavoriteId(id) {
         return (window.Game?.data?.personnage?.favoris || []).includes(id);
+    }
+
+    function normalizeFavorites() {
+        const p = window.Game?.data?.personnage;
+        if (!p) return;
+        p.favoris = Array.from(new Set(p.favoris || []));
     }
 
     function isLockedItem(item) {
@@ -220,6 +215,17 @@
         else if (typeof window.NVIMP_applyPagedInventory === "function") window.NVIMP_applyPagedInventory();
     }
 
+    function canEquipType(type) {
+        return ["arme", "casque", "armure", "gants", "chaussures", "collier", "bague"].includes(type);
+    }
+
+    function primaryActionHTML(item, obj) {
+        if (obj.type === "consommable") return `<button type="button" data-nvipr-action="use" data-nvipr-id="${escapeHtml(item.id)}">Utiliser</button>`;
+        if (obj.type === "bague") return `<button type="button" data-nvipr-action="equip-ring1" data-nvipr-id="${escapeHtml(item.id)}">Anneau I</button><button type="button" data-nvipr-action="equip-ring2" data-nvipr-id="${escapeHtml(item.id)}">Anneau II</button>`;
+        if (canEquipType(obj.type)) return `<button type="button" data-nvipr-action="equip" data-nvipr-id="${escapeHtml(item.id)}">Équiper</button>`;
+        return "";
+    }
+
     function renderInventoryPopupFromButton(button) {
         const layout = inventoryLayout();
         const meta = extractMeta(button);
@@ -239,6 +245,7 @@
         const stats = objectDetails(obj);
         const favorite = isFavoriteId(item.id);
         const locked = isLockedItem(item);
+        const primary = primaryActionHTML(item, obj);
 
         box.className = "nvi-details nvimp-details-popup nvipr-popup";
         box.dataset.nviprItemId = item.id;
@@ -255,9 +262,7 @@
             </div>
             ${stats ? `<p class="nvi-details__stats">${stats}</p>` : ""}
             <p class="nvi-details__description">${escapeHtml(obj.description || "Aucune description.")}</p>
-            <div class="nvi-details__actions">
-                ${obj.type === "consommable" ? `<button type="button" data-nvipr-action="use" data-nvipr-id="${escapeHtml(item.id)}">Utiliser</button>` : obj.type === "bague" ? `<button type="button" data-nvipr-action="equip-ring1" data-nvipr-id="${escapeHtml(item.id)}">Anneau I</button><button type="button" data-nvipr-action="equip-ring2" data-nvipr-id="${escapeHtml(item.id)}">Anneau II</button>` : `<button type="button" data-nvipr-action="equip" data-nvipr-id="${escapeHtml(item.id)}">Équiper</button>`}
-            </div>
+            ${primary ? `<div class="nvi-details__actions">${primary}</div>` : ""}
             <div class="nvipr-secondary-row">
                 <button type="button" class="nvipr-secondary-action" data-nvipr-action="favorite" data-nvipr-id="${escapeHtml(item.id)}">${favorite ? "Retirer favori" : "Ajouter favori"}</button>
                 <button type="button" class="nvi-lock-toggle ${locked ? "nvi-lock-toggle--locked" : "nvi-lock-toggle--unlocked"}" data-nvipr-action="lock" data-nvipr-id="${escapeHtml(item.id)}"><span class="nvi-lock-toggle__text">${locked ? "Bloqué" : "Libre"}</span></button>
@@ -366,20 +371,16 @@
         event.stopImmediatePropagation();
     }
 
-    function handleClose(event) {
-        stopActionEvent(event);
-        closePopup();
-        return true;
-    }
-
     function handleFavorite(event) {
         const resolved = resolvePopupItem();
         if (!resolved) return false;
         stopActionEvent(event);
-        window.Game.data.personnage.favoris ??= [];
+        const p = window.Game.data.personnage;
+        p.favoris ??= [];
+        normalizeFavorites();
         const active = !isFavoriteId(resolved.id);
-        if (active) window.Game.data.personnage.favoris.push(resolved.id);
-        else window.Game.data.personnage.favoris = window.Game.data.personnage.favoris.filter(entry => entry !== resolved.id);
+        if (active) p.favoris = Array.from(new Set([...(p.favoris || []), resolved.id]));
+        else p.favoris = (p.favoris || []).filter(entry => entry !== resolved.id);
         refreshFavoriteVisual(resolved.id, active);
         journal(active ? `${objectName(resolved.id)} ajouté aux favoris.` : `${objectName(resolved.id)} retiré des favoris.`);
         autosave("inventory object favorite");
@@ -429,6 +430,7 @@
         autosave("inventory instance delete");
         closePopup();
         redrawInventory();
+        if (typeof window.afficherJournal === "function") window.afficherJournal();
         return true;
     }
 
@@ -455,8 +457,7 @@
     }
 
     function equipmentSlotFor(action, obj) {
-        const forced = forcedEquipSlot(action, obj);
-        return forced || obj?.type || "";
+        return forcedEquipSlot(action, obj) || obj?.type || "";
     }
 
     function handleEquip(event, action) {
@@ -498,19 +499,6 @@
         return true;
     }
 
-    function handleDuplicateUnsafeAction(event, action) {
-        if (!DUPLICATE_UNSAFE_ACTIONS.has(action)) return false;
-        const resolved = resolvePopupItem();
-        if (!resolved || duplicateCount(resolved.id) <= 1) return false;
-        stopActionEvent(event);
-        const warnKey = `${action}:${resolved.id}`;
-        if (!duplicateWarnings.has(warnKey)) {
-            duplicateWarnings.add(warnKey);
-            journal(`${objectName(resolved.id)} existe en plusieurs piles : action ${action} bloquée pour éviter de cibler la mauvaise pile.`);
-        }
-        return true;
-    }
-
     function firstFreeSlotInPage(page, movingItem) {
         const start = Math.max(0, Number(page) || 0) * SLOTS_PER_PAGE;
         for (let slot = start; slot < start + SLOTS_PER_PAGE; slot++) {
@@ -542,7 +530,10 @@
         if (!resolved) return false;
         const page = Number(button.dataset.nvimpPage);
         if (!Number.isInteger(page) || page < 0) return false;
-        if (event.type === "click" && Date.now() < suppressMoveClickUntil) return true;
+        if (event.type === "click" && Date.now() < suppressMoveClickUntil) {
+            stopActionEvent(event);
+            return true;
+        }
         stopActionEvent(event);
         suppressMoveClickUntil = Date.now() + MOVE_CLICK_SUPPRESS_MS;
         const sourceSlot = slotOf(resolved.item);
@@ -575,7 +566,8 @@
         if (window.Game?.ui?.vueActive !== "inventaire") return;
         const closeButton = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-close");
         if (closeButton) {
-            handleClose(event);
+            stopActionEvent(event);
+            closePopup();
             return;
         }
         const actionButton = event.target?.closest?.(".nvi-details.nvipr-popup [data-nvipr-action]");
@@ -588,7 +580,6 @@
             else if (action === "delete-confirm") handleDeleteConfirm(event);
             else if (action === "use") handleUse(event);
             else if (action === "equip" || action === "equip-ring1" || action === "equip-ring2") handleEquip(event, action);
-            else handleDuplicateUnsafeAction(event, action);
             return;
         }
         const pageButton = event.target?.closest?.(".nvi-details.nvipr-popup .nvimp-popup-pager .nvimp-page-btn[data-nvimp-mode='move']");
@@ -596,7 +587,6 @@
     }
 
     function installMetadataBridge() {
-        window.NVI_INSTANCE_METADATA_BRIDGE_VERSION = BRIDGE_VERSION;
         if (!window.__NVI_INSTANCE_META_CLICK_CAPTURE) {
             window.__NVI_INSTANCE_META_CLICK_CAPTURE = true;
             document.addEventListener("click", event => {
@@ -618,28 +608,22 @@
     }
 
     function installPopupRenderer() {
-        window.NVI_INTERACTION_POPUP_VERSION = POPUP_VERSION;
         if (window.__NVI_INTERACTION_POPUP_RENDERER) return;
         window.__NVI_INTERACTION_POPUP_RENDERER = true;
         window.addEventListener("click", handleItemSelection, true);
     }
 
     function installInstanceActions() {
-        window.NVI_INSTANCE_ACTIONS_VERSION = ACTIONS_VERSION;
         if (window.__NVI_INSTANCE_ACTIONS) return;
         window.__NVI_INSTANCE_ACTIONS = true;
         window.addEventListener("pointerdown", handleInstanceActions, true);
         window.addEventListener("click", handleInstanceActions, true);
     }
 
-    function installIntegratedInstanceLayer() {
+    function dispatchReady() {
         installMetadataBridge();
         installPopupRenderer();
         installInstanceActions();
-    }
-
-    function dispatchReady() {
-        installIntegratedInstanceLayer();
         window.dispatchEvent(new CustomEvent("nv:inventory-interaction-ready", {
             detail: {
                 version: ENTRY_VERSION,
@@ -652,28 +636,6 @@
         }));
     }
 
-    if (backendReady()) {
-        dispatchReady();
-        return;
-    }
-
-    const existing = existingBackendScript();
-    if (existing) {
-        existing.addEventListener("load", dispatchReady, { once: true });
-        existing.addEventListener("error", () => console.error(`[NightVenture] Impossible de charger ${BACKEND_SRC}`), { once: true });
-        return;
-    }
-
-    const script = document.createElement("script");
-    script.id = BACKEND_ID;
-    script.src = BACKEND_SRC;
-    script.async = false;
-    script.dataset.nvModule = "inventory-interaction-backend";
-    script.dataset.nvTemporaryBackend = "true";
-    script.onload = dispatchReady;
-    script.onerror = () => console.error(`[NightVenture] Impossible de charger ${BACKEND_SRC}`);
-
-    const current = document.currentScript;
-    if (current?.parentNode) current.parentNode.insertBefore(script, current.nextSibling);
-    else document.head.appendChild(script);
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", dispatchReady);
+    else dispatchReady();
 })();
