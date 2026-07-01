@@ -4,15 +4,18 @@
 (function () {
     "use strict";
 
-    const ENTRY_VERSION = "v0.9.9.15-interaction-entrypoint";
+    const ENTRY_VERSION = "v0.9.9.16-interaction-entrypoint-instance-bridge";
     const BACKEND_SRC = "Inventory_Mobile_Paged.js";
     const BACKEND_ID = "nvInventoryInteractionBackend";
+    const BRIDGE_SRC = "Inventory_Instance_Metadata_Bridge.js";
+    const BRIDGE_ID = "nvInventoryInstanceMetadataBridge";
 
     if (window.__NVI_INTERACTION_ENTRYPOINT_LOADED) return;
     window.__NVI_INTERACTION_ENTRYPOINT_LOADED = true;
 
     window.NVI_INTERACTION_VERSION = ENTRY_VERSION;
     window.NVI_INTERACTION_BACKEND_SRC = BACKEND_SRC;
+    window.NVI_INTERACTION_BRIDGE_SRC = BRIDGE_SRC;
 
     function backendReady() {
         return typeof window.NVIMP_applyPagedInventory === "function" || typeof window.NVIPR_applyPopupRework === "function";
@@ -22,11 +25,25 @@
         return document.getElementById(BACKEND_ID) || document.querySelector(`script[src="${BACKEND_SRC}"]`);
     }
 
+    function loadBridge() {
+        if (window.NVI_INSTANCE_METADATA_BRIDGE_VERSION || document.getElementById(BRIDGE_ID) || document.querySelector(`script[src="${BRIDGE_SRC}"]`)) return;
+        const bridge = document.createElement("script");
+        bridge.id = BRIDGE_ID;
+        bridge.src = BRIDGE_SRC;
+        bridge.async = false;
+        bridge.dataset.nvModule = "inventory-instance-metadata-bridge";
+        const anchor = document.getElementById(BACKEND_ID) || document.currentScript;
+        if (anchor?.parentNode) anchor.parentNode.insertBefore(bridge, anchor.nextSibling);
+        else document.head.appendChild(bridge);
+    }
+
     function dispatchReady() {
+        loadBridge();
         window.dispatchEvent(new CustomEvent("nv:inventory-interaction-ready", {
             detail: {
                 version: ENTRY_VERSION,
                 backend: BACKEND_SRC,
+                bridge: BRIDGE_SRC,
                 ready: backendReady()
             }
         }));
