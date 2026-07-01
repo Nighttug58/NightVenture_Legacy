@@ -122,8 +122,8 @@
         return true;
     }
 
-    function moveSelectedToPage(page) {
-        const id = selectedItemId();
+    function moveSelectedToPage(page, forcedId = null) {
+        const id = forcedId || selectedItemId();
         if (!id) return;
 
         const target = firstFreeSlotInPage(page, id);
@@ -287,6 +287,8 @@
             const button = document.createElement("button");
             button.type = "button";
             button.className = "nvimp-page-btn" + (i === activePage ? " is-active" : "");
+            button.dataset.nvimpPage = String(i);
+            button.dataset.nvimpMode = mode;
             button.textContent = pageLabel(i);
             button.setAttribute("aria-label", mode === "move" ? "Déplacer vers page " + pageLabel(i) : "Afficher page " + pageLabel(i));
             button.addEventListener("click", function (event) {
@@ -407,6 +409,34 @@
         details.appendChild(movePager);
     }
 
+    function popupMoveIdFromButton(button) {
+        const details = button.closest(".nvi-details.nvipr-popup[data-nvipr-item-id]");
+        if (details?.dataset?.nviprItemId) return details.dataset.nviprItemId;
+        return selectedItemId();
+    }
+
+    function pageFromPopupButton(button) {
+        const datasetPage = Number(button?.dataset?.nvimpPage);
+        if (Number.isInteger(datasetPage) && datasetPage >= 0) return datasetPage;
+        const buttons = Array.from(button.parentElement?.querySelectorAll(".nvimp-page-btn") || []);
+        return Math.max(0, buttons.indexOf(button));
+    }
+
+    function handlePopupPagerClick(event) {
+        if (Game?.ui?.vueActive !== "inventaire") return;
+        const button = event.target?.closest?.(".nvi-layout--inventory .nvi-details.nvipr-popup .nvimp-popup-pager .nvimp-page-btn");
+        if (!button) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        const id = popupMoveIdFromButton(button);
+        const page = pageFromPopupButton(button);
+        if (!id || page < 0) return;
+        moveSelectedToPage(page, id);
+    }
+
     function applyPagedInventory() {
         injectStyle();
         if (Game?.ui?.vueActive !== "inventaire") return;
@@ -446,8 +476,15 @@
         observer.observe(root, { childList: true, subtree: true });
     }
 
+    function installPopupPagerCapture() {
+        if (window.__NVIMP_POPUP_PAGER_CAPTURE) return;
+        window.__NVIMP_POPUP_PAGER_CAPTURE = true;
+        document.addEventListener("click", handlePopupPagerClick, true);
+    }
+
     function install() {
         injectStyle();
+        installPopupPagerCapture();
         observeInventoryView();
         scheduleApply();
         setTimeout(function () {
