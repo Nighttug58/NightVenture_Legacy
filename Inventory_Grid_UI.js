@@ -2,7 +2,7 @@
 (function () {
     "use strict";
 
-    const NVI_VERSION = "v0.9.9.14-inventory-grid-ui";
+    const NVI_VERSION = "v0.9.9.15-inventory-grid-ui-stable";
     const SLOT_COUNT = 72;
 
     function hasGame() { return typeof Game !== "undefined" && Game?.data?.personnage; }
@@ -44,9 +44,11 @@
         p.inventaireSlots ??= {};
         p.inventaireVerrous ??= {};
         const used = new Set();
+        const validKeys = new Set();
         const map = new Map();
         p.inventaire.forEach(item => {
             const k = key(item);
+            if (k) validKeys.add(k);
             const persisted = Number(p.inventaireSlots[k]);
             const current = Number(item.slot);
             let slot = Number.isInteger(persisted) && persisted >= 0 ? persisted : Number.isInteger(current) && current >= 0 ? current : null;
@@ -62,6 +64,8 @@
             delete item.bloque;
             map.set(slot, item);
         });
+        Object.keys(p.inventaireSlots).forEach(k => { if (!validKeys.has(k)) delete p.inventaireSlots[k]; });
+        Object.keys(p.inventaireVerrous).forEach(k => { if (!validKeys.has(k)) delete p.inventaireVerrous[k]; });
         return map;
     }
 
@@ -103,7 +107,7 @@
 
     function toolbarHtml() {
         const filters = Game.constants?.filtresInventaire || [{ id: "tous", nom: "Tous" }, { id: "favoris", nom: "Favoris" }, { id: "arme", nom: "Armes" }, { id: "armure", nom: "Armures" }, { id: "accessoire", nom: "Accessoires" }, { id: "consommable", nom: "Consommables" }, { id: "materiau", nom: "Materiaux" }, { id: "quete", nom: "Quetes" }, { id: "divers", nom: "Divers" }];
-        const sorts = Game.constants?.trisInventaire || [{ id: "nom", nom: "Nom" }, { id: "type", nom: "Type" }, { id: "rarete", nom: "Rarete" }, { id: "niveau", nom: "Niveau" }, { id: "prix", nom: "Prix" }];
+        const sorts = Game.constants?.trisInventaire || [{ id: "nom", nom: "Nom" }, { id: "type", nom: "Type" }, { id: "rarete", nom: "Rarete" }, { id: "niveau", nom: "Niveau" }, { id: "prix", nom: "Prix" }, { id: "atk", nom: "ATK" }, { id: "atkMagique", nom: "ATK magique" }, { id: "def", nom: "DEF" }, { id: "defMagique", nom: "DEF magique" }];
         return `<div class="nvi-toolbar"><div class="nvi-toolbar__top"><div><h2>Inventaire</h2><p>Inventaire refonte.</p></div><button onclick="NVI_triAutomatiqueInventaire()">Tri auto</button><button onclick="ouvrirExploration()">Retour</button></div><div class="nvi-toolbar__search-row"><input id="nviSearch" type="text" placeholder="Rechercher..." value="${esc(Game.ui.rechercheInventaire || "")}" oninput="NVI_changerRecherche(this.value)"><select onchange="NVI_changerTri(this.value)">${sorts.map(s => `<option value="${esc(s.id)}" ${Game.ui.triInventaire === s.id ? "selected" : ""}>${esc(s.nom)}</option>`).join("")}</select><button onclick="NVI_inverserOrdreTri()">${Game.ui.ordreTriInventaire === "asc" ? "ASC" : "DESC"}</button></div><div class="nvi-filters">${filters.map(f => `<button class="nvi-filter" data-etat="${filterState(f.id)}" onclick="NVI_changerFiltre('${esc(f.id)}')">${esc(f.nom)}</button>`).join("")}</div></div>`;
     }
 
@@ -120,7 +124,7 @@
 
     function redraw() {
         if (!hasGame()) return;
-        if (Game.ui.vueActive === "inventaire") afficherVuePrincipale(renderHtml());
+        if (Game.ui.vueActive === "inventaire" && typeof afficherVuePrincipale === "function") afficherVuePrincipale(renderHtml());
         else if (Game.ui.vueActive === "marchand" && typeof NVM_redessinerVueActive === "function") NVM_redessinerVueActive();
     }
 
@@ -147,13 +151,24 @@
         redraw();
     }
 
+    function rarityScore(o) {
+        const order = { commun: 1, "peu-commun": 2, rare: 3, epique: 4, "épique": 4, legendaire: 5, "légendaire": 5, mythique: 6 };
+        return order[o?.rarete] || 0;
+    }
+
     function compareItems(a, b) {
         const A = obj(a.id), B = obj(b.id);
         if (!A || !B) return 0;
         const mode = Game.ui.triInventaire || "nom";
         let r = 0;
         if (mode === "type") r = String(A.type || "").localeCompare(String(B.type || ""));
+        else if (mode === "rarete") r = rarityScore(B) - rarityScore(A);
+        else if (mode === "niveau") r = (B.niveauRequis || 1) - (A.niveauRequis || 1);
         else if (mode === "prix") r = (B.prix || 0) - (A.prix || 0);
+        else if (mode === "atk") r = (B.attaque || 0) - (A.attaque || 0);
+        else if (mode === "atkMagique") r = (B.attaqueMagique || 0) - (A.attaqueMagique || 0);
+        else if (mode === "def") r = (B.defense || 0) - (A.defense || 0);
+        else if (mode === "defMagique") r = (B.defenseMagique || 0) - (A.defenseMagique || 0);
         else r = String(A.nom || "").localeCompare(String(B.nom || ""));
         return Game.ui.ordreTriInventaire === "desc" ? -r : r;
     }
@@ -166,7 +181,7 @@
         const free = [];
         for (let i = 0; i < Math.max(SLOT_COUNT, items.length + 12); i++) if (!lockedSlots.has(i)) free.push(i);
         movable.sort(compareItems).forEach((item, i) => { item.slot = free[i] ?? i; Game.data.personnage.inventaireSlots[key(item)] = item.slot; });
-        if (typeof ajouterJournal === "function") ajouterJournal("Inventaire trie automatiquement.");
+        if (typeof ajouterJournal === "function") ajouterJournal(lockedSlots.size > 0 ? `Inventaire trie automatiquement. ${lockedSlots.size} item(s) bloque(s) conserve(s).` : "Inventaire trie automatiquement.");
         if (typeof NV_demanderAutosave === "function") NV_demanderAutosave("inventory grid auto sort");
         redraw();
     }
