@@ -1,6 +1,6 @@
-/* NightVenture — Inventaire refonte + base statique legacy/merchant */
+/* NightVenture — Inventaire refonte + base statique marchand */
 
-/* Base commune ancien renderer / marchand */
+/* Base commune inventaire / marchand */
 .nvi-window {
     display: flex;
     flex-direction: column;
@@ -321,18 +321,7 @@
 
 .nvi-layout--inventory .nvi-item:focus,
 .nvi-layout--inventory .nvi-item:focus-visible,
-.nvi-layout--inventory .nvi-item:active {
-    outline: none !important;
-    box-shadow: none !important;
-    filter: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-}
-
-.nvi-layout--inventory .nvi-item.nvi-item--selected,
-.nvi-layout--inventory .nvi-item.nvi-item--selected:focus,
-.nvi-layout--inventory .nvi-item.nvi-item--selected:focus-visible,
-.nvi-layout--inventory .nvi-item.nvi-item--selected:active,
-.nvi-layout--inventory .nvi-item.nvi-item--selected:not(.nvimp-moving),
+.nvi-layout--inventory .nvi-item:active,
 .nvi-layout--inventory .nvi-item.nvimp-item--popup-open,
 .nvi-layout--inventory .nvi-item.nvimp-item--popup-open:focus,
 .nvi-layout--inventory .nvi-item.nvimp-item--popup-open:focus-visible,
@@ -348,8 +337,6 @@
     -webkit-tap-highlight-color: transparent !important;
 }
 
-.nvi-layout--inventory .nvi-item.nvi-item--selected::before,
-.nvi-layout--inventory .nvi-item.nvi-item--selected::after,
 .nvi-layout--inventory .nvi-item.nvimp-item--popup-open::before,
 .nvi-layout--inventory .nvi-item.nvimp-item--popup-open::after {
     display: none !important;
@@ -444,10 +431,6 @@
 
 .nvi-layout--inventory.nvimp-no-details {
     grid-template-columns: minmax(0, 1fr) !important;
-}
-
-.nvi-layout--inventory .nvi-details:has(.nvi-details__empty) {
-    display: none !important;
 }
 
 .nvi-layout--inventory .nvi-panel__title {
@@ -727,11 +710,6 @@
     font-size: 0.78rem;
     font-weight: 900;
     letter-spacing: 0.02em;
-}
-
-/* Neutralisation de l'ancien panneau détails généré par onclick legacy. */
-.nvi-layout--inventory > .nvi-details:not(.nvipr-popup) {
-    display: none !important;
 }
 
 @media (min-width: 720px) {
