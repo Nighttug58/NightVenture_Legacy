@@ -6,22 +6,3 @@
 .nvi-window .nvi-toolbar .nvi-toolbar__top h2 {
     margin-bottom: 0 !important;
 }
-
-/* Empêche le flash du texte "Fermer" avant le rework popup. */
-.nvimp-popup-close {
-    font-size: 0 !important;
-    text-indent: 0 !important;
-    overflow: hidden !important;
-}
-
-.nvimp-popup-close::before {
-    content: "×";
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    font-size: 1rem;
-    font-weight: 900;
-    line-height: 1;
-}
