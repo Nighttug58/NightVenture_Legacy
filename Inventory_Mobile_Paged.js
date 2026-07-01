@@ -5,8 +5,6 @@
     const SLOTS_PER_PAGE = 30;
     const MIN_SLOTS = 120;
     const DRAG_THRESHOLD = 8;
-    const LONG_PRESS_CLEAR_MS = 430;
-    const LONG_PRESS_SUPPRESS_MS = 950;
     const SYNTHETIC_CLICK_SUPPRESS_MS = 220;
     const PAGE_LABELS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
@@ -15,8 +13,6 @@
     let suppressObserver = false;
     let dragState = null;
     let dragGhost = null;
-    let longPressTimer = null;
-    let longPressBlockedClick = false;
     let suppressClickUntil = 0;
 
     function inv() { return Game?.data?.personnage?.inventaire || []; }
@@ -161,33 +157,6 @@
         document.querySelector(".nvi-layout--inventory")?.classList.add("nvimp-no-details");
     }
 
-    function hasInventoryPopup() {
-        return Boolean(document.querySelector(".nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id]"));
-    }
-
-    function clearLongPressTimer() {
-        if (!longPressTimer) return;
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-    }
-
-    function clearStaleLongPressSelection(item = null) {
-        if (document.activeElement?.closest?.(".nvi-layout--inventory .nvi-item")) document.activeElement.blur();
-        if (hasInventoryPopup()) return;
-        if (item?.classList) item.classList.remove("nvi-item--selected", "nvimp-item--popup-open");
-        else clearInventorySelectionClasses();
-    }
-
-    function scheduleLongPressNeutralize(item, pointerId) {
-        clearLongPressTimer();
-        longPressTimer = setTimeout(() => {
-            if (!dragState || dragState.pointerId !== pointerId || dragState.dragging) return;
-            longPressBlockedClick = true;
-            suppressClickUntil = Date.now() + LONG_PRESS_SUPPRESS_MS;
-            clearStaleLongPressSelection(item);
-        }, LONG_PRESS_CLEAR_MS);
-    }
-
     function moveSelectedToPage(page) {
         const id = selectedItemId();
         if (!id) return;
@@ -297,9 +266,10 @@
         }
         const favorite = isFavorite(id);
         const locked = isLocked(id);
+        const popupOpen = Boolean(document.querySelector(`.nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id=\"${id}\"]`));
         document.querySelectorAll(selectorForItem(id)).forEach(button => {
             button.classList.remove("nvi-item--selected");
-            button.classList.toggle("nvimp-item--popup-open", Boolean(document.querySelector(`.nvi-layout--inventory > .nvi-details.nvipr-popup[data-nvipr-item-id=\"${id}\"]`)));
+            button.classList.toggle("nvimp-item--popup-open", popupOpen);
             button.classList.toggle("nvi-item--locked", locked);
             button.draggable = false;
             let fav = button.querySelector(".nvi-item__favorite");
@@ -507,12 +477,10 @@
         if (Game?.ui?.vueActive !== "inventaire") return;
         const button = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]");
         if (!button) return;
-        if (Date.now() < suppressClickUntil || longPressBlockedClick) {
+        if (Date.now() < suppressClickUntil) {
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
-            clearStaleLongPressSelection(button);
-            longPressBlockedClick = false;
             return;
         }
         if (document.querySelector(".nvi-slot.nvimp-touch-target")) return;
@@ -709,21 +677,12 @@
     }
 
     function finishDrag(event) {
-        clearLongPressTimer();
         if (!dragState) return;
         const state = dragState;
         dragState = null;
         if (!state.dragging) {
             removeDragGhost();
             clearDragVisuals();
-            if (longPressBlockedClick) {
-                event.preventDefault();
-                event.stopPropagation();
-                event.stopImmediatePropagation();
-                suppressClickUntil = Date.now() + LONG_PRESS_SUPPRESS_MS;
-                clearStaleLongPressSelection(state.item);
-                setTimeout(() => { longPressBlockedClick = false; }, LONG_PRESS_SUPPRESS_MS);
-            }
             return;
         }
 
@@ -750,15 +709,10 @@
 
         document.addEventListener("contextmenu", event => {
             if (Game?.ui?.vueActive !== "inventaire") return;
-            const item = event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]");
-            if (!item) return;
+            if (!event.target?.closest?.(".nvi-layout--inventory .nvi-grid--inventory .nvi-item[data-nvi-item-id]")) return;
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
-            longPressBlockedClick = true;
-            suppressClickUntil = Date.now() + LONG_PRESS_SUPPRESS_MS;
-            clearLongPressTimer();
-            clearStaleLongPressSelection(item);
         }, true);
 
         document.addEventListener("dragstart", event => {
@@ -776,11 +730,9 @@
             if (!item) return;
             const grid = item.closest(".nvi-grid--inventory");
             if (!grid) return;
-            longPressBlockedClick = false;
             suppressClickUntil = 0;
             neutralizeNativeDragTargets(grid);
             dragState = { id: item.dataset.nviItemId, item, grid, pointerId: event.pointerId, x: event.clientX, y: event.clientY, dragging: false };
-            scheduleLongPressNeutralize(item, event.pointerId);
             createDragGhost(item, event, false);
             try { item.setPointerCapture(event.pointerId); } catch (_) {}
         }, true);
@@ -791,8 +743,6 @@
             const dy = event.clientY - dragState.y;
             if (!dragState.dragging && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
                 dragState.dragging = true;
-                longPressBlockedClick = false;
-                clearLongPressTimer();
                 suppressClickUntil = Date.now() + SYNTHETIC_CLICK_SUPPRESS_MS;
                 clearDragVisuals();
                 dragState.item.classList.add("nvimp-moving");
@@ -815,8 +765,6 @@
         document.addEventListener("pointercancel", event => {
             if (!dragState || dragState.pointerId !== event.pointerId) return;
             dragState = null;
-            longPressBlockedClick = false;
-            clearLongPressTimer();
             removeDragGhost();
             clearDragVisuals();
         }, true);
@@ -824,12 +772,10 @@
         document.addEventListener("click", event => {
             const item = event.target?.closest?.(".nvi-layout--inventory .nvi-item");
             if (!item) return;
-            if (Date.now() > suppressClickUntil && !longPressBlockedClick) return;
+            if (Date.now() > suppressClickUntil) return;
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
-            clearStaleLongPressSelection(item);
-            longPressBlockedClick = false;
         }, true);
     }
 
